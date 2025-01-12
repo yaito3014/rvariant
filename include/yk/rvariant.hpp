@@ -207,7 +207,7 @@ constexpr decltype(auto) raw_visit(Visitor&& vis, Variant&& var) {
 
 template <class R, class Visitor, class Variant, std::size_t... Is>
 constexpr auto make_farray_for_visit(std::index_sequence<Is...>) {
-  return std::array{+[](Visitor&& vi, Variant&& va) -> R { return std::invoke(std::forward<Visitor>(vi), get<Is>(va)); }...};
+  return std::array{+[](Visitor&& vi, Variant&& va) -> R { return std::invoke(std::forward<Visitor>(vi), get<Is>(std::forward<Variant>(va))); }...};
 }
 
 }  // namespace detail
