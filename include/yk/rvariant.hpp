@@ -180,27 +180,34 @@ constexpr const variant_alternative_t<I, rvariant<Types...>>&& get(const rvarian
 
 namespace detail {
 
+template <class Visitor, bool TD, std::size_t Index, class... Ts, std::size_t... Is>
+constexpr auto make_farray_for_raw_visit_at(std::index_sequence<Is...>) {
+  return std::array{
+      [](Visitor&& vi, variadic_union<TD, Index, Ts...>& vu) { std::invoke(std::forward<Visitor>(vi), get_alternative(vu, std::in_place_index<Is>)); }...};
+}
+
 template <class Visitor, bool TD, std::size_t Index, class... Ts>
 constexpr decltype(auto) raw_visit_at(Visitor&& vis, std::size_t index, variadic_union<TD, Index, Ts...>& varuni) {
   constexpr auto VariantSize = sizeof...(Ts);
-
-  constexpr auto farray = []<std::size_t... Is>(std::index_sequence<Is...>) -> std::array<void (*)(Visitor&&, variadic_union<TD, Index, Ts...>&), VariantSize> {
-    return {
-        [](Visitor&& vi, variadic_union<TD, Index, Ts...>& vu) { std::invoke(std::forward<Visitor>(vi), get_alternative(vu, std::in_place_index<Is>)); }...};
-  }(std::make_index_sequence<VariantSize>{});
-
+  constexpr auto farray = make_farray_for_raw_visit_at<Visitor, TD, Index, Ts...>(std::make_index_sequence<VariantSize>{});
   return farray[index](std::forward<Visitor>(vis), varuni);
+}
+
+template <class Visitor, class Variant, std::size_t... Is>
+constexpr auto make_farray_for_raw_visit(std::index_sequence<Is...>) {
+  return std::array{+[](Visitor&& vi, Variant&& va) { std::invoke(std::forward<Visitor>(vi), raw_get<Is>(va)); }...};
 }
 
 template <class Visitor, class Variant>
 constexpr decltype(auto) raw_visit(Visitor&& vis, Variant&& var) {
   constexpr auto VariantSize = variant_size_v<std::remove_cvref_t<Variant>>;
-
-  constexpr auto farray = []<std::size_t... Is>(std::index_sequence<Is...>) -> std::array<void (*)(Visitor&&, Variant&&), VariantSize> {
-    return {[](Visitor&& vi, Variant&& va) { std::invoke(std::forward<Visitor>(vi), raw_get<Is>(va)); }...};
-  }(std::make_index_sequence<VariantSize>{});
-
+  constexpr auto farray = make_farray_for_raw_visit<Visitor, Variant>(std::make_index_sequence<VariantSize>{});
   return farray[var.index()](std::forward<Visitor>(vis), std::forward<Variant>(var));
+}
+
+template <class R, class Visitor, class Variant, std::size_t... Is>
+constexpr auto make_farray_for_visit(std::index_sequence<Is...>) {
+  return std::array{+[](Visitor&& vi, Variant&& va) -> R { return std::invoke(std::forward<Visitor>(vi), get<Is>(va)); }...};
 }
 
 }  // namespace detail
@@ -209,13 +216,7 @@ template <class Visitor, class Variant>
 constexpr decltype(auto) visit(Visitor&& vis, Variant&& var) {
   constexpr auto VariantSize = variant_size_v<std::remove_cvref_t<Variant>>;
   using R = std::invoke_result_t<Visitor, variant_alternative_t<0, std::remove_cvref_t<Variant>>>;
-
-  constexpr auto farray = []<std::size_t... Is>(std::index_sequence<Is...>) -> std::array<R (*)(Visitor&&, Variant&&), VariantSize> {
-    static_assert(std::conjunction_v<std::is_same<R, std::invoke_result_t<Visitor, variant_alternative_t<Is, std::remove_cvref_t<Variant>>>>...>,
-                  "visit requires visitor's return type to be same for all alternatives");
-    return {[](Visitor&& vi, Variant&& va) { return std::invoke(std::forward<Visitor>(vi), get<Is>(va)); }...};
-  }(std::make_index_sequence<VariantSize>{});
-
+  constexpr auto farray = detail::make_farray_for_visit<R, Visitor, Variant>(std::make_index_sequence<VariantSize>{});
   return farray[var.index()](std::forward<Visitor>(vis), std::forward<Variant>(var));
 }
 
