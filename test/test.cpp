@@ -1,12 +1,9 @@
 #include <optional>
-#include <print>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <variant>
-
-#include <boost/variant.hpp>
 
 #include <yk/rvariant.hpp>
 
@@ -79,7 +76,7 @@ TEST_CASE("recursive") {
     struct UnaryExpr;
     struct BinaryExpr;
 
-    using Expr = yk::rvariant<int, float, boost::recursive_wrapper<UnaryExpr>, boost::recursive_wrapper<BinaryExpr>>;
+    using Expr = yk::rvariant<int, float, std::reference_wrapper<UnaryExpr>, std::reference_wrapper<BinaryExpr>>;
 
     struct UnaryExpr {
       int op;
