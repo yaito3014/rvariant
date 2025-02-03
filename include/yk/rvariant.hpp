@@ -162,7 +162,7 @@ struct narrowing_checker {
 
 template <std::size_t I, class T, class Ti, class = void>
 struct build_fun {
-  void fun() = delete;
+  static void fun() = delete;
 };
 
 template <std::size_t I, class T, class Ti>
