@@ -174,9 +174,8 @@ template <class T, class Variant, class Seq = std::make_index_sequence<variant_s
 struct build_funs;
 
 template <class T, class Variant, std::size_t... Is>
-struct build_funs<T, Variant, std::index_sequence<Is...>>
-    : build_fun<Is, T, detail::replace_t<recursive_self, Variant, variant_alternative_t<Is, Variant>>>... {
-  using build_fun<Is, T, detail::replace_t<recursive_self, Variant, variant_alternative_t<Is, Variant>>>::fun...;
+struct build_funs<T, Variant, std::index_sequence<Is...>> : build_fun<Is, T, variant_alternative_t<Is, Variant>>... {
+  using build_fun<Is, T, variant_alternative_t<Is, Variant>>::fun...;
 };
 
 template <class T, class Variant>

@@ -77,6 +77,14 @@ TEST_CASE("recursive") {
   }
 
   {
+    using V = yk::rvariant<int, float, std::vector<yk::recursive_self>>;
+    V v1 = 42;
+    V v2 = 3.14f;
+    std::vector<V> vec{v1, v2};
+    V v3 = vec;
+  }
+
+  {
     using V = yk::rvariant<int, std::optional<std::vector<yk::recursive_self>>>;
     V v(std::in_place_index<1>, std::vector{V(std::in_place_index<0>, 42)});
   }
