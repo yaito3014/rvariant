@@ -27,11 +27,20 @@ TEST_CASE("type traits") {
 }
 
 TEST_CASE("constructor") {
-  yk::rvariant<int, float> v_default;
-  yk::rvariant<int, float> v_first(std::in_place_index<0>, 42);
-  yk::rvariant<int, float> v_second(std::in_place_index<1>, 3.14f);
+  {
+    yk::rvariant<int, float> v_default;
+    yk::rvariant<int, float> v_first(std::in_place_index<0>, 42);
+    yk::rvariant<int, float> v_second(std::in_place_index<1>, 3.14f);
 
-  yk::rvariant<std::vector<int>> v_vec(std::in_place_index<0>, {3, 1, 4});
+    yk::rvariant<std::vector<int>> v_vec(std::in_place_index<0>, {3, 1, 4});
+  }
+
+  {
+    yk::rvariant<int, float> v_first = 42;
+    REQUIRE(v_first.index() == 0);
+    yk::rvariant<int, float> v_second = 3.14f;
+    REQUIRE(v_second.index() == 1);
+  }
 }
 
 TEST_CASE("get") {

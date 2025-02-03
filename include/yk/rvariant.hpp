@@ -155,6 +155,33 @@ constexpr auto&& raw_get(Variant&& v) noexcept {
 template <std::size_t Size>
 using select_index_t = std::conditional_t<(Size <= 1 << (sizeof(unsigned char) * CHAR_BIT)), unsigned char, unsigned short>;
 
+template <class Ti>
+struct narrowing_checker {
+  Ti x[1];
+};
+
+template <std::size_t I, class T, class Ti, class = void>
+struct build_fun {
+  void fun() = delete;
+};
+
+template <std::size_t I, class T, class Ti>
+struct build_fun<I, T, Ti, std::void_t<decltype(narrowing_checker<Ti>{{std::declval<T>()}})>> {
+  static std::integral_constant<std::size_t, I> fun(Ti);
+};
+
+template <class T, class Variant, class Seq = std::make_index_sequence<variant_size_v<Variant>>>
+struct build_funs;
+
+template <class T, class Variant, std::size_t... Is>
+struct build_funs<T, Variant, std::index_sequence<Is...>>
+    : build_fun<Is, T, detail::replace_t<recursive_self, Variant, variant_alternative_t<Is, Variant>>>... {
+  using build_fun<Is, T, detail::replace_t<recursive_self, Variant, variant_alternative_t<Is, Variant>>>::fun...;
+};
+
+template <class T, class Variant>
+using accepted_index = decltype(build_funs<T, Variant>::fun(std::declval<T>()));
+
 }  // namespace detail
 
 template <size_t I, class... Types>
@@ -234,6 +261,10 @@ public:
   constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<first_type>)
     requires std::is_default_constructible_v<first_type>
       : storage_(std::in_place_index<0>), index_(0) {}
+
+  template <class T>
+    requires requires { detail::accepted_index<T, rvariant>::value; }
+  constexpr rvariant(T&& x) : rvariant(std::in_place_index<detail::accepted_index<T, rvariant>::value>, std::forward<T>(x)) {}
 
   template <std::size_t I, class... Args>
     requires(I < sizeof...(Ts)) && std::constructible_from<detail::list_indexing_t<I, transformed_types>, Args...>
