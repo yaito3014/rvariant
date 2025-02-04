@@ -27,11 +27,20 @@ TEST_CASE("type traits") {
 }
 
 TEST_CASE("constructor") {
-  yk::rvariant<int, float> v_default;
-  yk::rvariant<int, float> v_first(std::in_place_index<0>, 42);
-  yk::rvariant<int, float> v_second(std::in_place_index<1>, 3.14f);
+  {
+    yk::rvariant<int, float> v_default;
+    yk::rvariant<int, float> v_first(std::in_place_index<0>, 42);
+    yk::rvariant<int, float> v_second(std::in_place_index<1>, 3.14f);
 
-  yk::rvariant<std::vector<int>> v_vec(std::in_place_index<0>, {3, 1, 4});
+    yk::rvariant<std::vector<int>> v_vec(std::in_place_index<0>, {3, 1, 4});
+  }
+
+  {
+    yk::rvariant<int, float> v_first = 42;
+    REQUIRE(v_first.index() == 0);
+    yk::rvariant<int, float> v_second = 3.14f;
+    REQUIRE(v_second.index() == 1);
+  }
 }
 
 TEST_CASE("get") {
@@ -65,6 +74,14 @@ TEST_CASE("recursive") {
     V v2(std::in_place_index<1>, 3.14f);
     std::vector<V> vec{v1, v2};
     V v3(std::in_place_index<2>, vec);
+  }
+
+  {
+    using V = yk::rvariant<int, float, std::vector<yk::recursive_self>>;
+    V v1 = 42;
+    V v2 = 3.14f;
+    std::vector<V> vec{v1, v2};
+    V v3 = vec;
   }
 
   {
