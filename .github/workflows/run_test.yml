@@ -18,6 +18,7 @@ jobs:
         with:
           filters: |
             src:
+              - '.github/workflows/run_test.yml'
               - 'include/**/*'
               - 'test/**/*'
 
