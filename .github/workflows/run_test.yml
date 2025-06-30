@@ -36,7 +36,6 @@ jobs:
             version: 2022
         build_type: [Release, Debug]
         cpp_version: [23, 26]
-        boost_version: [1.86.0]
         compiler:
           - name: GCC
             version: 14
@@ -114,9 +113,7 @@ jobs:
       - name: Test (Windows)
         if: matrix.os.name == 'windows'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
-        run: |
-          copy ${{ github.workspace }}/boost/dist/bin/*.dll .
-          ./yk_util_test --report_level=short
+        run: ./yk_util_test --report_level=short
       - uses: qoomon/actions--context@v4
         id: context
 
