@@ -36,6 +36,14 @@ TEST_CASE("constructor") {
 }
 
 TEST_CASE("get") {
+  {
+    using Variant = yk::rvariant<int, float>;
+    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<Variant&>())), int&>);
+    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<Variant>())), int&&>);
+    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<const Variant&>())), const int&>);
+    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<const Variant>())), const int&&>);
+  }
+
   yk::rvariant<int, float> v(std::in_place_index<0>, 42);
 
   int& x = yk::get<0>(v);
