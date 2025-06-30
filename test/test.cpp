@@ -100,6 +100,7 @@ TEST_CASE("recursive") {
 
     Expr a(std::in_place_index<0>, 42);
     Expr b(std::in_place_index<1>, 3.14f);
-    Expr expr(std::in_place_index<3>, std::make_unique<BinaryExpr>(std::move(a), '+', std::move(b)));
+    Expr c(std::in_place_index<2>, std::make_unique<UnaryExpr>('-', std::move(a)));
+    Expr expr(std::in_place_index<3>, std::make_unique<BinaryExpr>(std::move(c), '+', std::move(b)));
   }
 }
