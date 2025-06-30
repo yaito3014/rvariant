@@ -109,12 +109,12 @@ jobs:
       - name: Test (Ubuntu)
         if: matrix.os.name == 'ubuntu'
         working-directory: ${{ github.workspace }}/build/test
-        run: ./yk_rvariant_test --report_level=short
+        run: ./yk_rvariant_test
 
       - name: Test (Windows)
         if: matrix.os.name == 'windows'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
-        run: ./yk_rvariant_test --report_level=short
+        run: ./yk_rvariant_test
       - uses: qoomon/actions--context@v4
         id: context
 
