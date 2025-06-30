@@ -99,22 +99,22 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
+          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test 2>&1 | tee -a compilation.log
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
         run: |
-          cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_util_test 2>&1 | tee -a compilation.log
+          cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test 2>&1 | tee -a compilation.log
 
       - name: Test (Ubuntu)
         if: matrix.os.name == 'ubuntu'
         working-directory: ${{ github.workspace }}/build/test
-        run: ./yk_util_test --report_level=short
+        run: ./yk_rvariant_test --report_level=short
 
       - name: Test (Windows)
         if: matrix.os.name == 'windows'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
-        run: ./yk_util_test --report_level=short
+        run: ./yk_rvariant_test --report_level=short
       - uses: qoomon/actions--context@v4
         id: context
 
