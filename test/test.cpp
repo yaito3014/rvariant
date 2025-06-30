@@ -1,3 +1,4 @@
+#include <memory>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -76,7 +77,7 @@ TEST_CASE("recursive") {
     struct UnaryExpr;
     struct BinaryExpr;
 
-    using Expr = yk::rvariant<int, float, std::reference_wrapper<UnaryExpr>, std::reference_wrapper<BinaryExpr>>;
+    using Expr = yk::rvariant<int, float, std::unique_ptr<UnaryExpr>, std::unique_ptr<BinaryExpr>>;
 
     struct UnaryExpr {
       int op;
@@ -88,5 +89,9 @@ TEST_CASE("recursive") {
       int op;
       Expr rhs;
     };
+
+    Expr a(std::in_place_index<0>, 42);
+    Expr b(std::in_place_index<1>, 3.14f);
+    Expr expr(std::in_place_index<3>, std::make_unique<BinaryExpr>(std::move(a), '+', std::move(b)));
   }
 }
