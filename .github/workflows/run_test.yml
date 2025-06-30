@@ -121,13 +121,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: matrix.os.name == 'ubuntu'
         with:
-          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_log
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_0_log
           path: compilation*.log
 
       - uses: actions/upload-artifact@v4
         if: matrix.os.name == 'windows'
         with:
-          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_log
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_0_log
           path: compilation*.log
 
   run-notifier:
