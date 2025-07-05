@@ -83,6 +83,21 @@ struct replace<From, To, From> {
   using type = To;
 };
 
+template <class T, class From, class To>
+struct replace<T*, From, To> {
+  using type = replace_t<T, From, To>*;
+};
+
+template <class T, class From, class To>
+struct replace<T&, From, To> {
+  using type = replace_t<T, From, To>&;
+};
+
+template <class R, class... Args, class From, class To>
+struct replace<R (*)(Args...), From, To> {
+  using type = replace_t<R, From, To> (*)(replace_t<Args, From, To>...);
+};
+
 template <class From, class To, template <class...> class TT, class... Ts>
 struct replace<From, To, TT<Ts...>> {
   using type = TT<replace_t<From, To, Ts>...>;
