@@ -1,1 +1,6 @@
+# CMake
 build/
+
+# Node
+node_modules/
+package*.json
