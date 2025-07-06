@@ -41,7 +41,7 @@ h| https://www.boost.org/doc/libs/develop/doc/html/variant.html[`*Boost.Variant*
 h| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html[`*Boost.Variant2*`]
 
 s| Required Version
-| {cpp}17(?)
+| {cpp}20
 | {cpp}17
 | {cpp}11 icon:warning[title=Mostly legacy codebase from 2003]
 | {cpp}11
