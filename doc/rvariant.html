@@ -212,13 +212,6 @@ code .candidate {
 <td class="tableblock halign-left valign-top"><p class="tableblock">C&#43;&#43;11</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>constexpr?</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">constexpr</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">constexpr</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="bad">Not constexpr</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">constexpr</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Compilation Speed</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fast</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fast</p></td>
@@ -352,8 +345,8 @@ std::size_t _ = <a href="#hashing">hash_value(ab)</a>; // compatibility with boo
     std::println("{}", AB{123});   // "123"
     std::cout &lt;&lt; AB{123} &lt;&lt; '\n';  // "123"
 
-    // Note that %t prints <code>A</code>, not <code>int</code>
-    std::println("{:type is %t, value is %v}", AB{123}); // "type is A, value is 123" -- C&#43;&#43;26 reflection
+    // "type is A, value is 123" -- C&#43;&#43;26 reflection
+    std::println("{:type is %t, value is %v}", AB{123}); // Note that %t prints <code>A</code>, not <code>int</code>
 
     std::println("{}", ABC{C{}});  // "C" -- C&#43;&#43;26 reflection
     std::cout &lt;&lt; ABC{C{}} &lt;&lt; '\n'; // "C" -- C&#43;&#43;26 reflection

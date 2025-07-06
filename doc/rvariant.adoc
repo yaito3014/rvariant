@@ -46,12 +46,6 @@ s| Required Version
 | {cpp}11 icon:warning[title=Mostly legacy codebase from 2003]
 | {cpp}11
 
-s| constexpr?
-| constexpr
-| constexpr
-| [.bad]*Not constexpr*
-| constexpr
-
 s| Compilation Speed
 | Fast
 | Fast
@@ -168,8 +162,8 @@ std::size_t _ = xref:#hashing[hash_value(ab)]; // compatibility with boost
     std::println("{}", AB{123});   // "123"
     std::cout << AB{123} << '\n';  // "123"
 
-    // Note that %t prints `A`, not `int`
-    std::println("{:type is %t, value is %v}", AB{123}); // "type is A, value is 123" -- {cpp}26 reflection
+    // "type is A, value is 123" -- {cpp}26 reflection
+    std::println("{:type is %t, value is %v}", AB{123}); // Note that %t prints `A`, not `int`
 
     std::println("{}", ABC{C{}});  // "C" -- {cpp}26 reflection
     std::cout << ABC{C{}} << '\n'; // "C" -- {cpp}26 reflection
