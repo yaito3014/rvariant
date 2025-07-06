@@ -242,7 +242,8 @@ code .candidate {
 <a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety">(Double storage)</a></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Allows subset construction<br>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Allows flexible construction<br>
+<code>V&lt;A,B&gt; = V&lt;B,A&gt;</code><br>
 <code>V&lt;A,B,C&gt; = V&lt;A,B&gt;</code></strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="bad">No</strong></p></td>
@@ -283,6 +284,7 @@ using B = double;
 struct C {};
 
 using AB  = temp_ns::<a href="#class-template-rvariant">rvariant</a>&lt;A, B&gt;;
+using BA  = temp_ns::rvariant&lt;B, A&gt;;
 using ABC = temp_ns::rvariant&lt;A, B, C&gt;;
 
 // basic construction
@@ -321,8 +323,8 @@ temp_ns::<a href="#accessors">visit</a>(temp_ns::<a href="#utility">overloaded</
 <h3 id="advanced-features" class="discrete">Advanced Features</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// subset construction
-<a href="#subset-construction">ABC abc = AB{}</a>;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp"><a href="#flexible-construction">AB ab = BA{}</a>;   // unordered construction
+<a href="#flexible-construction">ABC abc = AB{}</a>; // subset construction
 
 static_assert(temp_ns::<a href="#trait-access">variant_size_v</a>&lt;AB&gt; == 2);
 static_assert(std::same_as&lt;temp_ns::<a href="#trait-access">variant_alternative_t</a>&lt;0, AB&gt;, A&gt;);

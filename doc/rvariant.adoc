@@ -72,7 +72,8 @@ https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.desi
 | [.good]#Strong exception safety# +
 https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety[(Double storage)]
 
-s| Allows subset construction +
+s| Allows flexible construction +
+`V<A,B> = V<B,A>` +
 `V<A,B,C> = V<A,B>`
 | Yes
 | [.bad]*No*
@@ -98,6 +99,7 @@ using B = double;
 struct C {};
 
 using AB  = temp_ns::xref:#class-template-rvariant[rvariant]<A, B>;
+using BA  = temp_ns::rvariant<B, A>;
 using ABC = temp_ns::rvariant<A, B, C>;
 
 // basic construction
@@ -138,8 +140,8 @@ temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
-// subset construction
-xref:#subset-construction[ABC abc = AB{}];
+xref:#flexible-construction[AB ab = BA{}];   // unordered construction
+xref:#flexible-construction[ABC abc = AB{}]; // subset construction
 
 static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
 static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
