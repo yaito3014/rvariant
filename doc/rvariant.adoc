@@ -142,7 +142,7 @@ temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
 xref:#subset-construction[ABC abc = AB{}];
 
 static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
-static_assert(std::same_as<A, temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>>);
+static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
 static_assert(temp_ns::xref:#trait-access[holds_alternative]<A>(ab));
 
 static_assert(ab.index() != https://en.cppreference.com/w/cpp/utility/variant/variant_npos[std::variant_npos]);

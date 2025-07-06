@@ -325,7 +325,7 @@ temp_ns::<a href="#accessors">visit</a>(temp_ns::<a href="#utility">overloaded</
 <a href="#subset-construction">ABC abc = AB{}</a>;
 
 static_assert(temp_ns::<a href="#trait-access">variant_size_v</a>&lt;AB&gt; == 2);
-static_assert(std::same_as&lt;A, temp_ns::<a href="#trait-access">variant_alternative_t</a>&lt;0, AB&gt;&gt;);
+static_assert(std::same_as&lt;temp_ns::<a href="#trait-access">variant_alternative_t</a>&lt;0, AB&gt;, A&gt;);
 static_assert(temp_ns::<a href="#trait-access">holds_alternative</a>&lt;A&gt;(ab));
 
 static_assert(ab.index() != <a href="https://en.cppreference.com/w/cpp/utility/variant/variant_npos">std::variant_npos</a>);
