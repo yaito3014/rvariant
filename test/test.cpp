@@ -1,105 +1,123 @@
-#include <memory>
-#include <optional>
 #include <type_traits>
 #include <utility>
-#include <vector>
-
-#include <variant>
 
 #include <yk/rvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
+TEST_CASE("pack indexing") {
+  STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int>, int>);
+  STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int, float>, int>);
+  STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<1, int, float>, float>);
+}
+
 TEST_CASE("helper class") {
-  static_assert(yk::variant_size_v<yk::rvariant<int>> == 1);
-  static_assert(yk::variant_size_v<yk::rvariant<int, float>> == 2);
+  STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int>> == 1);
+  STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int, float>> == 2);
 
-  static_assert(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int>>, int>);
-  static_assert(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int, float>>, int>);
-  static_assert(std::is_same_v<yk::variant_alternative_t<1, yk::rvariant<int, float>>, float>);
+  STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int>>, int>);
+  STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int, float>>, int>);
+  STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, yk::rvariant<int, float>>, float>);
+
+  STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, const yk::rvariant<int>>, const int>);
+  STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, const yk::rvariant<int, float>>, const int>);
+  STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, const yk::rvariant<int, float>>, const float>);
 }
 
-TEST_CASE("type traits") {
-  static_assert(std::is_default_constructible_v<yk::rvariant<int, float>>);
-  static_assert(std::is_trivially_destructible_v<yk::rvariant<int, float>>);
-
-  static_assert(!std::is_trivially_destructible_v<std::vector<int>>);
-  static_assert(!std::is_trivially_destructible_v<yk::rvariant<std::vector<int>>>);
-}
-
-TEST_CASE("constructor") {
-  yk::rvariant<int, float> v_default;
-  yk::rvariant<int, float> v_first(std::in_place_index<0>, 42);
-  yk::rvariant<int, float> v_second(std::in_place_index<1>, 3.14f);
-
-  yk::rvariant<std::vector<int>> v_vec(std::in_place_index<0>, {3, 1, 4});
-}
-
-TEST_CASE("get") {
+TEST_CASE("default construction") {
   {
-    using Variant = yk::rvariant<int, float>;
-    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<Variant&>())), int&>);
-    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<Variant>())), int&&>);
-    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<const Variant&>())), const int&>);
-    static_assert(std::is_same_v<decltype(yk::get<0>(std::declval<const Variant>())), const int&&>);
+    yk::rvariant<int> var;
+    STATIC_REQUIRE(std::is_nothrow_default_constructible_v<yk::rvariant<int>>);
+    CHECK_FALSE(var.valueless_by_exception());
+    CHECK(var.index() == 0);
   }
-
-  yk::rvariant<int, float> v(std::in_place_index<0>, 42);
-
-  int& x = yk::get<0>(v);
-  int&& y = yk::get<0>(std::move(v));
-}
-
-template <class... Fs>
-struct overloaded : Fs... {
-  using Fs::operator()...;
-};
-
-TEST_CASE("visit") {
-  yk::rvariant<int, float, std::string> v(std::in_place_index<2>, "meow");
-
-  const auto vis = overloaded{
-      [](int i) { return 0; },
-      [](float f) { return 1; },
-      [](std::string s) { return 2; },
-  };
-
-  REQUIRE(visit(vis, v) == 2);
-}
-
-TEST_CASE("recursive") {
   {
-    using V = yk::rvariant<int, float, std::vector<yk::recursive_self>>;
-    V v1(std::in_place_index<0>, 42);
-    V v2(std::in_place_index<1>, 3.14f);
-    std::vector<V> vec{v1, v2};
-    V v3(std::in_place_index<2>, vec);
-  }
-
-  {
-    using V = yk::rvariant<int, std::optional<std::vector<yk::recursive_self>>>;
-    V v(std::in_place_index<1>, std::vector{V(std::in_place_index<0>, 42)});
-  }
-
-  {
-    struct UnaryExpr;
-    struct BinaryExpr;
-
-    using Expr = yk::rvariant<int, float, std::unique_ptr<UnaryExpr>, std::unique_ptr<BinaryExpr>>;
-
-    struct UnaryExpr {
-      int op;
-      Expr expr;
+    struct S {
+      S() noexcept(false) {}
     };
-
-    struct BinaryExpr {
-      Expr lhs;
-      int op;
-      Expr rhs;
+    STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<S>);
+    yk::rvariant<S> var;
+    STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
+  }
+  {
+    struct S {
+      S() = delete;
     };
+    STATIC_REQUIRE_FALSE(std::is_default_constructible_v<S>);
+    STATIC_REQUIRE_FALSE(std::is_default_constructible_v<yk::rvariant<S>>);
+  }
+  {
+    struct S {
+      S() { throw std::exception(); }
+    };
+    REQUIRE_THROWS(yk::rvariant<S>());
+  }
+}
 
-    Expr a(std::in_place_index<0>, 42);
-    Expr b(std::in_place_index<1>, 3.14f);
-    Expr expr(std::in_place_index<3>, std::make_unique<BinaryExpr>(std::move(a), '+', std::move(b)));
+TEST_CASE("copy construction") {
+  {
+    STATIC_REQUIRE(std::is_trivially_copy_constructible_v<yk::rvariant<int>>);
+    yk::rvariant<int, double> a;
+    yk::rvariant<int, double> b(a);
+    CHECK_FALSE(b.valueless_by_exception());
+    CHECK(b.index() == 0);
+  }
+  {
+    struct S {
+      S(const S&) {}
+    };
+    STATIC_REQUIRE_FALSE(std::is_trivially_copy_constructible_v<S>);
+    STATIC_REQUIRE_FALSE(std::is_trivially_copy_constructible_v<yk::rvariant<S>>);
+    STATIC_REQUIRE_FALSE(std::is_trivially_copy_constructible_v<yk::rvariant<int, S>>);
+  }
+  {
+    struct S {
+      S(const S&) = delete;
+    };
+    STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<S>);
+    STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<yk::rvariant<S>>);
+    STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<yk::rvariant<int, S>>);
+  }
+  {
+    struct S {
+      S() {}
+      S(const S&) { throw std::exception(); }
+    };
+    yk::rvariant<S> a;
+    REQUIRE_THROWS(yk::rvariant<S>(a));
+  }
+}
+
+TEST_CASE("move construction") {
+  {
+    STATIC_REQUIRE(std::is_trivially_move_constructible_v<yk::rvariant<int>>);
+    yk::rvariant<int, double> a;
+    yk::rvariant<int, double> b(std::move(a));
+    CHECK_FALSE(b.valueless_by_exception());
+    CHECK(b.index() == 0);
+  }
+  {
+    struct S {
+      S(S&&) {}
+    };
+    STATIC_REQUIRE_FALSE(std::is_trivially_move_constructible_v<S>);
+    STATIC_REQUIRE_FALSE(std::is_trivially_move_constructible_v<yk::rvariant<S>>);
+    STATIC_REQUIRE_FALSE(std::is_trivially_move_constructible_v<yk::rvariant<int, S>>);
+  }
+  {
+    struct S {
+      S(S&&) = delete;
+    };
+    STATIC_REQUIRE_FALSE(std::is_move_constructible_v<S>);
+    STATIC_REQUIRE_FALSE(std::is_move_constructible_v<yk::rvariant<S>>);
+    STATIC_REQUIRE_FALSE(std::is_move_constructible_v<yk::rvariant<int, S>>);
+  }
+  {
+    struct S {
+      S() {}
+      S(S&&) { throw std::exception(); }
+    };
+    yk::rvariant<S> a;
+    REQUIRE_THROWS(yk::rvariant<S>(std::move(a)));
   }
 }
