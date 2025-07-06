@@ -169,7 +169,7 @@ std::size_t _ = xref:#hashing[hash_value(ab)]; // compatibility with boost
     std::cout << AB{123} << '\n';  // "123"
 
     // Note that %t prints `A`, not `int`
-    std::println("{:type is %t, value is %v}"); // "type is A, value is 123" -- {cpp}26 reflection
+    std::println("{:type is %t, value is %v}", AB{123}); // "type is A, value is 123" -- {cpp}26 reflection
 
     std::println("{}", ABC{C{}});  // "C" -- {cpp}26 reflection
     std::cout << ABC{C{}} << '\n'; // "C" -- {cpp}26 reflection
