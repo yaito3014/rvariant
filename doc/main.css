@@ -1,0 +1,105 @@
+@import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700";
+@import "https://cdn.jsdelivr.net/gh/asciidoctor/asciidoctor@2.0/data/stylesheets/asciidoctor-default.css";
+
+body {
+  font-size: 12.8px;
+  font-family: DejaVuSans, 'DejaVu Sans', sans-serif;
+  color: rgb(11 11 11);
+}
+
+h1, h2, p, td.content, span.alt, summary {
+  letter-spacing: inherit;
+}
+
+p strong, td.content strong, div.footnote strong {
+  letter-spacing: inherit;
+}
+
+.quoteblock .attribution cite, .verseblock .attribution cite {
+  letter-spacing: inherit;
+}
+
+p, td.content {
+  font-size: inherit;
+}
+
+a {
+  text-decoration-skip-ink: none;
+}
+
+dt {
+  font-size: 1.3em;
+}
+
+:where(th, td):has(.good) {
+  background-color: rgb(202 255 255);
+}
+
+:where(th, td):has(.bad) {
+  background-color: rgb(255 213 213);
+}
+
+table.params tr th, table.params tr td {
+  padding: .2em .25em;
+}
+
+code {
+  font-family: 'DejaVu Sans Mono', monospace;
+  max-width: 800px;
+}
+
+:not(pre):not([class^=L]) > code {
+  background: rgb(239 239 241);
+  border-radius: 0;
+}
+
+code .candidate {
+  display: inline-flex;
+  float: right;
+  user-select: none;
+  margin-right: 2em;
+}
+
+.candidate .hljs-comment {
+  font-style: normal;
+  font-weight: bold;
+  color: #008000;
+}
+
+.candidates ul {
+  list-style-type: none;
+}
+
+.candidates li {
+  padding-left: 3rem;
+  text-indent: -5.25rem;
+}
+
+.candidates .candidate {
+  display: inline-block;
+  width: 5rem;
+  text-align: right;
+  text-indent: 0;
+  font-weight: bold;
+}
+
+.small-note {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.scroll-x {
+  overflow-x: auto;
+}
+
+#toc.toc2 > ul {
+  font-size: inherit;
+}
+
+#toc.toc2 #toctitle {
+  font-size: 1.375em;
+}
+
+#feature-overview ~ * code a {
+  font-weight: bold;
+}
