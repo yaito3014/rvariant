@@ -57,13 +57,17 @@ code {
   position: relative;
 }
 
+:is(#fakeId, pre) code:has(.candidate) {
+  padding-right: 4em;
+}
+
 code .candidate {
   display: inline-flex;
   position: absolute;
   right: 0;
 
   user-select: none;
-  margin-right: 0.5em;
+  margin-right: 1em;
 }
 
 li p:has(+ .ulist) {
