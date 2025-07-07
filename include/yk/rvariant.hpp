@@ -1,8 +1,11 @@
 #ifndef YK_RVARIANT_HPP
 #define YK_RVARIANT_HPP
 
+#include "yk/detail/exactly_once.hpp"
+#include "yk/detail/is_specialization_of.hpp"
 #include "yk/detail/pack_indexing.hpp"
 
+#include <initializer_list>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -57,16 +60,32 @@ template <class... Ts>
 concept all_trivially_move_constructible = all_move_constructible<Ts...> && std::conjunction_v<std::is_trivially_move_constructible<Ts>...>;
 
 template <std::size_t I, class Dest, class Source>
-struct fun {
-  std::integral_constant<std::size_t, I> operator()()
-    requires requires { []() { Dest x[] = {std::declval<Source>()}; }(); };
+struct fun_impl {
+  std::integral_constant<std::size_t, I> operator()(Dest arg)
+    requires requires(Source source) { (Dest[]){std::forward<Source>(source)}; };
 };
+
+template <class Source, class Variant, class Seq = std::make_index_sequence<variant_size_v<Variant>>>
+struct fun;
+
+template <class Source, class Variant, std::size_t... Is>
+struct fun<Source, Variant, std::index_sequence<Is...>> : fun_impl<Is, variant_alternative_t<Is, Variant>, Source>... {
+  using fun_impl<Is, variant_alternative_t<Is, Variant>, Source>::operator()...;
+};
+
+template <class Source, class Variant>
+using accepted_index = decltype(fun<Source, Variant>{}(std::declval<Source>()));
+
+template <class Source, class Variant>
+inline constexpr std::size_t accepted_index_v = accepted_index<Source, Variant>::value;
 
 }  // namespace detail
 
 template <class... Ts>
 class rvariant {
 public:
+  static_assert(detail::is_unique_v<Ts...>);
+
   constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
     requires std::is_default_constructible_v<detail::pack_indexing_t<0, Ts...>>
       : storage_{}, index_(0) {}
@@ -91,11 +110,35 @@ public:
     requires detail::all_move_constructible<Ts...>
       : storage_(std::move(other.storage_)) {}
 
-  // template <class T>
-  //   requires requires {
-  //     requires sizeof...(Ts) > 0;
-  //   }
-  // constexpr rvariant(T&& x) {}
+  template <class T>
+    requires requires {
+      requires sizeof...(Ts) > 0;
+      requires !std::is_same_v<std::remove_cvref_t<T>, rvariant>;
+      requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
+      requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
+      requires std::is_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>;
+    }
+  constexpr rvariant(T&& x) noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>)
+      : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(x)) {}
+
+  template <class T, class... Args>
+    requires detail::exactly_once_v<T, Ts...> && std::is_constructible_v<T, Args...>
+  constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
+      : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<Args>(args)...) {}
+
+  template <class T, class U, class... Args>
+    requires detail::exactly_once_v<T, Ts...> && std::is_constructible_v<T, std::initializer_list<U>&, Args...>
+  constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
+      : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, il, std::forward<Args>(args)...) {}
+
+  template <std::size_t I, class... Args>
+    requires(I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
+  constexpr explicit rvariant(std::in_place_index_t<I>, Args&&... args) : storage_(std::in_place_index<I>, std::forward<Args>(args)...), index_(I) {}
+
+  template <std::size_t I, class U, class... Args>
+    requires(I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
+  constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
+      : storage_(std::in_place_index<I>, il, std::forward<Args>(args)...), index_(I) {}
 
   constexpr ~rvariant() = default;
 

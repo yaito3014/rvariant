@@ -1,6 +1,11 @@
 #include <type_traits>
 #include <utility>
+#include <variant>
+#include <vector>
 
+#include <yk/detail/exactly_once.hpp>
+#include <yk/detail/pack_indexing.hpp>
+#include <yk/detail/is_unique.hpp>
 #include <yk/rvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -9,6 +14,21 @@ TEST_CASE("pack indexing") {
   STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int>, int>);
   STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int, float>, int>);
   STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<1, int, float>, float>);
+}
+
+TEST_CASE("exactly once") {
+  STATIC_REQUIRE(yk::detail::exactly_once_v<int, int, float>);
+  STATIC_REQUIRE_FALSE(yk::detail::exactly_once_v<int, int, int>);
+}
+
+TEST_CASE("is in") {
+  STATIC_REQUIRE(yk::detail::is_in_v<int, int, float>);
+  STATIC_REQUIRE_FALSE(yk::detail::is_in_v<int, float>);
+}
+
+TEST_CASE("is unique") {
+  STATIC_REQUIRE(yk::detail::is_unique_v<int, float>);
+  STATIC_REQUIRE_FALSE(yk::detail::is_unique_v<int, int>);
 }
 
 TEST_CASE("helper class") {
@@ -119,5 +139,50 @@ TEST_CASE("move construction") {
     };
     yk::rvariant<S> a;
     REQUIRE_THROWS(yk::rvariant<S>(std::move(a)));
+  }
+}
+
+TEST_CASE("construction with index") {
+  {
+    yk::rvariant<int, float> var(std::in_place_index<0>, 42);
+    REQUIRE_FALSE(var.valueless_by_exception());
+    REQUIRE(var.index() == 0);
+  }
+  {
+    yk::rvariant<int, float> var(std::in_place_index<1>, 3.14f);
+    REQUIRE_FALSE(var.valueless_by_exception());
+    REQUIRE(var.index() == 1);
+  }
+  {
+    yk::rvariant<std::vector<int>> var(std::in_place_index<0>, {3, 1, 4});
+  }
+}
+
+TEST_CASE("construction with type") {
+  {
+    yk::rvariant<int, float> var(std::in_place_type<int>, 42);
+    REQUIRE_FALSE(var.valueless_by_exception());
+    REQUIRE(var.index() == 0);
+  }
+  {
+    yk::rvariant<int, float> var(std::in_place_type<float>, 3.14f);
+    REQUIRE_FALSE(var.valueless_by_exception());
+    REQUIRE(var.index() == 1);
+  }
+  {
+    yk::rvariant<std::vector<int>> var(std::in_place_type<std::vector<int>>, {3, 1, 4});
+  }
+}
+
+TEST_CASE("generic construction") {
+  {
+    yk::rvariant<int, float> var = 42;
+    REQUIRE_FALSE(var.valueless_by_exception());
+    REQUIRE(var.index() == 0);
+  }
+  {
+    yk::rvariant<int, float> var = 3.14f;
+    REQUIRE_FALSE(var.valueless_by_exception());
+    REQUIRE(var.index() == 1);
   }
 }

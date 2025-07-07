@@ -13,7 +13,6 @@ using pack_indexing_t = typename pack_indexing<I, Ts...>::type;
 
 template <class T, class... Ts>
 struct pack_indexing<0, T, Ts...> {
-  ~pack_indexing() = delete;
   using type = T;
 };
 
