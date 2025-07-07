@@ -207,3 +207,13 @@ TEST_CASE("generic construction") {
     REQUIRE(var.index() == 1);
   }
 }
+
+TEST_CASE("get") {
+  {
+    yk::rvariant<int, float> var = 42;
+    REQUIRE(yk::get<0>(var) == 42);
+    REQUIRE(yk::get<0>(std::as_const(var)) == 42);
+    REQUIRE(yk::get<0>(std::move(var)) == 42);
+    REQUIRE(yk::get<0>(std::move(std::as_const(var))) == 42);
+  }
+}

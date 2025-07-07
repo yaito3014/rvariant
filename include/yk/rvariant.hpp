@@ -113,6 +113,27 @@ union variadic_union<TriviallyDestructible, T, Ts...> {
   variadic_union<TriviallyDestructible, Ts...> rest;
 };
 
+template <std::size_t I>
+struct get_alternative {
+  template <class Union>
+  constexpr auto&& operator()(Union&& u) noexcept {
+    return get_alternative<I - 1>{}(std::forward<Union>(u).rest);
+  }
+};
+
+template <>
+struct get_alternative<0> {
+  template <class Union>
+  constexpr auto&& operator()(Union&& u) noexcept {
+    return std::forward<Union>(u).first;
+  }
+};
+
+template <std::size_t I, class Variant>
+constexpr decltype(auto) get_impl(Variant&& var) noexcept {
+  return get_alternative<I>{}(std::forward<Variant>(var).storage_);
+}
+
 }  // namespace detail
 
 template <class... Ts>
@@ -134,7 +155,9 @@ public:
 
   constexpr rvariant(const rvariant& other)
     requires detail::all_copy_constructible<Ts...>
-      : storage_(other.storage_), index_(other.index_) {}
+      : storage_(detail::valueless), index_(other.index_) {
+    // TODO
+  }
 
   constexpr rvariant(rvariant&&)
     requires detail::all_trivially_move_constructible<Ts...>
@@ -142,7 +165,9 @@ public:
 
   constexpr rvariant(rvariant&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
     requires detail::all_move_constructible<Ts...>
-      : storage_(std::move(other.storage_)) {}
+      : storage_(detail::valueless) {
+    // TODO
+  }
 
   template <class T>
     requires requires {
@@ -179,10 +204,37 @@ public:
   constexpr bool valueless_by_exception() const noexcept { return index_ == variant_npos; }
   constexpr std::size_t index() const noexcept { return index_; }
 
+  template <std::size_t I, class Variant>
+  friend constexpr decltype(auto) detail::get_impl(Variant&&) noexcept;
+
 private:
-  std::variant<Ts...> storage_;
+  detail::variadic_union<(std::is_trivially_destructible_v<Ts> && ...), Ts...> storage_;
   std::size_t index_ = variant_npos;
 };
+
+template <std::size_t I, class... Ts>
+constexpr variant_alternative_t<I, rvariant<Ts...>>& get(rvariant<Ts...>& var) {
+  if (I != var.index()) throw std::bad_variant_access{};
+  return detail::get_impl<I>(var);
+}
+
+template <std::size_t I, class... Ts>
+constexpr variant_alternative_t<I, rvariant<Ts...>>&& get(rvariant<Ts...>&& var) {
+  if (I != var.index()) throw std::bad_variant_access{};
+  return detail::get_impl<I>(std::move(var));
+}
+
+template <std::size_t I, class... Ts>
+constexpr const variant_alternative_t<I, rvariant<Ts...>>& get(const rvariant<Ts...>& var) {
+  if (I != var.index()) throw std::bad_variant_access{};
+  return detail::get_impl<I>(var);
+}
+
+template <std::size_t I, class... Ts>
+constexpr const variant_alternative_t<I, rvariant<Ts...>>&& get(const rvariant<Ts...>&& var) {
+  if (I != var.index()) throw std::bad_variant_access{};
+  return detail::get_impl<I>(std::move(var));
+}
 
 }  // namespace yk
 
