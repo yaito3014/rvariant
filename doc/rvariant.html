@@ -153,6 +153,7 @@ li p:has(+ .ulist) {
 <li><a href="#introduction">Introduction</a>
 <ul class="sectlevel2">
 <li><a href="#motivation">Motivation</a></li>
+<li><a href="#goals">Project goals</a></li>
 <li><a href="#comparison">Comparison of variant libraries</a></li>
 </ul>
 </li>
@@ -203,16 +204,32 @@ li p:has(+ .ulist) {
 <div class="sect2">
 <h3 id="motivation"><a class="anchor" href="#motivation"></a>Motivation</h3>
 <div class="paragraph">
-<p>Before C&#43;&#43;17, we relied on <code>boost::variant</code> for a wide range of type-safe union use cases.</p>
+<p>Since its introduction in 2004, <code>boost::variant</code> has been used for a wide range of type-safe union use cases.</p>
 </div>
 <div class="paragraph">
-<p>Starting with C&#43;&#43;17, most of those can be replaced with <code>std::variant</code>, <em>except</em> for <strong>recursive types</strong>. As a result, many users of generic frameworks that inherently require recursive variants&#8212;&#8203;most notably Boost.Spirit&#8212;&#8203;continued using <code>boost::variant</code>, despite its significant impact on compile times.</p>
+<p>Starting with C&#43;&#43;17, most of those can be replaced with <code>std::variant</code>, <em>except</em> for <strong>recursive types</strong>. As a result, many users of generic frameworks that inherently require recursive variants&#8212;&#8203;most notably Boost.Spirit&#8212;&#8203;have continued using <code>boost::variant</code>, despite its significant impact on compile times.</p>
 </div>
 <div class="paragraph">
-<p>The compile-time slowness of <code>boost::variant</code> comes from the technical debt: it relies heavily on preprocessor magic in its infamous dependency, Boost.MPL. Boost.MPL is so tightly glued with its implementation details that any attempt to <em>upgrade</em> <code>boost::variant</code> would be unrealistic; it would essentially require rewriting the entire codebase.</p>
+<p>The compile-time slowness of <code>boost::variant</code> stems from long-standing technical debt: it relies heavily on preprocessor magic in Boost.MPL. This wizardry is so tightly coupled with <code>boost::variant</code>'s internals that any attempt to modernize it would be unrealistic; it would effectively require a complete rewrite.</p>
 </div>
 <div class="paragraph">
-<p>Until 2025, no one has managed to introduce a fully featured recursive variant class into either Boost or the C&#43;&#43; standard. <code>rvariant</code> fills this gap with a modern implementation that supports recursive types while remaining API-compatible with <code>std::variant</code>.</p>
+<p>Until 2025, no one had managed to introduce a modern alternative into either Boost or the C&#43;&#43; standard. <code>rvariant</code> fills this gap with a new implementation that supports recursive types while remaining API-compatible with <code>std::variant</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="goals"><a class="anchor" href="#goals"></a>Project goals</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Provide a modern, efficient, and battle-tested recursive variant library to enable developers to avoid using Boost.Variant in new applications.</p>
+</li>
+<li>
+<p>Replace existing usages of Boost.Variant in established frameworks, especially Boost.Spirit.X3.</p>
+</li>
+<li>
+<p>Gain implementation experience with a recursive variant library to explore potential directions for future standardization.</p>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">

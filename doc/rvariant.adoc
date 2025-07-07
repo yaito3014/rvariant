@@ -19,13 +19,23 @@ Yaito Kakeyama; Nana Sakisaka
 = Introduction
 
 === Motivation
-Before {cpp}17, we relied on `boost::variant` for a wide range of type-safe union use cases.
+Since its introduction in 2004, `boost::variant` has been used for a wide range of type-safe union use cases.
 
-Starting with {cpp}17, most of those can be replaced with `std::variant`, _except_ for *recursive types*. As a result, many users of generic frameworks that inherently require recursive variants--most notably Boost.Spirit--continued using `boost::variant`, despite its significant impact on compile times.
+Starting with {cpp}17, most of those can be replaced with `std::variant`, _except_ for *recursive types*. As a result, many users of generic frameworks that inherently require recursive variants--most notably Boost.Spirit--have continued using `boost::variant`, despite its significant impact on compile times.
 
-The compile-time slowness of `boost::variant` comes from the technical debt: it relies heavily on preprocessor magic in its infamous dependency, Boost.MPL. Boost.MPL is so tightly glued with its implementation details that any attempt to _upgrade_ `boost::variant` would be unrealistic; it would essentially require rewriting the entire codebase.
+The compile-time slowness of `boost::variant` stems from long-standing technical debt: it relies heavily on preprocessor magic in Boost.MPL. This wizardry is so tightly coupled with ``boost::variant``'s internals that any attempt to modernize it would be unrealistic; it would effectively require a complete rewrite.
 
-Until 2025, no one has managed to introduce a fully featured recursive variant class into either Boost or the {cpp} standard. `rvariant` fills this gap with a modern implementation that supports recursive types while remaining API-compatible with `std::variant`.
+Until 2025, no one had managed to introduce a modern alternative into either Boost or the {cpp} standard. `rvariant` fills this gap with a new implementation that supports recursive types while remaining API-compatible with `std::variant`.
+
+
+[#goals]
+=== Project goals
+1. Provide a modern, efficient, and battle-tested recursive variant library to enable developers to avoid using Boost.Variant in new applications.
+
+2. Replace existing usages of Boost.Variant in established frameworks, especially Boost.Spirit.X3.
+
+3. Gain implementation experience with a recursive variant library to explore potential directions for future standardization.
+
 
 [#comparison]
 === Comparison of variant libraries
