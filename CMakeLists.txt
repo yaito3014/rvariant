@@ -14,7 +14,9 @@ target_sources(
 
 add_library(yk::rvariant ALIAS rvariant)
 
-include(CTest)
-if(BUILD_TESTING)
-    add_subdirectory(test)
+if(PROJECT_IS_TOP_LEVEL)
+    include(CTest)
+    if(BUILD_TESTING)
+        add_subdirectory(test)
+    endif()
 endif()
