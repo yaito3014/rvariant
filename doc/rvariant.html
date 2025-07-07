@@ -169,6 +169,7 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.mod">Modifiers</a></li>
 <li><a href="#rvariant.status">Value status</a></li>
 <li><a href="#rvariant.swap">Swap</a></li>
+<li><a href="#rvariant.visit">Visitation</a></li>
 </ul>
 </li>
 <li><a href="#rvariant.deduping">Pack manipulation and deduping</a></li>
@@ -480,6 +481,15 @@ public:
     constexpr bool valueless_by_exception() const noexcept;
     constexpr std::size_t index() const noexcept;
 
+    // <a href="#rvariant.swap">swap</a>
+    constexpr void swap(rvariant&amp;) noexcept(/* see below */);
+
+    // <a href="#rvariant.visit">visitation</a>
+    template&lt;class Self, class Visitor&gt;
+      constexpr decltype(auto) visit(this Self&amp;&amp;, Visitor&amp;&amp;);
+    template&lt;class R, class Self, class Visitor&gt;
+      constexpr R visit(this Self&amp;&amp;, Visitor&amp;&amp;);
+
     // ...
     // TODO
     // ...
@@ -725,7 +735,22 @@ constexpr std::size_t index() const noexcept;</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.status">[spec]</a></sup></p>
+<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.swap">[spec]</a></sup></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.visit"><a class="anchor" href="#rvariant.visit"></a>Visitation</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class Self, class Visitor&gt;
+constexpr decltype(auto) visit(this Self&amp;&amp;, Visitor&amp;&amp;);
+
+template&lt;class R, class Self, class Visitor&gt;
+constexpr R visit(this Self&amp;&amp;, Visitor&amp;&amp;);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.visit">[spec]</a></sup></p>
 </div>
 </div>
 </div>

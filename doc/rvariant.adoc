@@ -254,6 +254,15 @@ public:
     constexpr bool valueless_by_exception() const noexcept;
     constexpr std::size_t index() const noexcept;
 
+    // xref:#rvariant.swap[swap]
+    constexpr void swap(rvariant&) noexcept(/* see below */);
+
+    // xref:#rvariant.visit[visitation]
+    template<class Self, class Visitor>
+      constexpr decltype(auto) visit(this Self&&, Visitor&&);
+    template<class R, class Self, class Visitor>
+      constexpr R visit(this Self&&, Visitor&&);
+
     // ...
     // TODO
     // ...
@@ -438,7 +447,23 @@ include::_spec-proxy.adoc[]
 constexpr void swap(rvariant&) noexcept(/* see below */);
 ----
 
-:spec-url: https://eel.is/c++draft/variant.status
+:spec-url: https://eel.is/c++draft/variant.swap
+include::_spec-proxy.adoc[]
+
+
+[[rvariant.visit]]
+=== Visitation
+
+[,cpp,subs="+macros"]
+----
+template<class Self, class Visitor>
+constexpr decltype(auto) visit(this Self&&, Visitor&&);
+
+template<class R, class Self, class Visitor>
+constexpr R visit(this Self&&, Visitor&&);
+----
+
+:spec-url: https://eel.is/c++draft/variant.visit
 include::_spec-proxy.adoc[]
 
 
