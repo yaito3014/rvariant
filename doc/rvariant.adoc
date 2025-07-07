@@ -142,8 +142,10 @@ temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
 // xref:#rvariant.constructors[flexible construction]
-AB ab = BA{};   // unordered construction
-ABC abc = AB{}; // subset construction
+{
+    AB ab = BA{};   // unordered construction
+    ABC abc = AB{}; // subset construction
+}
 
 static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
 static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
