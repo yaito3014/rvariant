@@ -43,7 +43,8 @@ h| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html[`
 s| Required Version
 | {cpp}20
 | {cpp}17
-| {cpp}11 icon:warning[title=Mostly legacy codebase from 2003]
+| {cpp}11 +
+icon:warning[] Mostly legacy code from 2003
 | {cpp}11
 
 s| Compilation Speed
