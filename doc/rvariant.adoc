@@ -133,31 +133,32 @@ ab = AB{123};
     struct BinaryExpr { Expr lhs, rhs; };
 }
 
-A& a = temp_ns::xref:#accessors[get]<0>(ab);
+A& a = temp_ns::xref:#rvariant.syn[get]<0>(ab);
 A& a = temp_ns::get<A>(ab);
 C& c = temp_ns::get<C>(ab); // throws https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html[`std::bad_variant_access`]
 
-A* a = temp_ns::xref:#accessors[get_if]<0>(&ab);
+A* a = temp_ns::xref:#rvariant.syn[get_if]<0>(&ab);
 A* a = temp_ns::get_if<A>(&ab);
 C* c = temp_ns::get_if<C>(&ab); // `nullptr`
 
 // compatibility with boost; same effect as `get_if`
-A* a = temp_ns::xref:#accessors[get]<0>(&ab);
+A* a = temp_ns::xref:#rvariant.syn[get]<0>(&ab);
 A* a = temp_ns::get<A>(&ab);
 C* c = temp_ns::get<C>(&ab); // `nullptr`
 
-xref:#operators["ab == ab"];
-xref:#operators[ab < ab];
-xref:#operators[ab <=> ab]; // `requires (https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable[std::three_way_comparable]<Ts> && ...)`
+xref:#rvariant.syn["ab == ab"];
+xref:#rvariant.syn[ab < ab];
+xref:#rvariant.syn[ab <=> ab]; // `requires (https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable[std::three_way_comparable]<Ts> && ...)`
 
 auto visitor = temp_ns::xref:#rvariant.utility-todo[overloaded] {
     [](A const& a) {},
     [](B const& b) {},
 };
 
-abxref:#rvariant.visit[.visit(visitor)];           // member visit
-temp_ns::xref:#accessors-todo[visit](visitor, ab); // function visit
+abxref:#rvariant.visit[.visit(visitor)];         // member visit
+temp_ns::xref:#rvariant.syn[visit](visitor, ab); // function visit
 ----
+
 
 [discrete]
 === Advanced features
@@ -174,9 +175,9 @@ temp_ns::xref:#accessors-todo[visit](visitor, ab); // function visit
     abc = AB{};    // subset assignment
 }
 
-static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
-static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
-static_assert(temp_ns::xref:#trait-access[holds_alternative]<A>(ab));
+static_assert(temp_ns::xref:#rvariant.syn[variant_size_v]<AB> == 2);
+static_assert(std::same_as<temp_ns::xref:#rvariant.syn[variant_alternative_t]<0, AB>, A>);
+static_assert(temp_ns::xref:#rvariant.syn[holds_alternative]<A>(ab));
 
 static_assert(abxref:#rvariant.status[.index()] != https://en.cppreference.com/w/cpp/utility/variant/variant_npos[std::variant_npos]);
 static_assert(!abxref:#rvariant.status[.valueless_by_exception()]);
@@ -188,13 +189,13 @@ static_assert(!abxref:#rvariant.status[.valueless_by_exception()]);
 {
     using std::swap;
     AB tmp;
-    xref:#rvariant.specalg[swap](ab, tmp); // ADL
+    xref:#rvariant.syn[swap](ab, tmp); // ADL
 }
 
-std::size_t _ = xref:#hashing[std::hash<AB>{ab}]();
-std::size_t _ = xref:#hashing[hash_value(ab)]; // compatibility with boost
+std::size_t _ = xref:#rvariant.syn[std::hash<AB>{ab}]();
+std::size_t _ = xref:#rvariant.syn[hash_value(ab)]; // compatibility with boost
 
-// xref:#io[I/O support]
+// xref:#rvariant.io[I/O support]
 {
     std::println("{}", AB{123});   // "123"
     std::cout << AB{123} << '\n';  // "123"
@@ -207,8 +208,9 @@ std::size_t _ = xref:#hashing[hash_value(ab)]; // compatibility with boost
 }
 ----
 
-[[rvariant.rvariant]]
-== Class template `rvariant`
+
+[[rvariant.syn]]
+== Header <temp_ns/rvariant.hpp> synopsis
 
 [,cpp,subs="+macros"]
 ----
@@ -216,6 +218,66 @@ std::size_t _ = xref:#hashing[hash_value(ab)]; // compatibility with boost
 #include <utility> // for `std::in_place_type`, etc.
 #include <variant> // for compatibility with `std::bad_variant_access`
 
+namespace temp_ns {
+
+// xref:#rvariant.rvariant[class template pass:quotes[`rvariant`]]
+template<class... Ts>
+class rvariant;
+
+https://eel.is/c+\+draft/variant.syn[/* all features commented below defined as per standard */]
+    // variant_size, variant_size_v
+    // variant_alternative, variant_alternative_v
+    // get
+    // get_if
+
+    // operator==
+    // operator!=
+    // operator<
+    // operator>
+    // operator<=
+    // operator>=
+    // operator<=>
+
+    // visit
+    // swap
+    // hash
+
+/* extension */
+
+template<std::size_t I, class... Ts>
+  constexpr /* equivalent to standard */
+    get(rvariant<Ts...>*) noexcept;       // delegates to `get_if`
+
+template<std::size_t I, class... Ts>
+  constexpr /* equivalent to standard */
+    get(rvariant<Ts...> const*) noexcept; // delegates to `get_if`
+
+template<class T, class... Ts>
+  constexpr /* equivalent to standard */
+    get(rvariant<Ts...>*) noexcept;       // delegates to `get_if`
+
+template<class T, class... Ts>
+  constexpr /* equivalent to standard */
+    get(rvariant<Ts...> const*) noexcept; // delegates to `get_if`
+
+// ...
+// TODO: I/O
+// ...
+
+https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`] version instead */]
+    // variant_npos
+    // monostate and monostate-related functionalities
+    // bad_variant_access
+
+} // temp_ns
+----
+
+
+[[rvariant.rvariant]]
+== Class template `rvariant`
+
+[,cpp,subs="+macros"]
+----
 namespace temp_ns {
 
 template<class... Ts>
@@ -283,10 +345,6 @@ public:
       constexpr decltype(auto) visit(this Self&&, Visitor&&);
     template<class R, class Self, class Visitor>
       constexpr R visit(this Self&&, Visitor&&);
-
-    // ...
-    // TODO
-    // ...
 };
 
 } // temp_ns
@@ -488,7 +546,34 @@ constexpr R visit(this Self&&, Visitor&&);
 include::_spec-proxy.adoc[]
 
 
-[[rvariant.deduping]]
+[[rvariant.recursive]]
+== Class template `recursive_wrapper`
+
+[,cpp,subs="+quotes"]
+----
+#include <compare>
+
+namespace temp_ns {
+
+template<class T>
+class recursive_wrapper
+{
+public:
+
+    // ...
+    // TODO
+    // ...
+
+};
+
+} // temp_ns
+----
+
+=== Constructors
+TODO TODO TODO TODO TODO TODO
+
+
+[[rvariant.pack]]
 == Pack manipulation and deduping
 
 [WARNING]
@@ -525,28 +610,9 @@ using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
 
 
-[[rvariant.recursive]]
-== Class template `recursive_wrapper`
-
-[,cpp,subs="+quotes"]
-----
-#include <compare>
-
-namespace temp_ns {
-
-template<class T>
-class recursive_wrapper
-{
-public:
-
-private:
-};
-
-} // temp_ns
-----
-
-=== Constructors
-...
+[[rvariant.io]]
+== I/O
+TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 
 
 [[rvariant.xo]]
@@ -595,10 +661,9 @@ struct pass:quotes[_specialization-of_]; // exposition-onlypass:quotes[[.candida
 * [.candidate]#1-2)# Inherits `std::true_type` if and only if `T` is a specialization of `TT`; otherwise, `std::false_type`.
 
 * [.candidate]#3)# If `_any-ttp_` is a template template parameter that consists of NTTP, equivalent to `_nttp-specialization-of_`; otherwise, equivalent to `_ttp-specialization-of_`.
-+
-NOTE: `_specialization-of_` is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound `requires` expression.
 --
 
+NOTE: `_specialization-of_` is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound `requires` expression.
 
 
 = Additional information
