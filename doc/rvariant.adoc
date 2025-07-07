@@ -279,7 +279,6 @@ include::_spec-proxy.adoc[]
 *_Remarks:_*
 
 ** This constructor is defined as deleted unless `xref:#rvariant.expo.subset[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
-** If `std::is_trivially_copy_constructible_v<U~_j_~>` is `true` for all _j_, this constructor is trivial.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 
 * [.candidate]#10)# Flexible move constructor. If `w` does not hold a value, initializes the `rvariant` to not hold a value. Otherwise, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(std::move(w))`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
@@ -288,7 +287,6 @@ include::_spec-proxy.adoc[]
 
 ** This constructor is defined as deleted unless `xref:#rvariant.expo.subset[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>`.
 ** The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
-** If `std::is_trivially_move_constructible_v<U~_j_~>` is `true` for all _j_, this constructor is trivial.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 --
 
