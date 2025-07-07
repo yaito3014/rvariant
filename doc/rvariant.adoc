@@ -399,26 +399,22 @@ include::_spec-proxy.adoc[]
 [,cpp,subs="+macros"]
 ----
 template<class T, class... Args>
-constexpr T& emplace(Args&&...);pass:quotes[[.candidate\]#// 1#]
+constexpr T& emplace(Args&&...);
 
 template<class T, class U, class... Args>
-constexpr T& emplace(std::initializer_list<U>, Args&&...);pass:quotes[[.candidate\]#// 2#]
+constexpr T& emplace(std::initializer_list<U>, Args&&...);
 
 template<std::size_t I, class... Args>
 constexpr variant_alternative_t<I, rvariant<Types...>>&
-    emplace(Args&&...);pass:quotes[[.candidate\]#// 3#]
+    emplace(Args&&...);
 
 template<std::size_t I, class U, class... Args>
 constexpr variant_alternative_t<I, rvariant<Types...>>&
-    emplace(std::initializer_list<U>, Args&&...);pass:quotes[[.candidate\]#// 4#]
+    emplace(std::initializer_list<U>, Args&&...);
 ----
 
-[.candidates]
---
 :spec-url: https://eel.is/c++draft/variant.mod
-* [.candidate]#1-4)#
 include::_spec-proxy.adoc[]
---
 
 
 [[rvariant.status]]
@@ -426,16 +422,24 @@ include::_spec-proxy.adoc[]
 
 [,cpp,subs="+macros"]
 ----
-constexpr bool valueless_by_exception() const noexcept;pass:quotes[[.candidate\]#// 1#]
-constexpr std::size_t index() const noexcept;pass:quotes[[.candidate\]#// 2#]
+constexpr bool valueless_by_exception() const noexcept;
+constexpr std::size_t index() const noexcept;
 ----
 
-[.candidates]
---
 :spec-url: https://eel.is/c++draft/variant.status
-* [.candidate]#1-2)#
 include::_spec-proxy.adoc[]
---
+
+
+[[rvariant.swap]]
+=== Swap
+
+[,cpp,subs="+macros"]
+----
+constexpr void swap(rvariant&) noexcept(/* see below */);
+----
+
+:spec-url: https://eel.is/c++draft/variant.status
+include::_spec-proxy.adoc[]
 
 
 [[rvariant.deduping]]

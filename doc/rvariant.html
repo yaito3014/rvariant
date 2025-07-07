@@ -168,6 +168,7 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.assign">Assignment</a></li>
 <li><a href="#rvariant.mod">Modifiers</a></li>
 <li><a href="#rvariant.status">Value status</a></li>
+<li><a href="#rvariant.swap">Swap</a></li>
 </ul>
 </li>
 <li><a href="#rvariant.deduping">Pack manipulation and deduping</a></li>
@@ -686,52 +687,45 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class... Args&gt;
-constexpr T&amp; emplace(Args&amp;&amp;...);<span class="candidate">// 1</span>
+constexpr T&amp; emplace(Args&amp;&amp;...);
 
 template&lt;class T, class U, class... Args&gt;
-constexpr T&amp; emplace(std::initializer_list&lt;U&gt;, Args&amp;&amp;...);<span class="candidate">// 2</span>
+constexpr T&amp; emplace(std::initializer_list&lt;U&gt;, Args&amp;&amp;...);
 
 template&lt;std::size_t I, class... Args&gt;
 constexpr variant_alternative_t&lt;I, rvariant&lt;Types...&gt;&gt;&amp;
-    emplace(Args&amp;&amp;...);<span class="candidate">// 3</span>
+    emplace(Args&amp;&amp;...);
 
 template&lt;std::size_t I, class U, class... Args&gt;
 constexpr variant_alternative_t&lt;I, rvariant&lt;Types...&gt;&gt;&amp;
-    emplace(std::initializer_list&lt;U&gt;, Args&amp;&amp;...);<span class="candidate">// 4</span></code></pre>
+    emplace(std::initializer_list&lt;U&gt;, Args&amp;&amp;...);</code></pre>
 </div>
 </div>
-<div class="openblock candidates">
-<div class="content">
-<div class="ulist">
-<ul>
-<li>
-<p><span class="candidate">1-4)</span>
-Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup></p>
-</li>
-</ul>
-</div>
-</div>
+<div class="paragraph">
+<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup></p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="rvariant.status"><a class="anchor" href="#rvariant.status"></a>Value status</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr bool valueless_by_exception() const noexcept;<span class="candidate">// 1</span>
-constexpr std::size_t index() const noexcept;<span class="candidate">// 2</span></code></pre>
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr bool valueless_by_exception() const noexcept;
+constexpr std::size_t index() const noexcept;</code></pre>
 </div>
 </div>
-<div class="openblock candidates">
+<div class="paragraph">
+<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.status">[spec]</a></sup></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.swap"><a class="anchor" href="#rvariant.swap"></a>Swap</h3>
+<div class="listingblock">
 <div class="content">
-<div class="ulist">
-<ul>
-<li>
-<p><span class="candidate">1-2)</span>
-Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.status">[spec]</a></sup></p>
-</li>
-</ul>
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr void swap(rvariant&amp;) noexcept(/* see below */);</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.status">[spec]</a></sup></p>
 </div>
 </div>
 </div>
