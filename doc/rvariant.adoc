@@ -1,0 +1,273 @@
+= rvariant
+Yaito Kakeyama; Nana Sakisaka
+:doctype: book
+:stylesheet: main.css
+:source-highlighter: highlight.js
+:highlightjs-theme: github
+:icons: font
+:sectanchors:
+:idprefix:
+:idseparator: -
+:toc: left
+:toc-title: rvariant
+:toclevels: 2
+:reproducible:
+
+`rvariant` is a variant library that supports recursive types. It is API-compatible with `std::variant` and includes Boost-style interfaces that act as proxies to the standard-compatible API.
+
+[preface]
+= Introduction
+
+=== Motivation
+Before {cpp}17, we relied on `boost::variant` for a wide range of type-safe union use cases.
+
+Starting with {cpp}17, most of those can be replaced with `std::variant`, _except_ for *recursive types*. As a result, many users of generic frameworks that inherently require recursive variants--most notably Boost.Spirit--continued using `boost::variant`, despite its significant impact on compile times.
+
+The compile-time slowness of `boost::variant` comes from the technical debt: it relies heavily on preprocessor magic in its infamous dependency, Boost.MPL. Boost.MPL is so tightly glued with its implementation details that any attempt to _upgrade_ `boost::variant` would be unrealistic; it would essentially require rewriting the entire codebase.
+
+Until 2025, no one has managed to introduce a fully featured recursive variant class into either Boost or the {cpp} standard. `rvariant` fills this gap with a modern implementation that supports recursive types while remaining API-compatible with `std::variant`.
+
+[#comparison]
+=== Comparison of Variant Libraries
+
+[.scroll-x]
+--
+[frame=ends,cols=",,,,"]
+|===
+|
+h| `*temp_ns::rvariant*`
+h| https://en.cppreference.com/w/cpp/utility/variant.html[`*std::variant*`]
+h| https://www.boost.org/doc/libs/develop/doc/html/variant.html[`*Boost.Variant*`]
+h| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html[`*Boost.Variant2*`]
+
+s| Required Version
+| {cpp}20
+| {cpp}17
+| {cpp}11 +
+icon:warning[] Mostly legacy code from 2003
+| {cpp}11
+
+s| Compilation Speed
+| Fast
+| Fast
+| [.bad]*Very Slow*
+| Fast
+
+s| Can hold recursive types?
+| [.good]*Yes*
+| [.bad]*No*
+| https://www.boost.org/doc/libs/develop/doc/html/boost/recursive_wrapper.html[[.good]*Yes*]
+| [.bad]*No*
+
+s| May be valueless?
+| Yes
+| https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception.html[Yes]
+| https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty[No]
+| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_never_valueless[No]
+
+s| Exception Safety
+| Basic exception safety
+| Basic exception safety
+| [.good]#Strong exception safety# +
+https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty.heap-backup-solution[(Temporary heap backup)]
+| [.good]#Strong exception safety# +
+https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety[(Double storage)]
+
+s| Allows flexible construction +
+`V<A,B> = V<B,A>` +
+`V<A,B,C> = V<A,B>`
+| Yes
+| [.bad]*No*
+| Yes
+| Yes
+|===
+--
+
+NOTE: A variant class cannot determine its own size when it contains incomplete types. Therefore, recursive variants always require dynamic memory allocation.
+
+= Reference
+
+== Feature Cheat Sheet
+This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.
+
+[discrete]
+=== Basic Features
+
+[,cpp,subs="+quotes,+macros,+attributes"]
+----
+using A = int;
+using B = double;
+struct C {};
+
+using AB  = temp_ns::xref:#class-template-rvariant[rvariant]<A, B>;
+using BA  = temp_ns::rvariant<B, A>;
+using ABC = temp_ns::rvariant<A, B, C>;
+
+// basic construction
+xref:#constructors[AB ab{123}];
+
+// recursive types
+{
+    struct BinaryExpr;
+    using Expr = temp_ns::rvariant<A, B, C, temp_ns::xref:#class-template-recursive-wrapper[recursive_wrapper]<BinaryExpr>>;
+    struct BinaryExpr { Expr lhs, rhs; };
+}
+
+A& a = temp_ns::xref:#accessors[get]<0>(ab);
+A& a = temp_ns::get<A>(ab);
+C& c = temp_ns::get<C>(ab); // throws https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html[`std::bad_variant_access`]
+
+A* a = temp_ns::xref:#accessors[get_if]<0>(&ab);
+A* a = temp_ns::get_if<A>(&ab);
+C* c = temp_ns::get_if<C>(&ab); // `nullptr`
+
+// compatibility with boost; same effect as `get_if`
+A* a = temp_ns::xref:#accessors[get]<0>(&ab);
+A* a = temp_ns::get<A>(&ab);
+C* c = temp_ns::get<C>(&ab); // `nullptr`
+
+xref:#operators["ab == ab"];
+xref:#operators[ab < ab];
+xref:#operators[ab <=> ab]; // `requires (https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable[std::three_way_comparable]<Ts> && ...)`
+
+temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
+    [](A const& a) {},
+    [](B const& b) {},
+}, ab);
+----
+
+[discrete]
+=== Advanced Features
+
+[,cpp,subs="+quotes,+macros,+attributes"]
+----
+xref:#flexible-construction[AB ab = BA{}];   // unordered construction
+xref:#flexible-construction[ABC abc = AB{}]; // subset construction
+
+static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
+static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
+static_assert(temp_ns::xref:#trait-access[holds_alternative]<A>(ab));
+
+static_assert(ab.index() != https://en.cppreference.com/w/cpp/utility/variant/variant_npos[std::variant_npos]);
+static_assert(ab.which() == 0); // compatibility with boost; same effect as `.index()`
+
+{
+    using std::swap;
+    AB tmp;
+    xref:#accessors[swap](ab, tmp); // ADL
+}
+
+std::size_t _ = xref:#hashing[std::hash<AB>{ab}]();
+std::size_t _ = xref:#hashing[hash_value(ab)]; // compatibility with boost
+
+// xref:#io[I/O support]
+{
+    std::println("{}", AB{123});   // "123"
+    std::cout << AB{123} << '\n';  // "123"
+
+    // "type is A, value is 123" -- {cpp}26 reflection
+    std::println("{:type is %t, value is %v}", AB{123}); // Note that %t prints `A`, not `int`
+
+    std::println("{}", ABC{C{}});  // "C" -- {cpp}26 reflection
+    std::cout << ABC{C{}} << '\n'; // "C" -- {cpp}26 reflection
+}
+----
+
+== Class template `rvariant`
+
+[,cpp,subs="+quotes"]
+----
+#include <compare>
+#include <utility> // for `std::in_place_type`, etc.
+#include <variant> // for compatibility with `std::bad_variant_access`
+
+namespace temp_ns {
+
+template <class... Ts>
+class rvariant
+{
+public:
+    // .............
+
+private:
+};
+
+} // temp_ns
+----
+
+=== Type Traits
+
+Let *_rv_* be an instance of `rvariant<Ts\...>`.
+
+* *_rv_* follows all type traits of `std::variant`, unless otherwise noted.
+* All `Ts\...` must satisfy all constraints on `std::variant`, unless otherwise noted.
+
+NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
+
+
+=== Constructors
+
+[,cpp,subs="+quotes"]
+----
+constexpr rvariant::rvariant()                noexcept; <1>
+constexpr rvariant::rvariant(rvariant const&) noexcept; <2>
+constexpr rvariant::rvariant(rvariant&&)      noexcept; <3>
+----
+
+[.candidates]
+--
+- [.candidate]#1)# aaaaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa
+- [.candidate]#2-3)# aaaaaaa
+--
+
+Parameters: ::
++
+[%autowidth.params,frame=none,grid=none,cols=">m,^,"]
+|===
+| *foo* | - | the foo value
+| *first, last* | - | the foo value
+| *bar* | - | the bar value
+| *bar* | - | the bar value
+|===
+
+Effects: ::
++
+:spec-url: https://example.com/spec-url
+include::_spec-proxy.adoc[]
+
+Throws: ::
++
+:spec-url: https://example.com/spec-url
+include::_spec-proxy.adoc[]
+
+
+== Class template `recursive_wrapper`
+
+[,cpp,subs="+quotes"]
+----
+#include <compare>
+
+namespace temp_ns {
+
+template <class T>
+class recursive_wrapper
+{
+public:
+
+private:
+};
+
+} // temp_ns
+----
+
+=== Constructors
+...
+
+
+= Additional Information
+
+== Benchmark
+
+Non-recursive / Recursive
+
+GCC / Clang / MSVC
