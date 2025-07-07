@@ -207,7 +207,7 @@ public:
       constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U>, Args&&...);
 
     template<class... Us>
-      constexpr rvariant(rvariant<Us...> const& w) noexcept(/* see below */);
+      constexpr rvariant(rvariant<Us...> const& w);
     template<class... Us>
       constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);
 
