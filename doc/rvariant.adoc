@@ -103,13 +103,13 @@ using AB  = temp_ns::xref:#rvariant.rvariant[rvariant]<A, B>;
 using BA  = temp_ns::rvariant<B, A>;
 using ABC = temp_ns::rvariant<A, B, C>;
 
-// basic construction
-xref:#rvariant.constructors[AB ab{123}];
+// xref:#rvariant.constructors[basic construction]
+AB ab{123};
 
 // recursive types
 {
     struct BinaryExpr;
-    using Expr = temp_ns::rvariant<A, B, C, temp_ns::xref:#class-template-recursive-wrapper[recursive_wrapper]<BinaryExpr>>;
+    using Expr = temp_ns::rvariant<A, B, C, temp_ns::xref:#rvariant.recursive[recursive_wrapper]<BinaryExpr>>;
     struct BinaryExpr { Expr lhs, rhs; };
 }
 
@@ -141,9 +141,9 @@ temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
-// xref:#rvariant.constructors[flexible constructors]
-xref:#flexible-construction[AB ab = BA{}];   // unordered construction
-xref:#flexible-construction[ABC abc = AB{}]; // subset construction
+// xref:#rvariant.constructors[flexible construction]
+AB ab = BA{};   // unordered construction
+ABC abc = AB{}; // subset construction
 
 static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
 static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
@@ -357,6 +357,7 @@ using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
 
 
+[[rvariant.recursive]]
 == Class template `recursive_wrapper`
 
 [,cpp,subs="+quotes"]

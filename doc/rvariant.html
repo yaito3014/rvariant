@@ -167,7 +167,7 @@ li p:has(+ .ulist) {
 </ul>
 </li>
 <li><a href="#rvariant.deduping">Pack manipulation and deduping</a></li>
-<li><a href="#class-template-recursive_wrapper">Class template <code>recursive_wrapper</code></a>
+<li><a href="#rvariant.recursive">Class template <code>recursive_wrapper</code></a>
 <ul class="sectlevel2">
 <li><a href="#constructors">Constructors</a></li>
 </ul>
@@ -318,13 +318,13 @@ using AB  = temp_ns::<a href="#rvariant.rvariant">rvariant</a>&lt;A, B&gt;;
 using BA  = temp_ns::rvariant&lt;B, A&gt;;
 using ABC = temp_ns::rvariant&lt;A, B, C&gt;;
 
-// basic construction
-<a href="#rvariant.constructors">AB ab{123}</a>;
+// <a href="#rvariant.constructors">basic construction</a>
+AB ab{123};
 
 // recursive types
 {
     struct BinaryExpr;
-    using Expr = temp_ns::rvariant&lt;A, B, C, temp_ns::<a href="#class-template-recursive-wrapper">recursive_wrapper</a>&lt;BinaryExpr&gt;&gt;;
+    using Expr = temp_ns::rvariant&lt;A, B, C, temp_ns::<a href="#rvariant.recursive">recursive_wrapper</a>&lt;BinaryExpr&gt;&gt;;
     struct BinaryExpr { Expr lhs, rhs; };
 }
 
@@ -354,9 +354,9 @@ temp_ns::<a href="#accessors">visit</a>(temp_ns::<a href="#utility">overloaded</
 <h3 id="advanced-features" class="discrete">Advanced features</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// <a href="#rvariant.constructors">flexible constructors</a>
-<a href="#flexible-construction">AB ab = BA{}</a>;   // unordered construction
-<a href="#flexible-construction">ABC abc = AB{}</a>; // subset construction
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// <a href="#rvariant.constructors">flexible construction</a>
+AB ab = BA{};   // unordered construction
+ABC abc = AB{}; // subset construction
 
 static_assert(temp_ns::<a href="#trait-access">variant_size_v</a>&lt;AB&gt; == 2);
 static_assert(std::same_as&lt;temp_ns::<a href="#trait-access">variant_alternative_t</a>&lt;0, AB&gt;, A&gt;);
@@ -658,7 +658,7 @@ A variant with a single alternative may introduce unnecessary overhead when used
 </div>
 </div>
 <div class="sect1">
-<h2 id="class-template-recursive_wrapper"><a class="anchor" href="#class-template-recursive_wrapper"></a>Class template <code>recursive_wrapper</code></h2>
+<h2 id="rvariant.recursive"><a class="anchor" href="#rvariant.recursive"></a>Class template <code>recursive_wrapper</code></h2>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
