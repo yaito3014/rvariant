@@ -250,6 +250,10 @@ public:
       constexpr variant_alternative_t<I, rvariant<Types...>>&
         emplace(std::initializer_list<U>, Args&&...);
 
+    // xref:#rvariant.status[value status]
+    constexpr bool valueless_by_exception() const noexcept;
+    constexpr std::size_t index() const noexcept;
+
     // ...
     // TODO
     // ...
@@ -413,6 +417,23 @@ constexpr variant_alternative_t<I, rvariant<Types...>>&
 --
 :spec-url: https://eel.is/c++draft/variant.mod
 * [.candidate]#1-4)#
+include::_spec-proxy.adoc[]
+--
+
+
+[[rvariant.status]]
+=== Value status
+
+[,cpp,subs="+macros"]
+----
+constexpr bool valueless_by_exception() const noexcept;pass:quotes[[.candidate\]#// 1#]
+constexpr std::size_t index() const noexcept;pass:quotes[[.candidate\]#// 2#]
+----
+
+[.candidates]
+--
+:spec-url: https://eel.is/c++draft/variant.status
+* [.candidate]#1-2)#
 include::_spec-proxy.adoc[]
 --
 
