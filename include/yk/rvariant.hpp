@@ -95,7 +95,7 @@ public:
   = default;
 
   constexpr rvariant(const rvariant&)
-    requires(!std::is_copy_constructible_v<Ts> || ...)
+    requires(!detail::all_copy_constructible<Ts...>)
   = delete;
 
   constexpr rvariant(const rvariant& other)
