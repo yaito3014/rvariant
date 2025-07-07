@@ -4,7 +4,7 @@
 body {
   font-size: 12.8px;
   font-family: DejaVuSans, 'DejaVu Sans', sans-serif;
-  color: rgb(11 11 11);
+  color: rgb(11, 11, 11);
 }
 
 h1, h2, p, td.content, span.alt, summary {
@@ -32,11 +32,11 @@ dt {
 }
 
 :where(th, td):has(.good) {
-  background-color: rgb(202 255 255);
+  background-color: rgb(202, 255, 255);
 }
 
 :where(th, td):has(.bad) {
-  background-color: rgb(255 213 213);
+  background-color: rgb(255, 213, 213);
 }
 
 table.params tr th, table.params tr td {
@@ -49,15 +49,25 @@ code {
 }
 
 :not(pre):not([class^=L]) > code {
-  background: rgb(239 239 241);
+  background: rgb(239, 239, 241);
   border-radius: 0;
+}
+
+:is(#fakeId, pre) code {
+  position: relative;
 }
 
 code .candidate {
   display: inline-flex;
-  float: right;
+  position: absolute;
+  right: 0;
+
   user-select: none;
-  margin-right: 2em;
+  margin-right: 0.5em;
+}
+
+li p:has(+ .ulist) {
+  margin-bottom: 0;
 }
 
 .candidate .hljs-comment {
@@ -66,13 +76,17 @@ code .candidate {
   color: #008000;
 }
 
-.candidates ul {
+.candidates .content > .ulist > ul {
   list-style-type: none;
 }
 
-.candidates li {
+.candidates .content > .ulist > ul > li {
   padding-left: 3rem;
   text-indent: -5.25rem;
+}
+
+.candidates .content > .ulist > ul > li :is(.paragraph, ul) {
+  text-indent: 0;
 }
 
 .candidates .candidate {
@@ -81,6 +95,14 @@ code .candidate {
   text-align: right;
   text-indent: 0;
   font-weight: bold;
+}
+
+.conum[data-value] {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.listingblock:hover code[data-lang]::before {
+  display: none;
 }
 
 .small-note {

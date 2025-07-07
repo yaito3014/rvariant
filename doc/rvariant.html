@@ -14,7 +14,7 @@
 body {
   font-size: 12.8px;
   font-family: DejaVuSans, 'DejaVu Sans', sans-serif;
-  color: rgb(11 11 11);
+  color: rgb(11, 11, 11);
 }
 
 h1, h2, p, td.content, span.alt, summary {
@@ -42,11 +42,11 @@ dt {
 }
 
 :where(th, td):has(.good) {
-  background-color: rgb(202 255 255);
+  background-color: rgb(202, 255, 255);
 }
 
 :where(th, td):has(.bad) {
-  background-color: rgb(255 213 213);
+  background-color: rgb(255, 213, 213);
 }
 
 table.params tr th, table.params tr td {
@@ -59,15 +59,25 @@ code {
 }
 
 :not(pre):not([class^=L]) > code {
-  background: rgb(239 239 241);
+  background: rgb(239, 239, 241);
   border-radius: 0;
+}
+
+:is(#fakeId, pre) code {
+  position: relative;
 }
 
 code .candidate {
   display: inline-flex;
-  float: right;
+  position: absolute;
+  right: 0;
+
   user-select: none;
-  margin-right: 2em;
+  margin-right: 0.5em;
+}
+
+li p:has(+ .ulist) {
+  margin-bottom: 0;
 }
 
 .candidate .hljs-comment {
@@ -76,13 +86,17 @@ code .candidate {
   color: #008000;
 }
 
-.candidates ul {
+.candidates .content > .ulist > ul {
   list-style-type: none;
 }
 
-.candidates li {
+.candidates .content > .ulist > ul > li {
   padding-left: 3rem;
   text-indent: -5.25rem;
+}
+
+.candidates .content > .ulist > ul > li :is(.paragraph, ul) {
+  text-indent: 0;
 }
 
 .candidates .candidate {
@@ -91,6 +105,14 @@ code .candidate {
   text-align: right;
   text-indent: 0;
   font-weight: bold;
+}
+
+.conum[data-value] {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.listingblock:hover code[data-lang]::before {
+  display: none;
 }
 
 .small-note {
@@ -137,15 +159,22 @@ code .candidate {
 <li><a href="#reference">Reference</a>
 <ul class="sectlevel1">
 <li><a href="#feature-cheat-sheet">Feature Cheat Sheet</a></li>
-<li><a href="#class-template-rvariant">Class template <code>rvariant</code></a>
+<li><a href="#rvariant.rvariant">Class template <code>rvariant</code></a>
 <ul class="sectlevel2">
-<li><a href="#type-traits">Type Traits</a></li>
-<li><a href="#constructors">Constructors</a></li>
+<li><a href="#rvariant.requirements">Requirements</a></li>
+<li><a href="#rvariant.constructors">Constructors</a></li>
+<li><a href="#rvariant.destructor">Destructor</a></li>
 </ul>
 </li>
 <li><a href="#class-template-recursive_wrapper">Class template <code>recursive_wrapper</code></a>
 <ul class="sectlevel2">
-<li><a href="#constructors-2">Constructors</a></li>
+<li><a href="#constructors">Constructors</a></li>
+</ul>
+</li>
+<li><a href="#rvariant.expo">Exposition-only utilities</a>
+<ul class="sectlevel2">
+<li><a href="#rvariant.expo.subset">Subset Manipulation</a></li>
+<li><a href="#rvariant.expo.core">Core Type Traits</a></li>
 </ul>
 </li>
 </ul>
@@ -284,12 +313,12 @@ A variant class cannot determine its own size when it contains incomplete types.
 using B = double;
 struct C {};
 
-using AB  = temp_ns::<a href="#class-template-rvariant">rvariant</a>&lt;A, B&gt;;
+using AB  = temp_ns::<a href="#rvariant.rvariant">rvariant</a>&lt;A, B&gt;;
 using BA  = temp_ns::rvariant&lt;B, A&gt;;
 using ABC = temp_ns::rvariant&lt;A, B, C&gt;;
 
 // basic construction
-<a href="#constructors">AB ab{123}</a>;
+<a href="#rvariant.constructors">AB ab{123}</a>;
 
 // recursive types
 {
@@ -324,7 +353,8 @@ temp_ns::<a href="#accessors">visit</a>(temp_ns::<a href="#utility">overloaded</
 <h3 id="advanced-features" class="discrete">Advanced Features</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp"><a href="#flexible-construction">AB ab = BA{}</a>;   // unordered construction
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// <a href="#rvariant.constructors">flexible constructors</a>
+<a href="#flexible-construction">AB ab = BA{}</a>;   // unordered construction
 <a href="#flexible-construction">ABC abc = AB{}</a>; // subset construction
 
 static_assert(temp_ns::<a href="#trait-access">variant_size_v</a>&lt;AB&gt; == 2);
@@ -359,30 +389,55 @@ std::size_t _ = <a href="#hashing">hash_value(ab)</a>; // compatibility with boo
 </div>
 </div>
 <div class="sect1">
-<h2 id="class-template-rvariant"><a class="anchor" href="#class-template-rvariant"></a>Class template <code>rvariant</code></h2>
+<h2 id="rvariant.rvariant"><a class="anchor" href="#rvariant.rvariant"></a>Class template <code>rvariant</code></h2>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">#include &lt;compare&gt;
-#include &lt;utility&gt; // for <code>std::in_place_type</code>, etc.
-#include &lt;variant&gt; // for compatibility with <code>std::bad_variant_access</code>
+#include &lt;utility&gt; // for `std::in_place_type`, etc.
+#include &lt;variant&gt; // for compatibility with `std::bad_variant_access`
 
 namespace temp_ns {
 
-template &lt;class... Ts&gt;
+template&lt;class... Ts&gt;
 class rvariant
 {
 public:
-    // .............
+    // <a href="#rvariant.constructors">constructors</a>
+    constexpr rvariant::rvariant() noexcept(/* see below */);
+    constexpr rvariant::rvariant(rvariant const&amp;);
+    constexpr rvariant::rvariant(rvariant&amp;&amp;) noexcept(/* see below */);
 
-private:
+    template&lt;class T&gt;
+      constexpr rvariant(T&amp;&amp;) noexcept(/* see below */);
+
+    template&lt;class T, class... Args&gt;
+      constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, Args&amp;&amp;...);
+    template&lt;class T, class U, class... Args&gt;
+      constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);
+    template&lt;std::size_t I, class... Args&gt;
+      constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, Args&amp;&amp;...);
+    template&lt;std::size_t I, class U, class... Args&gt;
+      constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);
+
+    template&lt;class... Us&gt;
+      constexpr rvariant(rvariant&lt;Us...&gt; const&amp; w) noexcept(/* see below */);
+    template&lt;class... Us&gt;
+      constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);
+
+    // <a href="#rvariant.destructor">destructor</a>
+    constexpr ~variant();
+
+    // ...
+    // TODO
+    // ...
 };
 
 } // temp_ns</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="type-traits"><a class="anchor" href="#type-traits"></a>Type Traits</h3>
+<h3 id="rvariant.requirements"><a class="anchor" href="#rvariant.requirements"></a>Requirements</h3>
 <div class="paragraph">
 <p>Let <strong><em>rv</em></strong> be an instance of <code>rvariant&lt;Ts...&gt;</code>.</p>
 </div>
@@ -410,12 +465,37 @@ See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</
 </div>
 </div>
 <div class="sect2">
-<h3 id="constructors"><a class="anchor" href="#constructors"></a>Constructors</h3>
+<h3 id="rvariant.constructors"><a class="anchor" href="#rvariant.constructors"></a>Constructors</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr rvariant::rvariant()                noexcept; <i class="conum" data-value="1"></i><b>(1)</b>
-constexpr rvariant::rvariant(rvariant const&amp;) noexcept; <i class="conum" data-value="2"></i><b>(2)</b>
-constexpr rvariant::rvariant(rvariant&amp;&amp;)      noexcept; <i class="conum" data-value="3"></i><b>(3)</b></code></pre>
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr rvariant::rvariant() noexcept(/* see below */);<span class="candidate">// 1</span>
+constexpr rvariant::rvariant(rvariant const&amp;);<span class="candidate">// 2</span>
+constexpr rvariant::rvariant(rvariant&amp;&amp;) noexcept(/* see below */);<span class="candidate">// 3</span>
+
+template&lt;class T&gt;
+constexpr rvariant(T&amp;&amp;) noexcept(/* see below */);<span class="candidate">// 4</span>
+
+template&lt;class T, class... Args&gt;
+constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, Args&amp;&amp;...);<span class="candidate">// 5</span>
+
+template&lt;class T, class U, class... Args&gt;
+constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);<span class="candidate">// 6</span>
+
+template&lt;std::size_t I, class... Args&gt;
+constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, Args&amp;&amp;...);<span class="candidate">// 7</span>
+
+template&lt;std::size_t I, class U, class... Args&gt;
+constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);<span class="candidate">// 8</span>
+
+/* extensions */
+
+template&lt;class... Us&gt;
+    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
+constexpr rvariant(rvariant&lt;Us...&gt; const&amp; w);<span class="candidate">// 9</span>
+
+template&lt;class... Us&gt;
+    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
+constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);<span class="candidate">// 10</span></code></pre>
 </div>
 </div>
 <div class="openblock candidates">
@@ -423,10 +503,49 @@ constexpr rvariant::rvariant(rvariant&amp;&amp;)      noexcept; <i class="conum"
 <div class="ulist">
 <ul>
 <li>
-<p><span class="candidate">1)</span> aaaaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa</p>
+<p><span class="candidate">1-8)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup></p>
 </li>
 <li>
-<p><span class="candidate">2-3)</span> aaaaaaa</p>
+<p><span class="candidate">9)</span> Flexible copy constructor. If <code>w</code> does not hold a value, initializes the <code>rvariant</code> to not hold a value. Otherwise, initializes the <code>rvariant</code> to hold the corresponding alternative as <code>w</code> and direct-initializes the contained value with <code><em>GET</em>&lt;j&gt;(w)</code>, where <code>j</code> is <code>w.index()</code> and <code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>.</p>
+<div class="paragraph">
+<p><strong><em>Remarks:</em></strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>This constructor is defined as deleted unless <code><a href="#rvariant.expo.subset">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code> and <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+</li>
+<li>
+<p>If <code>std::is_trivially_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, this constructor is trivial.</p>
+</li>
+<li>
+<p>In case of duplicate alternative types, the corresponding index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts...</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><span class="candidate">10)</span> Flexible move constructor. If <code>w</code> does not hold a value, initializes the <code>rvariant</code> to not hold a value. Otherwise, initializes the <code>rvariant</code> to hold the corresponding alternative as <code>w</code> and direct-initializes the contained value with <code><em>GET</em>&lt;j&gt;(std::move(w))</code>, where <code>j</code> is <code>w.index()</code> and <code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>.</p>
+<div class="paragraph">
+<p><strong><em>Remarks:</em></strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>This constructor is defined as deleted unless <code><a href="#rvariant.expo.subset">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code>.</p>
+</li>
+<li>
+<p>The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+</li>
+<li>
+<p>If <code>std::is_trivially_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, this constructor is trivial.</p>
+</li>
+<li>
+<p>In case of duplicate alternative types, the corresponding index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts...</code>.</p>
+</li>
+</ul>
+</div>
 </li>
 </ul>
 </div>
@@ -434,51 +553,48 @@ constexpr rvariant::rvariant(rvariant&amp;&amp;)      noexcept; <i class="conum"
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">Parameters: </dt>
+<dt class="hdlist1">Exceptions </dt>
 <dd>
-<table class="tableblock frame-none grid-none fit-content params">
-<colgroup>
-<col>
-<col>
-<col>
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-right valign-top"><p class="tableblock"><code><strong>foo</strong></code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">the foo value</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-right valign-top"><p class="tableblock"><code><strong>first, last</strong></code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">the foo value</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-right valign-top"><p class="tableblock"><code><strong>bar</strong></code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">the bar value</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-right valign-top"><p class="tableblock"><code><strong>bar</strong></code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">the bar value</p></td>
-</tr>
-</tbody>
-</table>
-</dd>
-<dt class="hdlist1">Effects: </dt>
-<dd>
-<div class="paragraph">
-<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://example.com/spec-url">[spec]</a></sup></p>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1-8)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup></p>
+</li>
+<li>
+<p><span class="candidate">9)</span> Throws any exception thrown by direct-initializing any type in <code>Us...</code>.</p>
+</li>
+<li>
+<p><span class="candidate">10)</span> Throws any exception thrown by move-constructing any type in <code>Us...</code>.</p>
+</li>
+</ul>
 </div>
-</dd>
-<dt class="hdlist1">Throws: </dt>
-<dd>
-<div class="paragraph">
-<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://example.com/spec-url">[spec]</a></sup></p>
+</div>
 </div>
 </dd>
 </dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.destructor"><a class="anchor" href="#rvariant.destructor"></a>Destructor</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr ~rvariant();<span class="candidate">// 1</span></code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.dtor">[spec]</a></sup></p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -492,7 +608,7 @@ constexpr rvariant::rvariant(rvariant&amp;&amp;)      noexcept; <i class="conum"
 
 namespace temp_ns {
 
-template &lt;class T&gt;
+template&lt;class T&gt;
 class recursive_wrapper
 {
 public:
@@ -504,9 +620,84 @@ private:
 </div>
 </div>
 <div class="sect2">
-<h3 id="constructors-2"><a class="anchor" href="#constructors-2"></a>Constructors</h3>
+<h3 id="constructors"><a class="anchor" href="#constructors"></a>Constructors</h3>
 <div class="paragraph">
 <p>&#8230;&#8203;</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="rvariant.expo"><a class="anchor" href="#rvariant.expo"></a>Exposition-only utilities</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section demonstrates internal features used in the implementation. The documentation is written <em>as if</em> the content were proposed for the (imaginary) C++ standard.</p>
+</div>
+<div class="sect2">
+<h3 id="rvariant.expo.subset"><a class="anchor" href="#rvariant.expo.subset"></a>Subset Manipulation</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class V, class W&gt;
+struct <em>subset_like</em> : std::false_type {}; // exposition-only
+
+template&lt;class... Ts, class... Us&gt;
+struct <em>subset_like</em>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt; : std::true_type {}; // exposition-only<span class="candidate">// 1</span>
+
+template&lt;class V, class W&gt;
+constexpr bool <em>subset-like</em> = <em>subset_like</em>::value; // exposition-only</code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us...</code>, there exists at least one type <code>T</code> in <code>Ts...</code> such that <code>U</code> is the same type as <code>T</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.expo.core"><a class="anchor" href="#rvariant.expo.core"></a>Core Type Traits</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, template&lt;class...&gt; class TT&gt;
+struct <em>ttp-specialization-of</em>; // exposition-only<span class="candidate">// 1</span>
+
+template&lt;class T, template&lt;auto...&gt; class TT&gt;
+struct <em>nttp-specialization-of</em>; // exposition-only<span class="candidate">// 2</span>
+
+template&lt;class T, <em>any-ttp</em>&gt;
+struct <em>specialization-of</em>; // exposition-only<span class="candidate">// 3</span></code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1-2)</span> Inherits <code>std::true_type</code> if and only if <code>T</code> is a specialization of <code>TT</code>; otherwise, <code>std::false_type</code>.</p>
+</li>
+<li>
+<p><span class="candidate">3)</span> If <code><em>any-ttp</em></code> is a template template parameter that consists of NTTP, equivalent to <code><em>nttp-specialization-of</em></code>; otherwise, equivalent to <code><em>ttp-specialization-of</em></code>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code><em>specialization-of</em></code> is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound <code>requires</code> expression.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 </div>

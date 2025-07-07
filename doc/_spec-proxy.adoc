@@ -1,2 +1,1 @@
-:doctype: inline
 Equivalent to the `std::variant` counterpart. ^{spec-url}[[spec\]]^
