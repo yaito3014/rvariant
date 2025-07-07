@@ -340,8 +340,18 @@ using AB  = temp_ns::<a href="#rvariant.rvariant">rvariant</a>&lt;A, B&gt;;
 using BA  = temp_ns::rvariant&lt;B, A&gt;;
 using ABC = temp_ns::rvariant&lt;A, B, C&gt;;
 
-// <a href="#rvariant.constructors">basic construction</a>
-AB ab{123};
+// <a href="#rvariant.constructors">constructor</a>
+AB ab{42};
+
+{
+    AB local_ab{};
+} // <a href="#rvariant.destructor">destructor</a>
+
+ab<a href="#rvariant.mod">.emplace&lt;int&gt;(123)</a>;
+ab<a href="#rvariant.mod">.emplace&lt;0&gt;(123)</a>;
+
+// <a href="#rvariant.assign">assignment</a>
+ab = AB{123};
 
 // recursive types
 {
@@ -367,32 +377,43 @@ C* c = temp_ns::get&lt;C&gt;(&amp;ab); // <code>nullptr</code>
 <a href="#operators">ab &lt; ab</a>;
 <a href="#operators">ab &lt;=&gt; ab</a>; // <code>requires (<a href="https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable">std::three_way_comparable</a>&lt;Ts&gt; &amp;&amp; ...)</code>
 
-temp_ns::<a href="#accessors">visit</a>(temp_ns::<a href="#utility">overloaded</a> {
+auto visitor = temp_ns::<a href="#rvariant.utility-todo">overloaded</a> {
     [](A const&amp; a) {},
     [](B const&amp; b) {},
-}, ab);</code></pre>
+};
+
+ab<a href="#rvariant.visit">.visit(visitor)</a>;           // member visit
+temp_ns::<a href="#accessors-todo">visit</a>(visitor, ab); // function visit</code></pre>
 </div>
 </div>
 <h3 id="advanced-features" class="discrete">Advanced features</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// <a href="#rvariant.constructors">flexible construction</a>
-{
-    AB ab = BA{};   // unordered construction
-    ABC abc = AB{}; // subset construction
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">{
+    // <a href="#rvariant.constructors">flexible construction</a>
+    AB ab{BA{}};   // unordered construction
+    ABC abc{AB{}}; // subset construction
+
+    // <a href="#rvariant.assign">flexible assignment</a>
+    ab = BA{};     // unordered assignment
+    abc = AB{};    // subset assignment
 }
 
 static_assert(temp_ns::<a href="#trait-access">variant_size_v</a>&lt;AB&gt; == 2);
 static_assert(std::same_as&lt;temp_ns::<a href="#trait-access">variant_alternative_t</a>&lt;0, AB&gt;, A&gt;);
 static_assert(temp_ns::<a href="#trait-access">holds_alternative</a>&lt;A&gt;(ab));
 
-static_assert(ab.index() != <a href="https://en.cppreference.com/w/cpp/utility/variant/variant_npos">std::variant_npos</a>);
-static_assert(ab.which() == 0); // compatibility with boost; same effect as <code>.index()</code>
+static_assert(ab<a href="#rvariant.status">.index()</a> != <a href="https://en.cppreference.com/w/cpp/utility/variant/variant_npos">std::variant_npos</a>);
+static_assert(!ab<a href="#rvariant.status">.valueless_by_exception()</a>);
 
+{
+    AB tmp;
+    ab<a href="#rvariant.swap">.swap(tmp)</a>;
+}
 {
     using std::swap;
     AB tmp;
-    <a href="#accessors">swap</a>(ab, tmp); // ADL
+    <a href="#rvariant.specalg">swap</a>(ab, tmp); // ADL
 }
 
 std::size_t _ = <a href="#hashing">std::hash&lt;AB&gt;{ab}</a>();

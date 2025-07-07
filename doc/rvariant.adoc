@@ -113,8 +113,18 @@ using AB  = temp_ns::xref:#rvariant.rvariant[rvariant]<A, B>;
 using BA  = temp_ns::rvariant<B, A>;
 using ABC = temp_ns::rvariant<A, B, C>;
 
-// xref:#rvariant.constructors[basic construction]
-AB ab{123};
+// xref:#rvariant.constructors[constructor]
+AB ab{42};
+
+{
+    AB local_ab{};
+} // xref:#rvariant.destructor[destructor]
+
+abxref:#rvariant.mod[.emplace<int>(123)];
+abxref:#rvariant.mod[.emplace<0>(123)];
+
+// xref:#rvariant.assign[assignment]
+ab = AB{123};
 
 // recursive types
 {
@@ -140,10 +150,13 @@ xref:#operators["ab == ab"];
 xref:#operators[ab < ab];
 xref:#operators[ab <=> ab]; // `requires (https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable[std::three_way_comparable]<Ts> && ...)`
 
-temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
+auto visitor = temp_ns::xref:#rvariant.utility-todo[overloaded] {
     [](A const& a) {},
     [](B const& b) {},
-}, ab);
+};
+
+abxref:#rvariant.visit[.visit(visitor)];           // member visit
+temp_ns::xref:#accessors-todo[visit](visitor, ab); // function visit
 ----
 
 [discrete]
@@ -151,23 +164,31 @@ temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
-// xref:#rvariant.constructors[flexible construction]
 {
-    AB ab = BA{};   // unordered construction
-    ABC abc = AB{}; // subset construction
+    // xref:#rvariant.constructors[flexible construction]
+    AB ab{BA{}};   // unordered construction
+    ABC abc{AB{}}; // subset construction
+
+    // xref:#rvariant.assign[flexible assignment]
+    ab = BA{};     // unordered assignment
+    abc = AB{};    // subset assignment
 }
 
 static_assert(temp_ns::xref:#trait-access[variant_size_v]<AB> == 2);
 static_assert(std::same_as<temp_ns::xref:#trait-access[variant_alternative_t]<0, AB>, A>);
 static_assert(temp_ns::xref:#trait-access[holds_alternative]<A>(ab));
 
-static_assert(ab.index() != https://en.cppreference.com/w/cpp/utility/variant/variant_npos[std::variant_npos]);
-static_assert(ab.which() == 0); // compatibility with boost; same effect as `.index()`
+static_assert(abxref:#rvariant.status[.index()] != https://en.cppreference.com/w/cpp/utility/variant/variant_npos[std::variant_npos]);
+static_assert(!abxref:#rvariant.status[.valueless_by_exception()]);
 
+{
+    AB tmp;
+    abxref:#rvariant.swap[.swap(tmp)];
+}
 {
     using std::swap;
     AB tmp;
-    xref:#accessors[swap](ab, tmp); // ADL
+    xref:#rvariant.specalg[swap](ab, tmp); // ADL
 }
 
 std::size_t _ = xref:#hashing[std::hash<AB>{ab}]();
