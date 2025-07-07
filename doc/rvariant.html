@@ -153,12 +153,12 @@ li p:has(+ .ulist) {
 <li><a href="#introduction">Introduction</a>
 <ul class="sectlevel2">
 <li><a href="#motivation">Motivation</a></li>
-<li><a href="#comparison">Comparison of Variant Libraries</a></li>
+<li><a href="#comparison">Comparison of variant libraries</a></li>
 </ul>
 </li>
 <li><a href="#reference">Reference</a>
 <ul class="sectlevel1">
-<li><a href="#feature-cheat-sheet">Feature Cheat Sheet</a></li>
+<li><a href="#feature-cheat-sheet">Feature cheat sheet</a></li>
 <li><a href="#rvariant.rvariant">Class template <code>rvariant</code></a>
 <ul class="sectlevel2">
 <li><a href="#rvariant.requirements">Requirements</a></li>
@@ -166,20 +166,21 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.destructor">Destructor</a></li>
 </ul>
 </li>
+<li><a href="#rvariant.deduping">Pack manipulation and deduping</a></li>
 <li><a href="#class-template-recursive_wrapper">Class template <code>recursive_wrapper</code></a>
 <ul class="sectlevel2">
 <li><a href="#constructors">Constructors</a></li>
 </ul>
 </li>
-<li><a href="#rvariant.expo">Exposition-only utilities</a>
+<li><a href="#rvariant.xo">Exposition-only utilities</a>
 <ul class="sectlevel2">
-<li><a href="#rvariant.expo.subset">Subset Manipulation</a></li>
-<li><a href="#rvariant.expo.core">Core Type Traits</a></li>
+<li><a href="#rvariant.xo.flexibility">Flexibility traits</a></li>
+<li><a href="#rvariant.xo.core">Core type traits</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a href="#additional-information">Additional Information</a>
+<li><a href="#additional-information">Additional information</a>
 <ul class="sectlevel1">
 <li><a href="#benchmark">Benchmark</a></li>
 </ul>
@@ -214,7 +215,7 @@ li p:has(+ .ulist) {
 </div>
 </div>
 <div class="sect2">
-<h3 id="comparison"><a class="anchor" href="#comparison"></a>Comparison of Variant Libraries</h3>
+<h3 id="comparison"><a class="anchor" href="#comparison"></a>Comparison of variant libraries</h3>
 <div class="openblock scroll-x">
 <div class="content">
 <table class="tableblock frame-ends grid-all stretch">
@@ -301,12 +302,12 @@ A variant class cannot determine its own size when it contains incomplete types.
 </div>
 <h1 id="reference" class="sect0"><a class="anchor" href="#reference"></a>Reference</h1>
 <div class="sect1">
-<h2 id="feature-cheat-sheet"><a class="anchor" href="#feature-cheat-sheet"></a>Feature Cheat Sheet</h2>
+<h2 id="feature-cheat-sheet"><a class="anchor" href="#feature-cheat-sheet"></a>Feature cheat sheet</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.</p>
 </div>
-<h3 id="basic-features" class="discrete">Basic Features</h3>
+<h3 id="basic-features" class="discrete">Basic features</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">using A = int;
@@ -350,7 +351,7 @@ temp_ns::<a href="#accessors">visit</a>(temp_ns::<a href="#utility">overloaded</
 }, ab);</code></pre>
 </div>
 </div>
-<h3 id="advanced-features" class="discrete">Advanced Features</h3>
+<h3 id="advanced-features" class="discrete">Advanced features</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// <a href="#rvariant.constructors">flexible constructors</a>
@@ -514,7 +515,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist">
 <ul>
 <li>
-<p>This constructor is defined as deleted unless <code><a href="#rvariant.expo.subset">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code> and <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+<p>This constructor is defined as deleted unless <code><a href="#rvariant.xo.flexibility">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code> and <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
 </li>
 <li>
 <p>In case of duplicate alternative types, the corresponding index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts...</code>.</p>
@@ -530,7 +531,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist">
 <ul>
 <li>
-<p>This constructor is defined as deleted unless <code><a href="#rvariant.expo.subset">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code>.</p>
+<p>This constructor is defined as deleted unless <code><a href="#rvariant.xo.flexibility">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code>.</p>
 </li>
 <li>
 <p>The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
@@ -594,6 +595,69 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </div>
 </div>
 <div class="sect1">
+<h2 id="rvariant.deduping"><a class="anchor" href="#rvariant.deduping"></a>Pack manipulation and deduping</h2>
+<div class="sectionbody">
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Experimental feature proposal; need further consideration
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+struct pack_union;<span class="candidate">// 1</span>
+
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+struct pack_union_t = typename pack_union&lt;TT, A, B&gt;::type;
+
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+struct compact_alternative;<span class="candidate">// 2</span>
+
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type;
+
+} // temp_ns</code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1)</span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code>pack_union</code> defines the member type <code>::type</code> as <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the union of <code>As...</code> and <code>Bs...</code>. The order of types shall be preserved.</p>
+</li>
+<li>
+<p><span class="candidate">2)</span> Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code>pack_union_t&lt;TT, A, B&gt;</code>. <code>compact_alternative</code> defines the member type <code>::type</code> as the first type in <code>Ts...</code> if <code>sizeof...(Ts) == 1</code>; otherwise, it is defined as <code>TT&lt;Ts...&gt;</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Notes on single-type variant</div>
+A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be <em>unwrapped</em> using <code>compact_alternative</code>. This is useful for resolving issues such as <a href="https://github.com/boostorg/spirit/issues/610">boostorg/spirit#610</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="class-template-recursive_wrapper"><a class="anchor" href="#class-template-recursive_wrapper"></a>Class template <code>recursive_wrapper</code></h2>
 <div class="sectionbody">
 <div class="listingblock">
@@ -622,13 +686,13 @@ private:
 </div>
 </div>
 <div class="sect1">
-<h2 id="rvariant.expo"><a class="anchor" href="#rvariant.expo"></a>Exposition-only utilities</h2>
+<h2 id="rvariant.xo"><a class="anchor" href="#rvariant.xo"></a>Exposition-only utilities</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This section demonstrates internal features used in the implementation. The documentation is written <em>as if</em> the content were proposed for the (imaginary) C++ standard.</p>
+<p>This section demonstrates internal features used in the implementation.</p>
 </div>
 <div class="sect2">
-<h3 id="rvariant.expo.subset"><a class="anchor" href="#rvariant.expo.subset"></a>Subset Manipulation</h3>
+<h3 id="rvariant.xo.flexibility"><a class="anchor" href="#rvariant.xo.flexibility"></a>Flexibility traits</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class V, class W&gt;
@@ -654,7 +718,7 @@ constexpr bool <em>subset-like</em> = <em>subset_like</em>::value; // exposition
 </div>
 </div>
 <div class="sect2">
-<h3 id="rvariant.expo.core"><a class="anchor" href="#rvariant.expo.core"></a>Core Type Traits</h3>
+<h3 id="rvariant.xo.core"><a class="anchor" href="#rvariant.xo.core"></a>Core type traits</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, template&lt;class...&gt; class TT&gt;
@@ -696,7 +760,7 @@ struct <em>specialization-of</em>; // exposition-only<span class="candidate">// 
 </div>
 </div>
 </div>
-<h1 id="additional-information" class="sect0"><a class="anchor" href="#additional-information"></a>Additional Information</h1>
+<h1 id="additional-information" class="sect0"><a class="anchor" href="#additional-information"></a>Additional information</h1>
 <div class="sect1">
 <h2 id="benchmark"><a class="anchor" href="#benchmark"></a>Benchmark</h2>
 <div class="sectionbody">

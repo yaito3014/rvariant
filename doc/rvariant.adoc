@@ -28,7 +28,7 @@ The compile-time slowness of `boost::variant` comes from the technical debt: it 
 Until 2025, no one has managed to introduce a fully featured recursive variant class into either Boost or the {cpp} standard. `rvariant` fills this gap with a modern implementation that supports recursive types while remaining API-compatible with `std::variant`.
 
 [#comparison]
-=== Comparison of Variant Libraries
+=== Comparison of variant libraries
 
 [.scroll-x]
 --
@@ -87,11 +87,11 @@ NOTE: A variant class cannot determine its own size when it contains incomplete 
 
 = Reference
 
-== Feature Cheat Sheet
+== Feature cheat sheet
 This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.
 
 [discrete]
-=== Basic Features
+=== Basic features
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
@@ -137,7 +137,7 @@ temp_ns::xref:#accessors[visit](temp_ns::xref:#utility[overloaded] {
 ----
 
 [discrete]
-=== Advanced Features
+=== Advanced features
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
@@ -278,14 +278,14 @@ include::_spec-proxy.adoc[]
 +
 *_Remarks:_*
 
-** This constructor is defined as deleted unless `xref:#rvariant.expo.subset[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+** This constructor is defined as deleted unless `xref:#rvariant.xo.flexibility[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 
 * [.candidate]#10)# Flexible move constructor. If `w` does not hold a value, initializes the `rvariant` to not hold a value. Otherwise, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(std::move(w))`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
 +
 *_Remarks:_*
 
-** This constructor is defined as deleted unless `xref:#rvariant.expo.subset[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>`.
+** This constructor is defined as deleted unless `xref:#rvariant.xo.flexibility[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>`.
 ** The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 --
@@ -320,6 +320,43 @@ include::_spec-proxy.adoc[]
 --
 
 
+[[rvariant.deduping]]
+== Pack manipulation and deduping
+
+[WARNING]
+Experimental feature proposal; need further consideration
+
+[,cpp,subs="+macros"]
+----
+namespace temp_ns {
+
+template<template<class...> class TT, class A, class B>
+struct pack_union;pass:quotes[[.candidate\]#// 1#]
+
+template<template<class...> class TT, class A, class B>
+struct pack_union_t = typename pack_union<TT, A, B>::type;
+
+template<template<class...> class TT, class A, class B>
+struct compact_alternative;pass:quotes[[.candidate\]#// 2#]
+
+template<template<class...> class TT, class A, class B>
+using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
+
+} // temp_ns
+----
+
+[.candidates]
+--
+* [.candidate]#1)# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `pack_union` defines the member type `::type` as `TT<Ts\...>`, where `Ts\...` is the union of `As\...` and `Bs\...`. The order of types shall be preserved.
+
+* [.candidate]#2)# Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `pack_union_t<TT, A, B>`. `compact_alternative` defines the member type `::type` as the first type in `Ts\...` if `sizeof\...(Ts) == 1`; otherwise, it is defined as `TT<Ts\...>`.
+--
+
+[NOTE]
+.Notes on single-type variant
+A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
+
+
 == Class template `recursive_wrapper`
 
 [,cpp,subs="+quotes"]
@@ -343,13 +380,13 @@ private:
 ...
 
 
-[[rvariant.expo]]
+[[rvariant.xo]]
 == Exposition-only utilities
-This section demonstrates internal features used in the implementation. The documentation is written _as if_ the content were proposed for the (imaginary) C++ standard.
+This section demonstrates internal features used in the implementation.
 
 
-[[rvariant.expo.subset]]
-=== Subset Manipulation
+[[rvariant.xo.flexibility]]
+=== Flexibility traits
 
 [,cpp,subs="+macros"]
 ----
@@ -369,8 +406,8 @@ constexpr bool pass:quotes[_subset-like_] = pass:quotes[_subset_like_]::value; /
 --
 
 
-[[rvariant.expo.core]]
-=== Core Type Traits
+[[rvariant.xo.core]]
+=== Core type traits
 
 [,cpp,subs="+macros"]
 ----
@@ -395,7 +432,7 @@ NOTE: `_specialization-of_` is currently unimplementable due to lack of language
 
 
 
-= Additional Information
+= Additional information
 
 == Benchmark
 
