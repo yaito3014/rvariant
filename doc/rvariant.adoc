@@ -239,6 +239,17 @@ public:
     template<class... Us>
       constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);
 
+    // xref:#rvariant.mod[modifiers]
+    template<class T, class... Args>
+      constexpr T& emplace(Args&&...);
+    template<class T, class U, class... Args>
+      constexpr T& emplace(std::initializer_list<U>, Args&&...);
+    template<std::size_t I, class... Args>
+      constexpr variant_alternative_t<I, rvariant<Types...>>& emplace(Args&&...);
+    template<std::size_t I, class U, class... Args>
+      constexpr variant_alternative_t<I, rvariant<Types...>>&
+        emplace(std::initializer_list<U>, Args&&...);
+
     // ...
     // TODO
     // ...
@@ -375,6 +386,34 @@ include::_spec-proxy.adoc[]
 * [.candidate]#4)# Flexible copy assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO
 
 * [.candidate]#5)# Flexible move assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO
+--
+
+
+[[rvariant.mod]]
+=== Modifiers
+
+[,cpp,subs="+macros"]
+----
+template<class T, class... Args>
+constexpr T& emplace(Args&&...);pass:quotes[[.candidate\]#// 1#]
+
+template<class T, class U, class... Args>
+constexpr T& emplace(std::initializer_list<U>, Args&&...);pass:quotes[[.candidate\]#// 2#]
+
+template<std::size_t I, class... Args>
+constexpr variant_alternative_t<I, rvariant<Types...>>&
+    emplace(Args&&...);pass:quotes[[.candidate\]#// 3#]
+
+template<std::size_t I, class U, class... Args>
+constexpr variant_alternative_t<I, rvariant<Types...>>&
+    emplace(std::initializer_list<U>, Args&&...);pass:quotes[[.candidate\]#// 4#]
+----
+
+[.candidates]
+--
+:spec-url: https://eel.is/c++draft/variant.mod
+* [.candidate]#1-4)#
+include::_spec-proxy.adoc[]
 --
 
 
