@@ -79,6 +79,40 @@ using accepted_index = decltype(fun<Source, Variant>{}(std::declval<Source>()));
 template <class Source, class Variant>
 inline constexpr std::size_t accepted_index_v = accepted_index<Source, Variant>::value;
 
+struct valueless_t {};
+
+inline constexpr valueless_t valueless{};
+
+template <bool TriviallyDestructible, class... Ts>
+union variadic_union;
+
+template <bool TriviallyDestructible>
+union variadic_union<TriviallyDestructible> {
+  constexpr variadic_union(valueless_t) {}
+};
+
+template <bool TriviallyDestructible, class T, class... Ts>
+union variadic_union<TriviallyDestructible, T, Ts...> {
+  constexpr variadic_union() : first() {}
+
+  constexpr variadic_union(valueless_t) : rest(valueless) {}
+
+  template <class... Args>
+  constexpr variadic_union(std::in_place_index_t<0>, Args&&... args) : first(std::forward<Args>(args)...) {}
+
+  template <std::size_t I, class... Args>
+  constexpr variadic_union(std::in_place_index_t<I>, Args&&... args) : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...) {}
+
+  ~variadic_union() = default;
+
+  constexpr ~variadic_union()
+    requires(!TriviallyDestructible)
+  {}
+
+  T first;
+  variadic_union<TriviallyDestructible, Ts...> rest;
+};
+
 }  // namespace detail
 
 template <class... Ts>

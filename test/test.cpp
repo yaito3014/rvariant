@@ -4,8 +4,8 @@
 #include <vector>
 
 #include <yk/detail/exactly_once.hpp>
-#include <yk/detail/pack_indexing.hpp>
 #include <yk/detail/is_unique.hpp>
+#include <yk/detail/pack_indexing.hpp>
 #include <yk/rvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -42,6 +42,24 @@ TEST_CASE("helper class") {
   STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, const yk::rvariant<int>>, const int>);
   STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, const yk::rvariant<int, float>>, const int>);
   STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, const yk::rvariant<int, float>>, const float>);
+}
+
+TEST_CASE("variadic union") {
+  {
+    using VD = yk::detail::variadic_union<true, int, float>;
+    STATIC_REQUIRE(std::is_default_constructible_v<VD>);
+    STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+    STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
+    STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
+    STATIC_REQUIRE(std::is_constructible_v<VD, yk::detail::valueless_t>);
+  }
+  {
+    using VD = yk::detail::variadic_union<false, std::vector<int>>;
+    STATIC_REQUIRE(std::is_default_constructible_v<VD>);
+    STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<VD>);  // cannot copy without index
+    STATIC_REQUIRE_FALSE(std::is_move_constructible_v<VD>);  // cannot move without index
+    STATIC_REQUIRE(std::is_destructible_v<VD>);
+  }
 }
 
 TEST_CASE("default construction") {
@@ -86,6 +104,9 @@ TEST_CASE("copy construction") {
     struct S {
       S(const S&) {}
     };
+    STATIC_REQUIRE(std::is_copy_constructible_v<S>);
+    STATIC_REQUIRE(std::is_copy_constructible_v<yk::rvariant<S>>);
+    STATIC_REQUIRE(std::is_copy_constructible_v<yk::rvariant<int, S>>);
     STATIC_REQUIRE_FALSE(std::is_trivially_copy_constructible_v<S>);
     STATIC_REQUIRE_FALSE(std::is_trivially_copy_constructible_v<yk::rvariant<S>>);
     STATIC_REQUIRE_FALSE(std::is_trivially_copy_constructible_v<yk::rvariant<int, S>>);
