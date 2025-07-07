@@ -164,6 +164,7 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.requirements">Requirements</a></li>
 <li><a href="#rvariant.constructors">Constructors</a></li>
 <li><a href="#rvariant.destructor">Destructor</a></li>
+<li><a href="#rvariant.assign">Assignment</a></li>
 </ul>
 </li>
 <li><a href="#rvariant.deduping">Pack manipulation and deduping</a></li>
@@ -423,13 +424,26 @@ public:
     template&lt;std::size_t I, class U, class... Args&gt;
       constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);
 
+    /* extensions */
     template&lt;class... Us&gt;
       constexpr rvariant(rvariant&lt;Us...&gt; const&amp; w);
     template&lt;class... Us&gt;
       constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);
 
     // <a href="#rvariant.destructor">destructor</a>
-    constexpr ~variant();
+    constexpr ~rvariant();
+
+    // <a href="#rvariant.assign">assignment</a>
+    constexpr rvariant&amp; operator=(rvariant const&amp;);
+    constexpr rvariant&amp; operator=(rvariant&amp;&amp;) noexcept(/* see below */);
+
+    template&lt;class T&gt; constexpr rvariant&amp; operator=(T&amp;&amp;) noexcept(/* see below */);
+
+    /* extensions */
+    template&lt;class... Us&gt;
+      constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt; const&amp; w);
+    template&lt;class... Us&gt;
+      constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);
 
     // ...
     // TODO
@@ -588,6 +602,45 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">1)</span>
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.dtor">[spec]</a></sup></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.assign"><a class="anchor" href="#rvariant.assign"></a>Assignment</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr rvariant&amp; operator=(rvariant const&amp;);<span class="candidate">// 1</span>
+constexpr rvariant&amp; operator=(rvariant&amp;&amp;) noexcept(/* see below */);<span class="candidate">// 2</span>
+
+template&lt;class T&gt; constexpr rvariant&amp; operator=(T&amp;&amp;) noexcept(/* see below */);<span class="candidate">// 3</span>
+
+/* extensions */
+
+template&lt;class... Us&gt;
+    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
+constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt; const&amp; w);<span class="candidate">// 4</span>
+
+template&lt;class... Us&gt;
+    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
+constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);<span class="candidate">// 5</span></code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1-3)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup></p>
+</li>
+<li>
+<p><span class="candidate">4)</span> Flexible copy assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO</p>
+</li>
+<li>
+<p><span class="candidate">5)</span> Flexible move assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO</p>
 </li>
 </ul>
 </div>
