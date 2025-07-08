@@ -368,7 +368,7 @@ ab = AB{123};
 
 A&amp; a = temp_ns::<a href="#rvariant.syn">get</a>&lt;0&gt;(ab);
 A&amp; a = temp_ns::get&lt;A&gt;(ab);
-C&amp; c = temp_ns::get&lt;C&gt;(ab); // throws <a href="https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html"><code>std::bad_variant_access</code></a>
+C&amp; c = temp_ns::get&lt;C&gt;(ab);     // throws <a href="https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html"><code>std::bad_variant_access</code></a>
 
 A* a = temp_ns::<a href="#rvariant.syn">get_if</a>&lt;0&gt;(&amp;ab);
 A* a = temp_ns::get_if&lt;A&gt;(&amp;ab);
@@ -377,7 +377,7 @@ C* c = temp_ns::get_if&lt;C&gt;(&amp;ab); // <code>nullptr</code>
 // compatibility with boost; same effect as <code>get_if</code>
 A* a = temp_ns::<a href="#rvariant.syn">get</a>&lt;0&gt;(&amp;ab);
 A* a = temp_ns::get&lt;A&gt;(&amp;ab);
-C* c = temp_ns::get&lt;C&gt;(&amp;ab); // <code>nullptr</code>
+C* c = temp_ns::get&lt;C&gt;(&amp;ab);    // <code>nullptr</code>
 
 <a href="#rvariant.syn">ab == ab</a>;
 <a href="#rvariant.syn">ab &lt; ab</a>;
@@ -388,7 +388,7 @@ auto visitor = temp_ns::<a href="#rvariant.utility-todo">overloaded</a> {
     [](B const&amp; b) {},
 };
 
-ab<a href="#rvariant.visit">.visit(visitor)</a>;         // member visit
+ab<a href="#rvariant.visit">.visit(visitor)</a>;           // member visit
 temp_ns::<a href="#rvariant.syn">visit</a>(visitor, ab); // function visit</code></pre>
 </div>
 </div>

@@ -135,7 +135,7 @@ ab = AB{123};
 
 A& a = temp_ns::xref:#rvariant.syn[get]<0>(ab);
 A& a = temp_ns::get<A>(ab);
-C& c = temp_ns::get<C>(ab); // throws https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html[`std::bad_variant_access`]
+C& c = temp_ns::get<C>(ab);     // throws https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html[`std::bad_variant_access`]
 
 A* a = temp_ns::xref:#rvariant.syn[get_if]<0>(&ab);
 A* a = temp_ns::get_if<A>(&ab);
@@ -144,7 +144,7 @@ C* c = temp_ns::get_if<C>(&ab); // `nullptr`
 // compatibility with boost; same effect as `get_if`
 A* a = temp_ns::xref:#rvariant.syn[get]<0>(&ab);
 A* a = temp_ns::get<A>(&ab);
-C* c = temp_ns::get<C>(&ab); // `nullptr`
+C* c = temp_ns::get<C>(&ab);    // `nullptr`
 
 xref:#rvariant.syn["ab == ab"];
 xref:#rvariant.syn[ab < ab];
@@ -155,7 +155,7 @@ auto visitor = temp_ns::xref:#rvariant.utility-todo[overloaded] {
     [](B const& b) {},
 };
 
-abxref:#rvariant.visit[.visit(visitor)];         // member visit
+abxref:#rvariant.visit[.visit(visitor)];           // member visit
 temp_ns::xref:#rvariant.syn[visit](visitor, ab); // function visit
 ----
 
