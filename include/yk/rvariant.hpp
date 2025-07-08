@@ -113,6 +113,12 @@ union variadic_union<TriviallyDestructible, T, Ts...> {
   variadic_union<TriviallyDestructible, Ts...> rest;
 };
 
+template <std::size_t I, class T>
+struct alternative {
+  static constexpr std::size_t index = I;
+  T value;
+};
+
 template <std::size_t I>
 struct get_alternative {
   template <class Union>
@@ -130,9 +136,20 @@ struct get_alternative<0> {
 };
 
 template <std::size_t I, class Variant>
-constexpr decltype(auto) get_impl(Variant&& var) noexcept {
-  return get_alternative<I>{}(std::forward<Variant>(var).storage_);
+constexpr auto&& get_impl(Variant&& var) noexcept {
+  return get_alternative<I>{}(std::forward<Variant>(var).storage_).value;
 }
+
+template <class Seq, class... Ts>
+struct variant_storage;
+
+template <std::size_t... Is, class... Ts>
+struct variant_storage<std::index_sequence<Is...>, Ts...> {
+  using type = variadic_union<(std::is_trivially_destructible_v<Ts> && ...), alternative<Is, Ts>...>;
+};
+
+template <class Seq, class... Ts>
+using variant_storage_t = typename variant_storage<Seq, Ts...>::type;
 
 }  // namespace detail
 
@@ -205,10 +222,10 @@ public:
   constexpr std::size_t index() const noexcept { return index_; }
 
   template <std::size_t I, class Variant>
-  friend constexpr decltype(auto) detail::get_impl(Variant&&) noexcept;
+  friend constexpr auto&& detail::get_impl(Variant&&) noexcept;
 
 private:
-  detail::variadic_union<(std::is_trivially_destructible_v<Ts> && ...), Ts...> storage_;
+  detail::variant_storage_t<std::index_sequence_for<Ts...>, Ts...> storage_;
   std::size_t index_ = variant_npos;
 };
 
