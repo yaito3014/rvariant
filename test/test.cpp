@@ -208,6 +208,12 @@ TEST_CASE("generic construction") {
   }
 }
 
+TEST_CASE("raw get") {
+  yk::rvariant<int, float> var = 42;
+  STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);
+  STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::move(var))), yk::detail::alternative<0, int>&&>);
+}
+
 TEST_CASE("get") {
   {
     yk::rvariant<int, float> var = 42;

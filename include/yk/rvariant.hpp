@@ -5,6 +5,7 @@
 #include "yk/detail/is_specialization_of.hpp"
 #include "yk/detail/pack_indexing.hpp"
 
+#include <functional>
 #include <initializer_list>
 #include <type_traits>
 #include <utility>
@@ -136,8 +137,36 @@ struct get_alternative<0> {
 };
 
 template <std::size_t I, class Variant>
-constexpr auto&& get_impl(Variant&& var) noexcept {
-  return get_alternative<I>{}(std::forward<Variant>(var).storage_).value;
+constexpr auto&& raw_get(Variant&& var) noexcept {
+  return get_alternative<I>{}(std::forward<Variant>(var).storage_);
+}
+
+template <std::size_t I, class Variant>
+using alternative_t = decltype(raw_get<I>(std::declval<Variant>()));
+
+template <class Visitor, class Variant>
+using raw_visit_return_type = std::invoke_result_t<Visitor, alternative_t<0, Variant>>;
+
+template <std::size_t I, class Visitor, class Variant>
+constexpr raw_visit_return_type<Visitor, Variant> raw_visit_dispatch(Visitor&& vis,
+                                                                     Variant&& var) noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<0, Variant>>) {
+  return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Variant>(var)));
+}
+
+template <class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
+struct raw_visit_dispatch_table;
+
+template <class Visitor, class Variant, std::size_t... Is>
+struct raw_visit_dispatch_table<Visitor, Variant, std::index_sequence<Is...>> {
+  using function_type = raw_visit_return_type<Visitor, Variant> (*)(Visitor&&, Variant&&);
+  static constexpr function_type value[] = {&raw_visit_dispatch<Is, Visitor, Variant>...};
+};
+
+template <class Visitor, class Variant>
+constexpr raw_visit_return_type<Visitor, Variant> raw_visit(std::size_t index, Visitor&& vis,
+                                                            Variant&& var) noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<0, Variant>>) {
+  constexpr const auto& table = raw_visit_dispatch_table<Visitor, Variant>::value;
+  return std::invoke(table[index], std::forward<Visitor>(vis), std::forward<Variant>(var));
 }
 
 template <class Seq, class... Ts>
@@ -173,7 +202,9 @@ public:
   constexpr rvariant(const rvariant& other)
     requires detail::all_copy_constructible<Ts...>
       : storage_(detail::valueless), index_(other.index_) {
-    // TODO
+    detail::raw_visit(
+        index_, [this]<std::size_t I, class T>(const detail::alternative<I, T>& alt) { std::construct_at(&storage_, std::in_place_index<I>, alt.value); },
+        other);
   }
 
   constexpr rvariant(rvariant&&)
@@ -182,8 +213,16 @@ public:
 
   constexpr rvariant(rvariant&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
     requires detail::all_move_constructible<Ts...>
-      : storage_(detail::valueless) {
-    // TODO
+      : storage_(detail::valueless), index_(other.index_) {
+    try {
+      detail::raw_visit(
+          index_,
+          [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) { std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value); },
+          std::move(other));
+    } catch (...) {
+      other.index_ = variant_npos;
+      throw;
+    }
   }
 
   template <class T>
@@ -222,7 +261,7 @@ public:
   constexpr std::size_t index() const noexcept { return index_; }
 
   template <std::size_t I, class Variant>
-  friend constexpr auto&& detail::get_impl(Variant&&) noexcept;
+  friend constexpr auto&& detail::raw_get(Variant&&) noexcept;
 
 private:
   detail::variant_storage_t<std::index_sequence_for<Ts...>, Ts...> storage_;
@@ -232,25 +271,25 @@ private:
 template <std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>>& get(rvariant<Ts...>& var) {
   if (I != var.index()) throw std::bad_variant_access{};
-  return detail::get_impl<I>(var);
+  return detail::raw_get<I>(var).value;
 }
 
 template <std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&& get(rvariant<Ts...>&& var) {
   if (I != var.index()) throw std::bad_variant_access{};
-  return detail::get_impl<I>(std::move(var));
+  return detail::raw_get<I>(std::move(var)).value;
 }
 
 template <std::size_t I, class... Ts>
 constexpr const variant_alternative_t<I, rvariant<Ts...>>& get(const rvariant<Ts...>& var) {
   if (I != var.index()) throw std::bad_variant_access{};
-  return detail::get_impl<I>(var);
+  return detail::raw_get<I>(var).value;
 }
 
 template <std::size_t I, class... Ts>
 constexpr const variant_alternative_t<I, rvariant<Ts...>>&& get(const rvariant<Ts...>&& var) {
   if (I != var.index()) throw std::bad_variant_access{};
-  return detail::get_impl<I>(std::move(var));
+  return detail::raw_get<I>(std::move(var)).value;
 }
 
 }  // namespace yk
