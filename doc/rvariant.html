@@ -909,7 +909,7 @@ using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type
 <div class="ulist">
 <ul>
 <li>
-<p><span class="candidate">1)</span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code>pack_union</code> defines the member type <code>::type</code> as <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the union of <code>As...</code> and <code>Bs...</code>. The order of types shall be preserved.</p>
+<p><span class="candidate">1)</span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>is-specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code>pack_union</code> defines the member type <code>::type</code> as <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the union of <code>As...</code> and <code>Bs...</code>. The order of types shall be preserved.</p>
 </li>
 <li>
 <p><span class="candidate">2)</span> Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code>pack_union_t&lt;TT, A, B&gt;</code>. <code>compact_alternative</code> defines the member type <code>::type</code> as the first type in <code>Ts...</code> if <code>sizeof...(Ts) == 1</code>; otherwise, it is defined as <code>TT&lt;Ts...&gt;</code>.</p>
@@ -978,13 +978,13 @@ constexpr bool <em>subset-like</em> = <em>subset_like</em>::value; // exposition
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, template&lt;class...&gt; class TT&gt;
-struct <em>ttp-specialization-of</em>; // exposition-only<span class="candidate">// 1</span>
+struct <em>is-ttp-specialization-of</em>; // exposition-only<span class="candidate">// 1</span>
 
 template&lt;class T, template&lt;auto...&gt; class TT&gt;
-struct <em>nttp-specialization-of</em>; // exposition-only<span class="candidate">// 2</span>
+struct <em>is-nttp-specialization-of</em>; // exposition-only<span class="candidate">// 2</span>
 
 template&lt;class T, <em>any-ttp</em>&gt;
-struct <em>specialization-of</em>; // exposition-only<span class="candidate">// 3</span></code></pre>
+struct <em>is-specialization-of</em>; // exposition-only<span class="candidate">// 3</span></code></pre>
 </div>
 </div>
 <div class="openblock candidates">
@@ -995,7 +995,7 @@ struct <em>specialization-of</em>; // exposition-only<span class="candidate">// 
 <p><span class="candidate">1-2)</span> Inherits <code>std::true_type</code> if and only if <code>T</code> is a specialization of <code>TT</code>; otherwise, <code>std::false_type</code>.</p>
 </li>
 <li>
-<p><span class="candidate">3)</span> If <code><em>any-ttp</em></code> is a template template parameter that consists of NTTP, equivalent to <code><em>nttp-specialization-of</em></code>; otherwise, equivalent to <code><em>ttp-specialization-of</em></code>.</p>
+<p><span class="candidate">3)</span> If <code><em>any-ttp</em></code> is a template template parameter that consists of NTTP, equivalent to <code><em>is-nttp-specialization-of</em></code>; otherwise, equivalent to <code><em>is-ttp-specialization-of</em></code>.</p>
 </li>
 </ul>
 </div>
@@ -1008,7 +1008,7 @@ struct <em>specialization-of</em>; // exposition-only<span class="candidate">// 
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<code><em>specialization-of</em></code> is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound <code>requires</code> expression.
+<code><em>is-specialization-of</em></code> is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound <code>requires</code> expression.
 </td>
 </tr>
 </table>

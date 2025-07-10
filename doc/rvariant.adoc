@@ -600,7 +600,7 @@ using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 [.candidates]
 --
-* [.candidate]#1)# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `pack_union` defines the member type `::type` as `TT<Ts\...>`, where `Ts\...` is the union of `As\...` and `Bs\...`. The order of types shall be preserved.
+* [.candidate]#1)# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_is-specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `pack_union` defines the member type `::type` as `TT<Ts\...>`, where `Ts\...` is the union of `As\...` and `Bs\...`. The order of types shall be preserved.
 
 * [.candidate]#2)# Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `pack_union_t<TT, A, B>`. `compact_alternative` defines the member type `::type` as the first type in `Ts\...` if `sizeof\...(Ts) == 1`; otherwise, it is defined as `TT<Ts\...>`.
 --
@@ -647,23 +647,23 @@ constexpr bool pass:quotes[_subset-like_] = pass:quotes[_subset_like_]::value; /
 [,cpp,subs="+macros"]
 ----
 template<class T, template<class...> class TT>
-struct pass:quotes[_ttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 1#]
+struct pass:quotes[_is-ttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 1#]
 
 template<class T, template<auto...> class TT>
-struct pass:quotes[_nttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 2#]
+struct pass:quotes[_is-nttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 2#]
 
 template<class T, pass:quotes[_any-ttp_]>
-struct pass:quotes[_specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 3#]
+struct pass:quotes[_is-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 3#]
 ----
 
 [.candidates]
 --
 * [.candidate]#1-2)# Inherits `std::true_type` if and only if `T` is a specialization of `TT`; otherwise, `std::false_type`.
 
-* [.candidate]#3)# If `_any-ttp_` is a template template parameter that consists of NTTP, equivalent to `_nttp-specialization-of_`; otherwise, equivalent to `_ttp-specialization-of_`.
+* [.candidate]#3)# If `_any-ttp_` is a template template parameter that consists of NTTP, equivalent to `_is-nttp-specialization-of_`; otherwise, equivalent to `_is-ttp-specialization-of_`.
 --
 
-NOTE: `_specialization-of_` is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound `requires` expression.
+NOTE: `_is-specialization-of_` is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound `requires` expression.
 
 
 = Additional information
