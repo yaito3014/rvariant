@@ -264,7 +264,7 @@ template<class T, class... Ts>
 // TODO: I/O
 // ...
 
-https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`] version instead */]
+https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`] versions instead */]
     // variant_npos
     // monostate and monostate-related functionalities
     // bad_variant_access
