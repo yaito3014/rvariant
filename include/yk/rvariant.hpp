@@ -180,29 +180,32 @@ struct variant_storage<std::index_sequence<Is...>, Ts...> {
 template<class Seq, class... Ts>
 using variant_storage_t = typename variant_storage<Seq, Ts...>::type;
 
+template<class...>
+struct pack_union_helper {};
+
 template<template<class...> class TT, class T, class... Us>
 struct pack_union_impl;
 
 template<template<class...> class TT, class... Ts>
-struct pack_union_impl<TT, TT<Ts...>> {
+struct pack_union_impl<TT, pack_union_helper<Ts...>> {
     using type = TT<Ts...>;
 };
 
 template<template<class...> class TT, class... Ts, class U, class... Us>
-struct pack_union_impl<TT, TT<Ts...>, U, Us...>
-    : std::conditional_t<is_in_v<U, Ts...>, pack_union_impl<TT, TT<Ts...>, Us...>, pack_union_impl<TT, TT<Ts..., U>, Us...>> {};
+struct pack_union_impl<TT, pack_union_helper<Ts...>, U, Us...>
+    : std::conditional_t<is_in_v<U, Ts...>, pack_union_impl<TT, pack_union_helper<Ts...>, Us...>, pack_union_impl<TT, pack_union_helper<Ts..., U>, Us...>> {};
 
 template<template<class...> class TT, class A, class B>
-struct pack_union : pack_union_impl<TT, TT<>, A, B> {};
+struct pack_union : pack_union_impl<TT, pack_union_helper<>, A, B> {};
 
 template<template<class...> class TT, class... As, class B>
-struct pack_union<TT, TT<As...>, B> : pack_union_impl<TT, TT<>, As..., B> {};
+struct pack_union<TT, TT<As...>, B> : pack_union_impl<TT, pack_union_helper<>, As..., B> {};
 
 template<template<class...> class TT, class A, class... Bs>
-struct pack_union<TT, A, TT<Bs...>> : pack_union_impl<TT, TT<>, A, Bs...> {};
+struct pack_union<TT, A, TT<Bs...>> : pack_union_impl<TT, pack_union_helper<>, A, Bs...> {};
 
 template<template<class...> class TT, class... As, class... Bs>
-struct pack_union<TT, TT<As...>, TT<Bs...>> : pack_union_impl<TT, TT<>, As..., Bs...> {};
+struct pack_union<TT, TT<As...>, TT<Bs...>> : pack_union_impl<TT, pack_union_helper<>, As..., Bs...> {};
 
 template<class T>
 struct unwrap_one_pack {
