@@ -195,18 +195,6 @@ template<template<class...> class TT, class... Ts, class U, class... Us>
 struct pack_union_impl<TT, pack_union_helper<Ts...>, U, Us...>
     : std::conditional_t<is_in_v<U, Ts...>, pack_union_impl<TT, pack_union_helper<Ts...>, Us...>, pack_union_impl<TT, pack_union_helper<Ts..., U>, Us...>> {};
 
-template<template<class...> class TT, class A, class B>
-struct pack_union : pack_union_impl<TT, pack_union_helper<>, A, B> {};
-
-template<template<class...> class TT, class... As, class B>
-struct pack_union<TT, TT<As...>, B> : pack_union_impl<TT, pack_union_helper<>, As..., B> {};
-
-template<template<class...> class TT, class A, class... Bs>
-struct pack_union<TT, A, TT<Bs...>> : pack_union_impl<TT, pack_union_helper<>, A, Bs...> {};
-
-template<template<class...> class TT, class... As, class... Bs>
-struct pack_union<TT, TT<As...>, TT<Bs...>> : pack_union_impl<TT, pack_union_helper<>, As..., Bs...> {};
-
 template<class T>
 struct unwrap_one_pack {
     using type = T;
@@ -220,7 +208,19 @@ struct unwrap_one_pack<TT<T>> {
 }  // namespace detail
 
 template<template<class...> class TT, class A, class B>
-struct pack_union : detail::pack_union<TT, A, B> {};
+struct pack_union;
+
+template<template<class...> class TT, class A, class B>
+struct pack_union : detail::pack_union_impl<TT, detail::pack_union_helper<>, A, B> {};
+
+template<template<class...> class TT, class... As, class B>
+struct pack_union<TT, TT<As...>, B> : detail::pack_union_impl<TT, detail::pack_union_helper<>, As..., B> {};
+
+template<template<class...> class TT, class A, class... Bs>
+struct pack_union<TT, A, TT<Bs...>> : detail::pack_union_impl<TT, detail::pack_union_helper<>, A, Bs...> {};
+
+template<template<class...> class TT, class... As, class... Bs>
+struct pack_union<TT, TT<As...>, TT<Bs...>> : detail::pack_union_impl<TT, detail::pack_union_helper<>, As..., Bs...> {};
 
 template<template<class...> class TT, class A, class B>
 using pack_union_t = typename pack_union<TT, A, B>::type;
