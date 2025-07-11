@@ -227,14 +227,30 @@ public:
     }
 
     template<class... Us>
-        requires detail::subset_like_v<rvariant, rvariant<Us...>>
-    constexpr rvariant(rvariant<Us...> const& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index())) {
+        requires detail::all_copy_constructible<Us...> && detail::subset_like_v<rvariant, rvariant<Us...>>
+    constexpr rvariant(rvariant<Us...> const& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
         detail::raw_visit(
-            other.index(),
+            other.index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
                 std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, alt.value);
             },
             other);
+    }
+
+    template<class... Us>
+        requires detail::all_move_constructible<Us...> && detail::subset_like_v<rvariant, rvariant<Us...>>
+    constexpr rvariant(rvariant<Us...>&& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
+        try {
+            detail::raw_visit(
+                other.index_,
+                [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
+                    std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
+                },
+                std::move(other));
+        } catch (...) {
+            other.index_ = variant_npos;
+            throw;
+        }
     }
 
     template<class T>
@@ -271,6 +287,9 @@ public:
 
     constexpr bool valueless_by_exception() const noexcept { return index_ == variant_npos; }
     constexpr std::size_t index() const noexcept { return index_; }
+
+    template<class... Us>
+    friend class rvariant;
 
     template<std::size_t I, class Variant>
     friend constexpr auto&& detail::raw_get(Variant&&) noexcept;

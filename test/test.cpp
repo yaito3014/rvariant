@@ -251,6 +251,23 @@ TEST_CASE("flexible copy construction") {
     }
 }
 
+TEST_CASE("flexible move construction") {
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int, float> b = std::move(a);
+        REQUIRE(b.index() == 0);
+        yk::rvariant<int, float, double> c = std::move(b);
+        REQUIRE(c.index() == 0);
+    }
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<float, int> b = std::move(a);
+        REQUIRE(b.index() == 1);
+        yk::rvariant<double, float, int> c = std::move(b);
+        REQUIRE(c.index() == 2);
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);
