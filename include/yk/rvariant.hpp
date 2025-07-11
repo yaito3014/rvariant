@@ -107,7 +107,7 @@ union variadic_union<TriviallyDestructible, T, Ts...> {
     ~variadic_union() = default;
 
     constexpr ~variadic_union()
-        requires(!TriviallyDestructible)
+        requires (!TriviallyDestructible)
     {}
 
     T first;
@@ -117,6 +117,7 @@ union variadic_union<TriviallyDestructible, T, Ts...> {
 template<std::size_t I, class T>
 struct alternative {
     static constexpr std::size_t index = I;
+    using type = T;
     T value;
 };
 
@@ -286,7 +287,7 @@ public:
     = default;
 
     constexpr rvariant(rvariant const&)
-        requires(!detail::all_copy_constructible<Ts...>)
+        requires (!detail::all_copy_constructible<Ts...>)
     = delete;
 
     constexpr rvariant(rvariant const& other)
@@ -322,7 +323,7 @@ public:
     }
 
     template<class... Us>
-        requires(!(detail::all_copy_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
+        requires (!(detail::all_copy_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
     constexpr rvariant(rvariant<Us...> const&) = delete;
 
     template<class... Us>
@@ -339,7 +340,7 @@ public:
     }
 
     template<class... Us>
-        requires(!(detail::all_move_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
+        requires (!(detail::all_move_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
     constexpr rvariant(rvariant<Us...>&&) = delete;
 
     template<class... Us>
@@ -380,15 +381,29 @@ public:
         : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, il, std::forward<Args>(args)...) {}
 
     template<std::size_t I, class... Args>
-        requires(I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
+        requires (I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
     constexpr explicit rvariant(std::in_place_index_t<I>, Args&&... args) : storage_(std::in_place_index<I>, std::forward<Args>(args)...), index_(I) {}
 
     template<std::size_t I, class U, class... Args>
-        requires(I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
+        requires (I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
         : storage_(std::in_place_index<I>, il, std::forward<Args>(args)...), index_(I) {}
 
     constexpr ~rvariant() = default;
+
+    constexpr ~rvariant()
+        requires (!std::conjunction_v<std::is_trivially_destructible<Ts>...>)
+    {
+        detail::raw_visit(
+            index_,
+            []<class Alt>(Alt&& alt) {
+                if constexpr (std::remove_cvref_t<Alt>::index != variant_npos) {
+                    using T = typename std::remove_cvref_t<Alt>::type;
+                    alt.value.~T();
+                }
+            },
+            *this);
+    }
 
     constexpr bool valueless_by_exception() const noexcept { return index_ == variant_npos; }
     constexpr std::size_t index() const noexcept { return index_; }
