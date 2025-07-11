@@ -312,7 +312,7 @@ public:
     template<std::size_t I, class U, class... Args>
       constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U>, Args&&...);
 
-    /* extensions */
+    // xref:#rvariant.constructors[flexible constructors]
     template<class... Us>
       constexpr rvariant(rvariant<Us...> const& w);
     template<class... Us>
@@ -327,7 +327,7 @@ public:
 
     template<class T> constexpr rvariant& operator=(T&&) noexcept(/* see below */);
 
-    /* extensions */
+    // xref:#rvariant.assign[flexible assignment]
     template<class... Us>
       constexpr rvariant& operator=(rvariant<Us...> const& w);
     template<class... Us>
@@ -397,12 +397,12 @@ constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U>, 
 
 /* extensions */
 
+// Flexible copy constructor
 template<class... Us>
-    requires (!std::same_as<rvariant<Us...>, rvariant<Ts...>>)
 constexpr rvariant(rvariant<Us...> const& w);pass:quotes[[.candidate\]#// 9#]
 
+// Flexible move constructor
 template<class... Us>
-    requires (!std::same_as<rvariant<Us...>, rvariant<Ts...>>)
 constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);pass:quotes[[.candidate\]#// 10#]
 ----
 
@@ -416,14 +416,14 @@ include::_std-variant-proxy.adoc[]
 +
 *_Remarks:_*
 
-** This constructor is defined as deleted unless `xref:#rvariant.xo.flexibility[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+** This constructor is defined as deleted unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Ts\...>, rvariant<Us\...>>` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 
 * [.candidate]#10)# Flexible move constructor. If `w` does not hold a value, initializes the `rvariant` to not hold a value. Otherwise, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(std::move(w))`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
 +
 *_Remarks:_*
 
-** This constructor is defined as deleted unless `xref:#rvariant.xo.flexibility[subset-like]<rvariant<Ts\...>, rvariant<Us\...>>`.
+** This constructor is defined as deleted unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Ts\...>, rvariant<Us\...>>`.
 ** The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 --
@@ -470,12 +470,12 @@ template<class T> constexpr rvariant& operator=(T&&) noexcept(/* see below */);p
 
 /* extensions */
 
+// Flexible copy assignment
 template<class... Us>
-    requires (!std::same_as<rvariant<Us...>, rvariant<Ts...>>)
 constexpr rvariant& operator=(rvariant<Us...> const& w);pass:quotes[[.candidate\]#// 4#]
 
+// Flexible move assignment
 template<class... Us>
-    requires (!std::same_as<rvariant<Us...>, rvariant<Ts...>>)
 constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);pass:quotes[[.candidate\]#// 5#]
 ----
 
@@ -588,6 +588,36 @@ struct hash<::temp_ns::rvariant<Ts...>>;pass:quotes[[.candidate\]#// 2#]
 :spec-url: https://eel.is/c++draft/variant.hash
 * [.candidate]#2)#
 include::_std-variant-proxy.adoc[]
+--
+
+
+[[rvariant.helper]]
+== `rvariant` helper utilities
+
+[[rvariant.helper.flexibility]]
+=== Flexibility traits
+
+[,cpp,subs="+macros"]
+----
+template<class T, class U>
+struct is_subset_of : std::false_type {};
+
+template<
+  template<class...> class TT, class... Ts,
+  template<class...> class UU, class... Us
+>
+struct is_subset_of<TT<Ts...>, UU<Us...>> : std::true_type {};pass:quotes[[.candidate\]#// 1#]
+
+template<class T, class U>
+constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
+
+template<class T, class U>
+concept subset_of = is_subset_of_v<T, U>;
+----
+
+[.candidates]
+--
+* [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
 --
 
 
@@ -716,30 +746,6 @@ TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 [[rvariant.xo]]
 == Exposition-only utilities
 This section demonstrates internal features used in the implementation.
-
-
-[[rvariant.xo.flexibility]]
-=== Flexibility traits
-
-[,cpp,subs="+macros"]
-----
-template<class T, class U>
-struct pass:quotes[_subset_like_] : std::false_type {}; // exposition-only
-
-template<
-  template<class...> class TT, class... Ts,
-  template<class...> class UU, class... Us
->
-struct pass:quotes[_subset_like_]<TT<Ts...>, UU<Us...>> : std::true_type {}; // exposition-onlypass:quotes[[.candidate\]#// 1#]
-
-template<class T, class U>
-concept pass:quotes[_subset-like_] = pass:quotes[_subset_like_]::value; // exposition-only
-----
-
-[.candidates]
---
-* [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
---
 
 
 [[rvariant.xo.pack]]

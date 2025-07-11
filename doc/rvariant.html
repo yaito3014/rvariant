@@ -178,6 +178,11 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.hash">Hash support</a></li>
 </ul>
 </li>
+<li><a href="#rvariant.helper"><code>rvariant</code> helper utilities</a>
+<ul class="sectlevel2">
+<li><a href="#rvariant.helper.flexibility">Flexibility traits</a></li>
+</ul>
+</li>
 <li><a href="#rvariant.recursive">Class template <code>recursive_wrapper</code></a>
 <ul class="sectlevel2">
 <li><a href="#rvariant.recursive.general">General</a></li>
@@ -188,7 +193,6 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.io">I/O</a></li>
 <li><a href="#rvariant.xo">Exposition-only utilities</a>
 <ul class="sectlevel2">
-<li><a href="#rvariant.xo.flexibility">Flexibility traits</a></li>
 <li><a href="#rvariant.xo.pack">Pack utilities</a></li>
 <li><a href="#rvariant.xo.core">Core type traits</a></li>
 </ul>
@@ -547,7 +551,7 @@ public:
     template&lt;std::size_t I, class U, class... Args&gt;
       constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);
 
-    /* extensions */
+    // <a href="#rvariant.constructors">flexible constructors</a>
     template&lt;class... Us&gt;
       constexpr rvariant(rvariant&lt;Us...&gt; const&amp; w);
     template&lt;class... Us&gt;
@@ -562,7 +566,7 @@ public:
 
     template&lt;class T&gt; constexpr rvariant&amp; operator=(T&amp;&amp;) noexcept(/* see below */);
 
-    /* extensions */
+    // <a href="#rvariant.assign">flexible assignment</a>
     template&lt;class... Us&gt;
       constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt; const&amp; w);
     template&lt;class... Us&gt;
@@ -646,12 +650,12 @@ constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_lis
 
 /* extensions */
 
+// Flexible copy constructor
 template&lt;class... Us&gt;
-    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
 constexpr rvariant(rvariant&lt;Us...&gt; const&amp; w);<span class="candidate">// 9</span>
 
+// Flexible move constructor
 template&lt;class... Us&gt;
-    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
 constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);<span class="candidate">// 10</span></code></pre>
 </div>
 </div>
@@ -671,7 +675,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist">
 <ul>
 <li>
-<p>This constructor is defined as deleted unless <code><a href="#rvariant.xo.flexibility">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code> and <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+<p>This constructor is defined as deleted unless <code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code> and <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
 </li>
 <li>
 <p>In case of duplicate alternative types, the corresponding index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts...</code>.</p>
@@ -687,7 +691,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist">
 <ul>
 <li>
-<p>This constructor is defined as deleted unless <code><a href="#rvariant.xo.flexibility">subset-like</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code>.</p>
+<p>This constructor is defined as deleted unless <code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt;</code>.</p>
 </li>
 <li>
 <p>The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
@@ -759,12 +763,12 @@ template&lt;class T&gt; constexpr rvariant&amp; operator=(T&amp;&amp;) noexcept(
 
 /* extensions */
 
+// Flexible copy assignment
 template&lt;class... Us&gt;
-    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
 constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt; const&amp; w);<span class="candidate">// 4</span>
 
+// Flexible move assignment
 template&lt;class... Us&gt;
-    requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&lt;Ts...&gt;&gt;)
 constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(/* see below */);<span class="candidate">// 5</span></code></pre>
 </div>
 </div>
@@ -887,6 +891,43 @@ struct hash&lt;::temp_ns::rvariant&lt;Ts...&gt;&gt;;<span class="candidate">// 2
 <li>
 <p><span class="candidate">2)</span>
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.hash">[spec]</a></sup></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="rvariant.helper"><a class="anchor" href="#rvariant.helper"></a><code>rvariant</code> helper utilities</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="rvariant.helper.flexibility"><a class="anchor" href="#rvariant.helper.flexibility"></a>Flexibility traits</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class U&gt;
+struct is_subset_of : std::false_type {};
+
+template&lt;
+  template&lt;class...&gt; class TT, class... Ts,
+  template&lt;class...&gt; class UU, class... Us
+&gt;
+struct is_subset_of&lt;TT&lt;Ts...&gt;, UU&lt;Us...&gt;&gt; : std::true_type {};<span class="candidate">// 1</span>
+
+template&lt;class T, class U&gt;
+constexpr bool is_subset_of_v = is_subset_of&lt;T, U&gt;::value;
+
+template&lt;class T, class U&gt;
+concept subset_of = is_subset_of_v&lt;T, U&gt;;</code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us...</code>, there exists at least one type <code>T</code> in <code>Ts...</code> such that <code>U</code> is the same type as <code>T</code>.</p>
 </li>
 </ul>
 </div>
@@ -1081,35 +1122,6 @@ A variant with a single alternative may introduce unnecessary overhead when used
 <div class="sectionbody">
 <div class="paragraph">
 <p>This section demonstrates internal features used in the implementation.</p>
-</div>
-<div class="sect2">
-<h3 id="rvariant.xo.flexibility"><a class="anchor" href="#rvariant.xo.flexibility"></a>Flexibility traits</h3>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class U&gt;
-struct <em>subset_like</em> : std::false_type {}; // exposition-only
-
-template&lt;
-  template&lt;class...&gt; class TT, class... Ts,
-  template&lt;class...&gt; class UU, class... Us
-&gt;
-struct <em>subset_like</em>&lt;TT&lt;Ts...&gt;, UU&lt;Us...&gt;&gt; : std::true_type {}; // exposition-only<span class="candidate">// 1</span>
-
-template&lt;class T, class U&gt;
-concept <em>subset-like</em> = <em>subset_like</em>::value; // exposition-only</code></pre>
-</div>
-</div>
-<div class="openblock candidates">
-<div class="content">
-<div class="ulist">
-<ul>
-<li>
-<p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us...</code>, there exists at least one type <code>T</code> in <code>Ts...</code> such that <code>U</code> is the same type as <code>T</code>.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
 </div>
 <div class="sect2">
 <h3 id="rvariant.xo.pack"><a class="anchor" href="#rvariant.xo.pack"></a>Pack utilities</h3>
