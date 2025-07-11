@@ -153,20 +153,27 @@ constexpr raw_visit_return_type<Visitor, Variant> raw_visit_dispatch(Visitor&& v
     return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Variant>(var)));
 }
 
+template<class Visitor, class Variant>
+constexpr raw_visit_return_type<Visitor, Variant> raw_visit_valueless(Visitor&& vis, Variant&&)  //
+    noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, std::monostate>>)    //
+{
+    return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, std::monostate>{});
+}
+
 template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
 struct raw_visit_dispatch_table;
 
 template<class Visitor, class Variant, std::size_t... Is>
 struct raw_visit_dispatch_table<Visitor, Variant, std::index_sequence<Is...>> {
     using function_type = raw_visit_return_type<Visitor, Variant> (*)(Visitor&&, Variant&&);
-    static constexpr function_type value[] = {&raw_visit_dispatch<Is, Visitor, Variant>...};
+    static constexpr function_type value[] = {&raw_visit_valueless<Visitor, Variant>, &raw_visit_dispatch<Is, Visitor, Variant>...};
 };
 
 template<class Visitor, class Variant>
 constexpr raw_visit_return_type<Visitor, Variant> raw_visit(std::size_t index, Visitor&& vis,
                                                             Variant&& var) noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<0, Variant>>) {
     constexpr auto const& table = raw_visit_dispatch_table<Visitor, Variant>::value;
-    return std::invoke(table[index], std::forward<Visitor>(vis), std::forward<Variant>(var));
+    return std::invoke(table[index + 1], std::forward<Visitor>(vis), std::forward<Variant>(var));
 }
 
 template<class Seq, class... Ts>
@@ -286,7 +293,12 @@ public:
         requires detail::all_copy_constructible<Ts...>
         : storage_(detail::valueless), index_(other.index_) {
         detail::raw_visit(
-            index_, [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) { std::construct_at(&storage_, std::in_place_index<I>, alt.value); },
+            index_,
+            [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
+                if constexpr (I != variant_npos) {
+                    std::construct_at(&storage_, std::in_place_index<I>, alt.value);
+                }
+            },
             other);
     }
 
@@ -300,7 +312,11 @@ public:
         variant_npos_setter guard(this);
         detail::raw_visit(
             index_,
-            [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) { std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value); },
+            [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
+                if constexpr (I != variant_npos) {
+                    std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value);
+                }
+            },
             std::move(other));
         guard.mark_succeeded();
     }
@@ -315,7 +331,9 @@ public:
         detail::raw_visit(
             other.index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
-                std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, alt.value);
+                if constexpr (I != variant_npos) {
+                    std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, alt.value);
+                }
             },
             other);
     }
@@ -332,7 +350,9 @@ public:
         detail::raw_visit(
             other.index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
-                std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
+                if constexpr (I != variant_npos) {
+                    std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
+                }
             },
             std::move(other));
         guard.mark_succeeded();
@@ -374,13 +394,19 @@ public:
     constexpr std::size_t index() const noexcept { return index_; }
 
 private:
+    constexpr rvariant(detail::valueless_t) noexcept : storage_(detail::valueless), index_(variant_npos) {}
+
     template<class... Us>
-    static constexpr auto subset_visitor = []<class Alt>(Alt&& alt) -> rvariant<Us...> /* noexcept */ {
-        constexpr std::size_t pos = detail::convert_index<rvariant, rvariant<Us...>>(std::remove_cvref_t<Alt>::index);
-        if constexpr (pos == detail::find_index_npos) {
-            throw std::bad_variant_access{};
+    static constexpr auto subset_visitor = []<class Alt>(Alt&& alt) -> rvariant<Us...> /* noexcept is TODO */ {
+        if constexpr (std::remove_cvref_t<Alt>::index == variant_npos) {
+            return rvariant<Us...>(detail::valueless);
         } else {
-            return rvariant<Us...>(std::in_place_index<pos>, std::forward<Alt>(alt).value);
+            constexpr std::size_t pos = detail::convert_index<rvariant, rvariant<Us...>>(std::remove_cvref_t<Alt>::index);
+            if constexpr (pos == detail::find_index_npos) {
+                throw std::bad_variant_access{};
+            } else {
+                return rvariant<Us...>(std::in_place_index<pos>, std::forward<Alt>(alt).value);
+            }
         }
     };
 
