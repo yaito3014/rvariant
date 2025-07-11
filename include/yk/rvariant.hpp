@@ -62,8 +62,9 @@ concept all_trivially_move_constructible = all_move_constructible<Ts...> && std:
 
 template<std::size_t I, class Dest, class Source>
 struct fun_impl {
+    using dest_array = Dest[];
     std::integral_constant<std::size_t, I> operator()(Dest arg)
-        requires requires(Source source) { (Dest[]){std::forward<Source>(source)}; };
+        requires requires(Source source) { dest_array{std::forward<Source>(source)}; };
 };
 
 template<class Source, class Variant, class Seq = std::make_index_sequence<variant_size_v<Variant>>>
