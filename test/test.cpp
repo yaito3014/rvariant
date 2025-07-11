@@ -288,6 +288,20 @@ TEST_CASE("flexible move construction") {
     }
 }
 
+TEST_CASE("subset") {
+    {
+        yk::rvariant<int, float> a = 42;
+        yk::rvariant<int> b = a.subset<int>();
+        yk::rvariant<int> c = std::as_const(a).subset<int>();
+        yk::rvariant<int> d = std::move(std::as_const(a)).subset<int>();
+        yk::rvariant<int> e = std::move(a).subset<int>();
+    }
+    {
+        yk::rvariant<int, float> a = 42;
+        REQUIRE_THROWS(a.subset<float>());
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);

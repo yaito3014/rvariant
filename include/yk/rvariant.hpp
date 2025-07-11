@@ -370,6 +370,42 @@ public:
     constexpr bool valueless_by_exception() const noexcept { return index_ == variant_npos; }
     constexpr std::size_t index() const noexcept { return index_; }
 
+private:
+    template<class... Us>
+    static constexpr auto subset_visitor = []<class Alt>(Alt&& alt) -> rvariant<Us...> {
+        constexpr std::size_t pos = detail::convert_index<rvariant, rvariant<Us...>>(std::remove_cvref_t<Alt>::index);
+        if constexpr (pos == detail::find_index_npos) {
+            throw std::bad_variant_access{};
+        } else {
+            return rvariant<Us...>(std::in_place_index<pos>, std::forward<Alt>(alt).value);
+        }
+    };
+
+public:
+    template<class... Us>
+        requires subset_of<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant<Us...> subset() const& {
+        return detail::raw_visit(index_, subset_visitor<Us...>, *this);
+    }
+
+    template<class... Us>
+        requires subset_of<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant<Us...> subset() & {
+        return detail::raw_visit(index_, subset_visitor<Us...>, *this);
+    }
+
+    template<class... Us>
+        requires subset_of<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant<Us...> subset() && {
+        return detail::raw_visit(index_, subset_visitor<Us...>, std::move(*this));
+    }
+
+    template<class... Us>
+        requires subset_of<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant<Us...> subset() const&& {
+        return detail::raw_visit(index_, subset_visitor<Us...>, std::move(*this));
+    }
+
     template<class... Us>
     friend class rvariant;
 
