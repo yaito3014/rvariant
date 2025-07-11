@@ -295,73 +295,73 @@ template<class... Ts>
 class rvariant
 {
 public:
-    // xref:#rvariant.constructors[constructors]
-    constexpr rvariant::rvariant() noexcept(/* see below */);
-    constexpr rvariant::rvariant(rvariant const&);
-    constexpr rvariant::rvariant(rvariant&&) noexcept(/* see below */);
+  // xref:#rvariant.constructors[constructors]
+  constexpr rvariant::rvariant() noexcept(/* see below */);
+  constexpr rvariant::rvariant(rvariant const&);
+  constexpr rvariant::rvariant(rvariant&&) noexcept(/* see below */);
 
-    template<class T>
-      constexpr rvariant(T&&) noexcept(/* see below */);
+  template<class T>
+    constexpr rvariant(T&&) noexcept(/* see below */);
 
-    template<class T, class... Args>
-      constexpr explicit rvariant(std::in_place_type_t<T>, Args&&...);
-    template<class T, class U, class... Args>
-      constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U>, Args&&...);
-    template<std::size_t I, class... Args>
-      constexpr explicit rvariant(std::in_place_index_t<I>, Args&&...);
-    template<std::size_t I, class U, class... Args>
-      constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U>, Args&&...);
+  template<class T, class... Args>
+    constexpr explicit rvariant(std::in_place_type_t<T>, Args&&...);
+  template<class T, class U, class... Args>
+    constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U>, Args&&...);
+  template<std::size_t I, class... Args>
+    constexpr explicit rvariant(std::in_place_index_t<I>, Args&&...);
+  template<std::size_t I, class U, class... Args>
+    constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U>, Args&&...);
 
-    // xref:#rvariant.constructors[flexible constructors]
-    template<class... Us>
-      constexpr rvariant(rvariant<Us...> const& w);
-    template<class... Us>
-      constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);
+  // xref:#rvariant.constructors[flexible constructors]
+  template<class... Us>
+    constexpr rvariant(rvariant<Us...> const& w);
+  template<class... Us>
+    constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);
 
-    // xref:#rvariant.destructor[destructor]
-    constexpr ~rvariant();
+  // xref:#rvariant.destructor[destructor]
+  constexpr ~rvariant();
 
-    // xref:#rvariant.assign[assignment]
-    constexpr rvariant& operator=(rvariant const&);
-    constexpr rvariant& operator=(rvariant&&) noexcept(/* see below */);
+  // xref:#rvariant.assign[assignment]
+  constexpr rvariant& operator=(rvariant const&);
+  constexpr rvariant& operator=(rvariant&&) noexcept(/* see below */);
 
-    template<class T> constexpr rvariant& operator=(T&&) noexcept(/* see below */);
+  template<class T> constexpr rvariant& operator=(T&&) noexcept(/* see below */);
 
-    // xref:#rvariant.assign[flexible assignment]
-    template<class... Us>
-      constexpr rvariant& operator=(rvariant<Us...> const& w);
-    template<class... Us>
-      constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);
+  // xref:#rvariant.assign[flexible assignment]
+  template<class... Us>
+    constexpr rvariant& operator=(rvariant<Us...> const& w);
+  template<class... Us>
+    constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);
 
-    // xref:#rvariant.mod[modifiers]
-    template<class T, class... Args>
-      constexpr T& emplace(Args&&...);
-    template<class T, class U, class... Args>
-      constexpr T& emplace(std::initializer_list<U>, Args&&...);
-    template<std::size_t I, class... Args>
-      constexpr variant_alternative_t<I, rvariant<Types...>>& emplace(Args&&...);
-    template<std::size_t I, class U, class... Args>
-      constexpr variant_alternative_t<I, rvariant<Types...>>&
-        emplace(std::initializer_list<U>, Args&&...);
+  // xref:#rvariant.mod[modifiers]
+  template<class T, class... Args>
+    constexpr T& emplace(Args&&...);
+  template<class T, class U, class... Args>
+    constexpr T& emplace(std::initializer_list<U>, Args&&...);
+  template<std::size_t I, class... Args>
+    constexpr variant_alternative_t<I, rvariant<Types...>>& emplace(Args&&...);
+  template<std::size_t I, class U, class... Args>
+    constexpr variant_alternative_t<I, rvariant<Types...>>&
+      emplace(std::initializer_list<U>, Args&&...);
 
-    // xref:#rvariant.status[value status]
-    constexpr bool valueless_by_exception() const noexcept;
-    constexpr std::size_t index() const noexcept;
+  // xref:#rvariant.status[value status]
+  constexpr bool valueless_by_exception() const noexcept;
+  constexpr std::size_t index() const noexcept;
 
-    // xref:#rvariant.subset[subset]
-    template<class... Us>
-      constexpr rvariant<Us...> subset() const& noexcept(/* see below */);
-    template<class... Us>
-      constexpr rvariant<Us...> subset() && noexcept(/* see below */);
+  // xref:#rvariant.subset[subset]
+  template<class... Us>
+    constexpr rvariant<Us...> subset() const& noexcept(/* see below */);
+  template<class... Us>
+    constexpr rvariant<Us...> subset() && noexcept(/* see below */);
 
-    // xref:#rvariant.swap[swap]
-    constexpr void swap(rvariant&) noexcept(/* see below */);
+  // xref:#rvariant.swap[swap]
+  constexpr void swap(rvariant&) noexcept(/* see below */);
 
-    // xref:#rvariant.visit[visitation]
-    template<class Self, class Visitor>
-      constexpr decltype(auto) visit(this Self&&, Visitor&&);
-    template<class R, class Self, class Visitor>
-      constexpr R visit(this Self&&, Visitor&&);
+  // xref:#rvariant.visit[visitation]
+  template<class Self, class Visitor>
+    constexpr decltype(auto) visit(this Self&&, Visitor&&);
+  template<class R, class Self, class Visitor>
+    constexpr R visit(this Self&&, Visitor&&);
 };
 
 } // temp_ns
@@ -509,11 +509,11 @@ constexpr T& emplace(std::initializer_list<U>, Args&&...);
 
 template<std::size_t I, class... Args>
 constexpr variant_alternative_t<I, rvariant<Types...>>&
-    emplace(Args&&...);
+  emplace(Args&&...);
 
 template<std::size_t I, class U, class... Args>
 constexpr variant_alternative_t<I, rvariant<Types...>>&
-    emplace(std::initializer_list<U>, Args&&...);
+  emplace(std::initializer_list<U>, Args&&...);
 ----
 
 :spec-url: https://eel.is/c++draft/variant.mod
