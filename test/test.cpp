@@ -173,6 +173,7 @@ TEST_CASE("copy construction") {
         yk::rvariant<S> a;
         REQUIRE_THROWS(yk::rvariant<S>(a));
     }
+    // TODO: valueless case
 }
 
 TEST_CASE("move construction") {
@@ -207,6 +208,7 @@ TEST_CASE("move construction") {
         yk::rvariant<S> a;
         REQUIRE_THROWS(yk::rvariant<S>(std::move(a)));
     }
+    // TODO: valueless case
 }
 
 TEST_CASE("construction with index") {
@@ -269,6 +271,7 @@ TEST_CASE("flexible copy construction") {
         yk::rvariant<double, float, int> c = b;
         REQUIRE(c.index() == 2);
     }
+    // TODO: valueless case
 }
 
 TEST_CASE("flexible move construction") {
@@ -286,6 +289,7 @@ TEST_CASE("flexible move construction") {
         yk::rvariant<double, float, int> c = std::move(b);
         REQUIRE(c.index() == 2);
     }
+    // TODO: valueless case
 }
 
 TEST_CASE("subset") {
@@ -307,6 +311,7 @@ TEST_CASE("subset") {
         yk::rvariant<int, float> a = 42;
         REQUIRE_THROWS(a.subset<float>());
     }
+    // TODO: valueless case
 }
 
 TEST_CASE("raw get") {
