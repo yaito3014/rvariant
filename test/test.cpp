@@ -8,7 +8,6 @@
 #include <yk/detail/find_index.hpp>
 #include <yk/detail/is_in.hpp>
 #include <yk/detail/pack_indexing.hpp>
-#include <yk/detail/subset_like.hpp>
 
 #include <yk/rvariant.hpp>
 
@@ -31,10 +30,14 @@ TEST_CASE("is in") {
 }
 
 TEST_CASE("subset like") {
-    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<int, float>>);
-    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<int, double>>);
-    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<float, double>>);
-    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float>, yk::rvariant<float, int>>);
+    STATIC_REQUIRE(yk::subset_of<yk::rvariant<int, float>, yk::rvariant<int, float, double>>);
+    STATIC_REQUIRE(yk::subset_of<yk::rvariant<int, double>, yk::rvariant<int, float, double>>);
+    STATIC_REQUIRE(yk::subset_of<yk::rvariant<float, double>, yk::rvariant<int, float, double>>);
+    STATIC_REQUIRE(yk::subset_of<yk::rvariant<int, float>, yk::rvariant<float, int>>);
+
+    STATIC_REQUIRE_FALSE(yk::subset_of<yk::rvariant<int>, yk::rvariant<double>>);
+    STATIC_REQUIRE_FALSE(yk::subset_of<yk::rvariant<int, float, double>, yk::rvariant<int>>);
+    STATIC_REQUIRE_FALSE(yk::subset_of<yk::rvariant<int, float, double>, yk::rvariant<int, float>>);
 }
 
 TEST_CASE("find index") {

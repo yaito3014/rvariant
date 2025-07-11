@@ -225,6 +225,18 @@ struct unwrap_one_pack<TT<T>> {
 
 }  // namespace detail
 
+template<class T, class U>
+struct is_subset_of : std::false_type {};
+
+template<template<class...> class L1, class... Ts, template<class...> class L2, class... Us>
+struct is_subset_of<L1<Ts...>, L2<Us...>> : std::conjunction<detail::is_in<Ts, Us...>...> {};
+
+template<class T, class U>
+inline constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
+
+template<class T, class U>
+concept subset_of = is_subset_of_v<T, U>;
+
 template<template<class...> class TT, class A, class B>
 struct compact_alternative : detail::unwrap_one_pack<detail::pack_union_t<TT, A, B>> {};
 
@@ -291,7 +303,11 @@ public:
     }
 
     template<class... Us>
-        requires detail::all_copy_constructible<Us...> && detail::subset_like_v<rvariant, rvariant<Us...>>
+        requires(!(detail::all_copy_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
+    constexpr rvariant(rvariant<Us...> const&) = delete;
+
+    template<class... Us>
+        requires detail::all_copy_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>
     constexpr rvariant(rvariant<Us...> const& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
         detail::raw_visit(
             other.index_,
@@ -302,7 +318,11 @@ public:
     }
 
     template<class... Us>
-        requires detail::all_move_constructible<Us...> && detail::subset_like_v<rvariant, rvariant<Us...>>
+        requires(!(detail::all_move_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
+    constexpr rvariant(rvariant<Us...>&&) = delete;
+
+    template<class... Us>
+        requires detail::all_move_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>
     constexpr rvariant(rvariant<Us...>&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
         : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
         variant_npos_setter guard(this);
