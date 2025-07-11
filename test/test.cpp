@@ -234,6 +234,23 @@ TEST_CASE("generic construction") {
     }
 }
 
+TEST_CASE("flexible copy construction") {
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int, float> b = a;
+        REQUIRE(b.index() == 0);
+        yk::rvariant<int, float, double> c = b;
+        REQUIRE(c.index() == 0);
+    }
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<float, int> b = a;
+        REQUIRE(b.index() == 1);
+        yk::rvariant<double, float, int> c = b;
+        REQUIRE(c.index() == 2);
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);

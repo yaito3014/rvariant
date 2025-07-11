@@ -226,10 +226,21 @@ public:
         }
     }
 
+    template<class... Us>
+        requires detail::subset_like_v<rvariant, rvariant<Us...>>
+    constexpr rvariant(rvariant<Us...> const& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index())) {
+        detail::raw_visit(
+            other.index(),
+            [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
+                std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, alt.value);
+            },
+            other);
+    }
+
     template<class T>
         requires requires {
             requires sizeof...(Ts) > 0;
-            requires !std::is_same_v<std::remove_cvref_t<T>, rvariant>;
+            requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, rvariant>;
             requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
             requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
             requires std::is_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>;
