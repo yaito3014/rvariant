@@ -237,6 +237,9 @@ inline constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
 template<class T, class U>
 concept subset_of = is_subset_of_v<T, U>;
 
+template<class T, class U>
+concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
+
 template<template<class...> class TT, class A, class B>
 struct compact_alternative : detail::unwrap_one_pack<detail::pack_union_t<TT, A, B>> {};
 
@@ -372,7 +375,7 @@ public:
 
 private:
     template<class... Us>
-    static constexpr auto subset_visitor = []<class Alt>(Alt&& alt) -> rvariant<Us...> {
+    static constexpr auto subset_visitor = []<class Alt>(Alt&& alt) -> rvariant<Us...> /* noexcept */ {
         constexpr std::size_t pos = detail::convert_index<rvariant, rvariant<Us...>>(std::remove_cvref_t<Alt>::index);
         if constexpr (pos == detail::find_index_npos) {
             throw std::bad_variant_access{};
@@ -383,26 +386,26 @@ private:
 
 public:
     template<class... Us>
-        requires subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() const& {
+        requires std::same_as<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant subset() const& noexcept(std::is_nothrow_copy_constructible_v<rvariant>) {
+        return *this;
+    }
+
+    template<class... Us>
+        requires std::same_as<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant subset() && noexcept(std::is_nothrow_move_constructible_v<rvariant>) {
+        return std::move(*this);
+    }
+
+    template<class... Us>
+        requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant<Us...> subset() const& noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_copy_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, *this);
     }
 
     template<class... Us>
-        requires subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() & {
-        return detail::raw_visit(index_, subset_visitor<Us...>, *this);
-    }
-
-    template<class... Us>
-        requires subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() && {
-        return detail::raw_visit(index_, subset_visitor<Us...>, std::move(*this));
-    }
-
-    template<class... Us>
-        requires subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() const&& {
+        requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
+    [[nodiscard]] constexpr rvariant<Us...> subset() && noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_move_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, std::move(*this));
     }
 

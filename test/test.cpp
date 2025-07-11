@@ -290,6 +290,13 @@ TEST_CASE("flexible move construction") {
 
 TEST_CASE("subset") {
     {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int> b = a.subset<int>();
+        yk::rvariant<int> c = std::as_const(a).subset<int>();
+        yk::rvariant<int> d = std::move(std::as_const(a)).subset<int>();
+        yk::rvariant<int> e = std::move(a).subset<int>();
+    }
+    {
         yk::rvariant<int, float> a = 42;
         yk::rvariant<int> b = a.subset<int>();
         yk::rvariant<int> c = std::as_const(a).subset<int>();
