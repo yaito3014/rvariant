@@ -365,6 +365,7 @@ public:
             requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, rvariant>;
             requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
             requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
+            requires requires (T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
             requires std::is_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>;
         }
     constexpr rvariant(T&& x) noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>)
