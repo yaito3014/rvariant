@@ -625,13 +625,16 @@ This section demonstrates internal features used in the implementation.
 
 [,cpp,subs="+macros"]
 ----
-template<class V, class W>
+template<class T, class U>
 struct pass:quotes[_subset_like_] : std::false_type {}; // exposition-only
 
-template<class... Ts, class... Us>
-struct pass:quotes[_subset_like_]<rvariant<Ts...>, rvariant<Us...>> : std::true_type {}; // exposition-onlypass:quotes[[.candidate\]#// 1#]
+template<
+  template<class...> class TT, class... Ts,
+  template<class...> class UU, class... Us
+>
+struct pass:quotes[_subset_like_]<TT<Ts...>, UU<Us...>> : std::true_type {}; // exposition-onlypass:quotes[[.candidate\]#// 1#]
 
-template<class V, class W>
+template<class T, class U>
 constexpr bool pass:quotes[_subset-like_] = pass:quotes[_subset_like_]::value; // exposition-only
 ----
 

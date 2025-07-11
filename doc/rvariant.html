@@ -951,13 +951,16 @@ A variant with a single alternative may introduce unnecessary overhead when used
 <h3 id="rvariant.xo.flexibility"><a class="anchor" href="#rvariant.xo.flexibility"></a>Flexibility traits</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class V, class W&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class U&gt;
 struct <em>subset_like</em> : std::false_type {}; // exposition-only
 
-template&lt;class... Ts, class... Us&gt;
-struct <em>subset_like</em>&lt;rvariant&lt;Ts...&gt;, rvariant&lt;Us...&gt;&gt; : std::true_type {}; // exposition-only<span class="candidate">// 1</span>
+template&lt;
+  template&lt;class...&gt; class TT, class... Ts,
+  template&lt;class...&gt; class UU, class... Us
+&gt;
+struct <em>subset_like</em>&lt;TT&lt;Ts...&gt;, UU&lt;Us...&gt;&gt; : std::true_type {}; // exposition-only<span class="candidate">// 1</span>
 
-template&lt;class V, class W&gt;
+template&lt;class T, class U&gt;
 constexpr bool <em>subset-like</em> = <em>subset_like</em>::value; // exposition-only</code></pre>
 </div>
 </div>
