@@ -187,7 +187,6 @@ class rvariant {
 public:
     static_assert((std::is_destructible_v<Ts> && ...));
     static_assert(sizeof...(Ts) > 0);
-    static_assert(detail::is_unique_v<Ts...>);
 
     constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
         requires std::is_default_constructible_v<detail::pack_indexing_t<0, Ts...>>

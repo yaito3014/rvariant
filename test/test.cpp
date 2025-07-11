@@ -4,8 +4,9 @@
 #include <vector>
 
 #include <yk/detail/exactly_once.hpp>
-#include <yk/detail/is_unique.hpp>
+#include <yk/detail/is_in.hpp>
 #include <yk/detail/pack_indexing.hpp>
+#include <yk/detail/subset_like.hpp>
 #include <yk/rvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -26,9 +27,11 @@ TEST_CASE("is in") {
     STATIC_REQUIRE_FALSE(yk::detail::is_in_v<int, float>);
 }
 
-TEST_CASE("is unique") {
-    STATIC_REQUIRE(yk::detail::is_unique_v<int, float>);
-    STATIC_REQUIRE_FALSE(yk::detail::is_unique_v<int, int>);
+TEST_CASE("subset like") {
+    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<int, double>>);
+    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<float, double>>);
+    STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float>, yk::rvariant<float, int>>);
 }
 
 TEST_CASE("helper class") {
