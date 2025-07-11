@@ -184,6 +184,24 @@ using variant_storage_t = typename variant_storage<Seq, Ts...>::type;
 
 template<class... Ts>
 class rvariant {
+private:
+    class variant_npos_setter {
+    public:
+        constexpr variant_npos_setter(rvariant* par) noexcept : parent_(par) {}
+
+        constexpr void mark_succeeded() noexcept { succeeded_  = true; }
+
+        constexpr ~variant_npos_setter() noexcept {
+            if (!succeeded_) parent_->index_ = variant_npos;
+        }
+
+    private:
+        rvariant* parent_;
+        bool succeeded_ = false;
+    };
+
+    friend struct variant_npos_setter;
+
 public:
     static_assert((std::is_destructible_v<Ts> && ...));
     static_assert(sizeof...(Ts) > 0);
@@ -215,15 +233,12 @@ public:
     constexpr rvariant(rvariant&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
         requires detail::all_move_constructible<Ts...>
         : storage_(detail::valueless), index_(other.index_) {
-        try {
-            detail::raw_visit(
-                index_,
-                [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) { std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value); },
-                std::move(other));
-        } catch (...) {
-            other.index_ = variant_npos;
-            throw;
-        }
+        variant_npos_setter guard(this);
+        detail::raw_visit(
+            index_,
+            [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) { std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value); },
+            std::move(other));
+        guard.mark_succeeded();
     }
 
     template<class... Us>
@@ -241,17 +256,14 @@ public:
         requires detail::all_move_constructible<Us...> && detail::subset_like_v<rvariant, rvariant<Us...>>
     constexpr rvariant(rvariant<Us...>&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
         : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
-        try {
-            detail::raw_visit(
-                other.index_,
-                [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
-                    std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
-                },
-                std::move(other));
-        } catch (...) {
-            other.index_ = variant_npos;
-            throw;
-        }
+        variant_npos_setter guard(this);
+        detail::raw_visit(
+            other.index_,
+            [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
+                std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
+            },
+            std::move(other));
+        guard.mark_succeeded();
     }
 
     template<class T>
