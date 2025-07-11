@@ -666,30 +666,28 @@ include::_std-variant-proxy.adoc[]
 
 [,cpp,subs="+macros"]
 ----
-template<class T, class U>
+template<class U, class T>
 struct is_subset_of : std::false_type {};
 
 template<
-  template<class...> class TT, class... Ts,
-  template<class...> class UU, class... Us
+  template<class...> class UU, class... Us,
+  template<class...> class TT, class... Ts
 >
-struct is_subset_of<TT<Ts...>, UU<Us...>> : std::true_type {};pass:quotes[[.candidate\]#// 1#]
+struct is_subset_of<UU<Us...>, TT<Ts...>> : std::true_type {};pass:quotes[[.candidate\]#// 1#]
+
+template<class U, class T>
+constexpr bool is_subset_of_v = is_subset_of<U, T>::value;
+
+template<class U, class T>
+concept subset_of = is_subset_of_v<U, T>;
 
 template<class T, class U>
-constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
-
-template<class T, class U>
-concept subset_of = is_subset_of_v<T, U>;
-
-template<class T, class U>
-concept equivalent_to = subset_of<T, U> && subset_of<U, T>;pass:quotes[[.candidate\]#// 2#]
+concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
 ----
 
 [.candidates]
 --
 * [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
-
-* [.candidate]#2)# `equivalent_to<T, U>` requires both `T` and `U` to TODO TODO TODO
 --
 
 

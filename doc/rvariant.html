@@ -1012,23 +1012,23 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <h3 id="rvariant.helper.flexibility"><a class="anchor" href="#rvariant.helper.flexibility"></a>Flexibility traits</h3>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class U&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class U, class T&gt;
 struct is_subset_of : std::false_type {};
 
 template&lt;
-  template&lt;class...&gt; class TT, class... Ts,
-  template&lt;class...&gt; class UU, class... Us
+  template&lt;class...&gt; class UU, class... Us,
+  template&lt;class...&gt; class TT, class... Ts
 &gt;
-struct is_subset_of&lt;TT&lt;Ts...&gt;, UU&lt;Us...&gt;&gt; : std::true_type {};<span class="candidate">// 1</span>
+struct is_subset_of&lt;UU&lt;Us...&gt;, TT&lt;Ts...&gt;&gt; : std::true_type {};<span class="candidate">// 1</span>
+
+template&lt;class U, class T&gt;
+constexpr bool is_subset_of_v = is_subset_of&lt;U, T&gt;::value;
+
+template&lt;class U, class T&gt;
+concept subset_of = is_subset_of_v&lt;U, T&gt;;
 
 template&lt;class T, class U&gt;
-constexpr bool is_subset_of_v = is_subset_of&lt;T, U&gt;::value;
-
-template&lt;class T, class U&gt;
-concept subset_of = is_subset_of_v&lt;T, U&gt;;
-
-template&lt;class T, class U&gt;
-concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;<span class="candidate">// 2</span></code></pre>
+concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;</code></pre>
 </div>
 </div>
 <div class="openblock candidates">
@@ -1037,9 +1037,6 @@ concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;<
 <ul>
 <li>
 <p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us...</code>, there exists at least one type <code>T</code> in <code>Ts...</code> such that <code>U</code> is the same type as <code>T</code>.</p>
-</li>
-<li>
-<p><span class="candidate">2)</span> <code>equivalent_to&lt;T, U&gt;</code> requires both <code>T</code> and <code>U</code> to TODO TODO TODO</p>
 </li>
 </ul>
 </div>
