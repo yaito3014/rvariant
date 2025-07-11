@@ -348,6 +348,12 @@ public:
     constexpr bool valueless_by_exception() const noexcept;
     constexpr std::size_t index() const noexcept;
 
+    // xref:#rvariant.subset[subset]
+    template<class... Us>
+      constexpr rvariant<Us...> subset() const& noexcept(/* see below */);
+    template<class... Us>
+      constexpr rvariant<Us...> subset() && noexcept(/* see below */);
+
     // xref:#rvariant.swap[swap]
     constexpr void swap(rvariant&) noexcept(/* see below */);
 
@@ -412,20 +418,19 @@ constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);pass:quotes[[.
 * [.candidate]#1-8)#
 include::_std-variant-proxy.adoc[]
 
-* [.candidate]#9)# Flexible copy constructor. If `w` does not hold a value, initializes the `rvariant` to not hold a value. Otherwise, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
+* [.candidate]#9)# Flexible copy constructor.
++
+*_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, initializes the `rvariant` to not hold a value.
 +
 *_Remarks:_*
 
-** This constructor is defined as deleted unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Ts\...>, rvariant<Us\...>>` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+** This constructor is defined as deleted unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 ** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 
-* [.candidate]#10)# Flexible move constructor. If `w` does not hold a value, initializes the `rvariant` to not hold a value. Otherwise, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(std::move(w))`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
+* [.candidate]#10)# Flexible move constructor. Equivalent to #9, except that:
 +
-*_Remarks:_*
-
-** This constructor is defined as deleted unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Ts\...>, rvariant<Us\...>>`.
+** `_GET_<j>(w)` is replaced with `_GET_<j>(std::move(w))`, and
 ** The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
-** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
 --
 
 Exceptions ::
@@ -528,6 +533,68 @@ constexpr std::size_t index() const noexcept;
 include::_std-variant-proxy.adoc[]
 
 
+[[rvariant.subset]]
+=== Subset
+
+[,cpp,subs="+macros"]
+----
+template<class... Us>
+  requires std::same_as<rvariant<Us...>, rvariant>
+constexpr rvariant subset() const& noexcept(std::is_nothrow_copy_constructible_v<rvariant>);pass:quotes[[.candidate\]#// 1#]
+
+template<class... Us>
+  requires std::same_as<rvariant<Us...>, rvariant>
+constexpr rvariant subset() && noexcept(std::is_nothrow_move_constructible_v<rvariant>);pass:quotes[[.candidate\]#// 2#]
+
+template<class... Us>
+  requires (!std::same_as<rvariant<Us...>, rvariant>)
+constexpr rvariant<Us...> subset() const& noexcept(/* see below */);pass:quotes[[.candidate\]#// 3#]
+
+template<class... Us>
+  requires (!std::same_as<rvariant<Us...>, rvariant>)
+constexpr rvariant<Us...> subset() && noexcept(/* see below */);pass:quotes[[.candidate\]#// 4#]
+----
+
+[.candidates]
+--
+* [.candidate]#1)# Returns `*this`.
+
+* [.candidate]#2)# Returns `std::move(*this)`.
+
+* [.candidate]#3)#
+*_Mandates:_* `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
++
+*_Effects:_* If `*this` holds a value, returns an object of `rvariant<Us\...>` that holds the corresponding alternative as `*this` and whose contained value is direct-initialized with `_GET_<i>(*this)`, where `i` is `this\->index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, returns an object of `rvariant<Us\...>` that does not hold a value.
++
+*_Remarks:_*
+
+** This function does not participate in overload resolution unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true`.
+
+** If `pass:quotes[_equivalent-to_]<rvariant<Us\...>, rvariant>` is `true`, the exception specification is equivalent to the logical `AND` of `std::is_nothrow_copy_constructible_v<U~_j_~>` for all _j_. Otherwise, it is equivalent to `false`.
+
+** In case of duplicate alternative types, the corresponding index on the returned `rvariant<Us\...>` object shall be determined by the first occurrence of the same type in `Us\...`.
+
+* [.candidate]#4)# Equivalent to the overload #3, except that:
++
+** `_GET_<i>(*this)` is replaced with `_GET_<i>(std::move(*this))`, and
+** `std::is_copy_constructible_v` is replaced with `std::is_move_constructible_v`, and
+** `std::is_nothrow_copy_constructible_v` is replaced with `std::is_nothrow_move_constructible_v`.
+--
+
+Exceptions ::
++
+[.candidates]
+--
+* [.candidate]#1)# Throws any exception thrown by copy-constructing any type in `Us\...`.
+
+* [.candidate]#2)# Throws any exception thrown by move-constructing any type in `Us\...`.
+
+* [.candidate]#3)# Throws https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`] if `*this` holds an alternative that is not contained in `Us\...`; otherwise, throws any exception thrown by copy-constructing any type in `Us\...`.
+
+* [.candidate]#4)# Throws https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`] if `*this` holds an alternative that is not contained in `Us\...`; otherwise, throws any exception thrown by move-constructing any type in `Us\...`.
+--
+
+
 [[rvariant.swap]]
 === Swap
 
@@ -613,11 +680,16 @@ constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
 
 template<class T, class U>
 concept subset_of = is_subset_of_v<T, U>;
+
+template<class T, class U>
+concept equivalent_to = subset_of<T, U> && subset_of<U, T>;pass:quotes[[.candidate\]#// 2#]
 ----
 
 [.candidates]
 --
 * [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
+
+* [.candidate]#2)# `equivalent_to<T, U>` requires both `T` and `U` to TODO TODO TODO
 --
 
 
