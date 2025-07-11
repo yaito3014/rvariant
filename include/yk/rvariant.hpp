@@ -239,7 +239,8 @@ public:
 
     template<class... Us>
         requires detail::all_move_constructible<Us...> && detail::subset_like_v<rvariant, rvariant<Us...>>
-    constexpr rvariant(rvariant<Us...>&& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
+    constexpr rvariant(rvariant<Us...>&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
+        : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
         try {
             detail::raw_visit(
                 other.index_,
