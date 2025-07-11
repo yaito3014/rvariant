@@ -180,7 +180,53 @@ struct variant_storage<std::index_sequence<Is...>, Ts...> {
 template<class Seq, class... Ts>
 using variant_storage_t = typename variant_storage<Seq, Ts...>::type;
 
+template<template<class...> class TT, class T, class... Us>
+struct pack_union_impl;
+
+template<template<class...> class TT, class... Ts>
+struct pack_union_impl<TT, TT<Ts...>> {
+    using type = TT<Ts...>;
+};
+
+template<template<class...> class TT, class... Ts, class U, class... Us>
+struct pack_union_impl<TT, TT<Ts...>, U, Us...>
+    : std::conditional_t<is_in_v<U, Ts...>, pack_union_impl<TT, TT<Ts...>, Us...>, pack_union_impl<TT, TT<Ts..., U>, Us...>> {};
+
+template<template<class...> class TT, class A, class B>
+struct pack_union : pack_union_impl<TT, TT<>, A, B> {};
+
+template<template<class...> class TT, class... As, class B>
+struct pack_union<TT, TT<As...>, B> : pack_union_impl<TT, TT<>, As..., B> {};
+
+template<template<class...> class TT, class A, class... Bs>
+struct pack_union<TT, A, TT<Bs...>> : pack_union_impl<TT, TT<>, A, Bs...> {};
+
+template<template<class...> class TT, class... As, class... Bs>
+struct pack_union<TT, TT<As...>, TT<Bs...>> : pack_union_impl<TT, TT<>, As..., Bs...> {};
+
+template<class T>
+struct unwrap_one_pack {
+    using type = T;
+};
+
+template<template<class...> class TT, class T>
+struct unwrap_one_pack<TT<T>> {
+    using type = T;
+};
+
 }  // namespace detail
+
+template<template<class...> class TT, class A, class B>
+struct pack_union : detail::pack_union<TT, A, B> {};
+
+template<template<class...> class TT, class A, class B>
+using pack_union_t = typename pack_union<TT, A, B>::type;
+
+template<template<class...> class TT, class A, class B>
+struct compact_alternative : detail::unwrap_one_pack<pack_union_t<TT, A, B>> {};
+
+template<template<class...> class TT, class A, class B>
+using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 template<class... Ts>
 class rvariant {
@@ -189,7 +235,7 @@ private:
     public:
         constexpr variant_npos_setter(rvariant* par) noexcept : parent_(par) {}
 
-        constexpr void mark_succeeded() noexcept { succeeded_  = true; }
+        constexpr void mark_succeeded() noexcept { succeeded_ = true; }
 
         constexpr ~variant_npos_setter() noexcept {
             if (!succeeded_) parent_->index_ = variant_npos;

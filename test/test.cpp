@@ -57,6 +57,18 @@ TEST_CASE("convert index") {
     STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<float, double, int>>(1) == 0);
 }
 
+TEST_CASE("pack union") {
+    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, int, float>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, yk::rvariant<int>, float>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, int, yk::rvariant<float>>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, yk::rvariant<int>, yk::rvariant<float>>, yk::rvariant<int, float>>);
+}
+
+TEST_CASE("compact alternative") {
+    STATIC_REQUIRE(std::is_same_v<yk::compact_alternative_t<yk::rvariant, int, float>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<yk::compact_alternative_t<yk::rvariant, int, int>, int>);
+}
+
 TEST_CASE("helper class") {
     STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int>> == 1);
     STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int, float>> == 2);
