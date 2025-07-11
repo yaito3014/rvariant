@@ -3,10 +3,13 @@
 #include <variant>
 #include <vector>
 
+#include <yk/detail/convert_index.hpp>
 #include <yk/detail/exactly_once.hpp>
+#include <yk/detail/find_index.hpp>
 #include <yk/detail/is_in.hpp>
 #include <yk/detail/pack_indexing.hpp>
 #include <yk/detail/subset_like.hpp>
+
 #include <yk/rvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -32,6 +35,26 @@ TEST_CASE("subset like") {
     STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<int, double>>);
     STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float, double>, yk::rvariant<float, double>>);
     STATIC_REQUIRE(yk::detail::subset_like_v<yk::rvariant<int, float>, yk::rvariant<float, int>>);
+}
+
+TEST_CASE("find index") {
+    STATIC_REQUIRE(yk::detail::find_index_v<int, int, float, double> == 0);
+    STATIC_REQUIRE(yk::detail::find_index_v<float, int, float, double> == 1);
+    STATIC_REQUIRE(yk::detail::find_index_v<double, int, float, double> == 2);
+}
+
+TEST_CASE("convert index") {
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<int, float>>(0) == 0);
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<int, float>>(1) == 1);
+
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<float, int>>(0) == 1);
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<float, int>>(1) == 0);
+
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<int, float, double>>(0) == 0);
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<int, float, double>>(1) == 1);
+
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<float, double, int>>(0) == 2);
+    STATIC_REQUIRE(yk::detail::convert_index<yk::rvariant<int, float>, yk::rvariant<float, double, int>>(1) == 0);
 }
 
 TEST_CASE("helper class") {
