@@ -58,14 +58,15 @@ TEST_CASE("convert index") {
 }
 
 TEST_CASE("pack union") {
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, int, float>, yk::rvariant<int, float>>);
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, yk::rvariant<int>, float>, yk::rvariant<int, float>>);
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, int, yk::rvariant<float>>, yk::rvariant<int, float>>);
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, yk::rvariant<int>, yk::rvariant<float>>, yk::rvariant<int, float>>);
+    using yk::detail::pack_union_t;
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, int, float>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, yk::rvariant<int>, float>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, int, yk::rvariant<float>>, yk::rvariant<int, float>>);
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, yk::rvariant<int>, yk::rvariant<float>>, yk::rvariant<int, float>>);
 
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, int, int>, yk::rvariant<int>>);
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, yk::rvariant<int, float>, yk::rvariant<int, double>>, yk::rvariant<int, float, double>>);
-    STATIC_REQUIRE(std::is_same_v<yk::pack_union_t<yk::rvariant, yk::rvariant<float, int>, yk::rvariant<int, double>>, yk::rvariant<float, int, double>>);
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, int, int>, yk::rvariant<int>>);
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, yk::rvariant<int, float>, yk::rvariant<int, double>>, yk::rvariant<int, float, double>>);
+    STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, yk::rvariant<float, int>, yk::rvariant<int, double>>, yk::rvariant<float, int, double>>);
 }
 
 TEST_CASE("compact alternative") {
