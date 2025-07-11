@@ -1,5 +1,9 @@
 BasedOnStyle: Google
 
-AccessModifierOffset: -2
+AccessModifierOffset: -4
 ColumnLimit: 160
 IncludeBlocks: Preserve
+
+IndentWidth: 4
+QualifierAlignment: Right
+SpaceAfterTemplateKeyword: false
