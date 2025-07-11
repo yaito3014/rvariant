@@ -189,6 +189,7 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.xo">Exposition-only utilities</a>
 <ul class="sectlevel2">
 <li><a href="#rvariant.xo.flexibility">Flexibility traits</a></li>
+<li><a href="#rvariant.xo.pack">Pack utilities</a></li>
 <li><a href="#rvariant.xo.core">Core type traits</a></li>
 </ul>
 </li>
@@ -1025,30 +1026,12 @@ Equivalent to the <code>std::indirect</code> counterpart. <sup><a href="https://
 <div class="sect1">
 <h2 id="rvariant.pack"><a class="anchor" href="#rvariant.pack"></a>Pack manipulation and deduping</h2>
 <div class="sectionbody">
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-Experimental feature proposal; need further consideration
-</td>
-</tr>
-</table>
-</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
 
 template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-struct pack_union;<span class="candidate">// 1</span>
-
-template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-struct pack_union_t = typename pack_union&lt;TT, A, B&gt;::type;
-
-template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-struct compact_alternative;<span class="candidate">// 2</span>
+struct compact_alternative;<span class="candidate">// 1</span>
 
 template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
 using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type;
@@ -1061,10 +1044,10 @@ using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type
 <div class="ulist">
 <ul>
 <li>
-<p><span class="candidate">1)</span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>is-specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code>pack_union</code> defines the member type <code>::type</code> as <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the union of <code>As...</code> and <code>Bs...</code>. The order of types shall be preserved.</p>
-</li>
-<li>
-<p><span class="candidate">2)</span> Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code>pack_union_t&lt;TT, A, B&gt;</code>. <code>compact_alternative</code> defines the member type <code>::type</code> as the first type in <code>Ts...</code> if <code>sizeof...(Ts) == 1</code>; otherwise, it is defined as <code>TT&lt;Ts...&gt;</code>.</p>
+<p><span class="candidate">1)</span> Effectively concatenates contained types in <code>A</code> and <code>B</code>, then dedupes them. If the resulting type list consists of only single type, unwraps the surrounding template.</p>
+<div class="paragraph">
+<p><em>Formally:</em>  Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code><a href="#rvariant.xo.pack"><em>pack-union-t</em></a>&lt;TT, A, B&gt;</code>. <code>compact_alternative</code> defines the member type <code>::type</code> as the first type in <code>Ts...</code> if <code>sizeof...(Ts) == 1</code>; otherwise, it is defined as <code>TT&lt;Ts...&gt;</code>.</p>
+</div>
 </li>
 </ul>
 </div>
@@ -1113,7 +1096,7 @@ template&lt;
 struct <em>subset_like</em>&lt;TT&lt;Ts...&gt;, UU&lt;Us...&gt;&gt; : std::true_type {}; // exposition-only<span class="candidate">// 1</span>
 
 template&lt;class T, class U&gt;
-constexpr bool <em>subset-like</em> = <em>subset_like</em>::value; // exposition-only</code></pre>
+concept <em>subset-like</em> = <em>subset_like</em>::value; // exposition-only</code></pre>
 </div>
 </div>
 <div class="openblock candidates">
@@ -1122,6 +1105,26 @@ constexpr bool <em>subset-like</em> = <em>subset_like</em>::value; // exposition
 <ul>
 <li>
 <p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us...</code>, there exists at least one type <code>T</code> in <code>Ts...</code> such that <code>U</code> is the same type as <code>T</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.xo.pack"><a class="anchor" href="#rvariant.xo.pack"></a>Pack utilities</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+using <em>pack-union-t</em> = /* see below */; // exposition-only<span class="candidate">// 1</span></code></pre>
+</div>
+</div>
+<div class="openblock candidates">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><span class="candidate">1)</span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>is-specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code><em>pack-union-t</em></code> is <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the set union of <code>As...</code> and <code>Bs...</code> expanded from left to right. For duplicate types, the first occurrence shall remain in <code>Ts...</code>.</p>
 </li>
 </ul>
 </div>

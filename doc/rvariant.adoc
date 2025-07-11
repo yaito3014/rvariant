@@ -683,21 +683,12 @@ include::_std-indirect-proxy.adoc[]
 [[rvariant.pack]]
 == Pack manipulation and deduping
 
-[WARNING]
-Experimental feature proposal; need further consideration
-
 [,cpp,subs="+macros"]
 ----
 namespace temp_ns {
 
 template<template<class...> class TT, class A, class B>
-struct pack_union;pass:quotes[[.candidate\]#// 1#]
-
-template<template<class...> class TT, class A, class B>
-struct pack_union_t = typename pack_union<TT, A, B>::type;
-
-template<template<class...> class TT, class A, class B>
-struct compact_alternative;pass:quotes[[.candidate\]#// 2#]
+struct compact_alternative;pass:quotes[[.candidate\]#// 1#]
 
 template<template<class...> class TT, class A, class B>
 using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
@@ -707,9 +698,9 @@ using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 [.candidates]
 --
-* [.candidate]#1)# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_is-specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `pack_union` defines the member type `::type` as `TT<Ts\...>`, where `Ts\...` is the union of `As\...` and `Bs\...`. The order of types shall be preserved.
-
-* [.candidate]#2)# Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `pack_union_t<TT, A, B>`. `compact_alternative` defines the member type `::type` as the first type in `Ts\...` if `sizeof\...(Ts) == 1`; otherwise, it is defined as `TT<Ts\...>`.
+* [.candidate]#1)# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only single type, unwraps the surrounding template.
++
+_Formally:_  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `xref:#rvariant.xo.pack[_pack-union-t_]<TT, A, B>`. `compact_alternative` defines the member type `::type` as the first type in `Ts\...` if `sizeof\...(Ts) == 1`; otherwise, it is defined as `TT<Ts\...>`.
 --
 
 [NOTE]
@@ -742,12 +733,27 @@ template<
 struct pass:quotes[_subset_like_]<TT<Ts...>, UU<Us...>> : std::true_type {}; // exposition-onlypass:quotes[[.candidate\]#// 1#]
 
 template<class T, class U>
-constexpr bool pass:quotes[_subset-like_] = pass:quotes[_subset_like_]::value; // exposition-only
+concept pass:quotes[_subset-like_] = pass:quotes[_subset_like_]::value; // exposition-only
 ----
 
 [.candidates]
 --
 * [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
+--
+
+
+[[rvariant.xo.pack]]
+=== Pack utilities
+
+[,cpp,subs="+macros"]
+----
+template<template<class...> class TT, class A, class B>
+using pass:quotes[_pack-union-t_] = /* see below */; // exposition-onlypass:quotes[[.candidate\]#// 1#]
+----
+
+[.candidates]
+--
+* [.candidate]#1)# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_is-specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `_pack-union-t_` is `TT<Ts\...>`, where `Ts\...` is the set union of `As\...` and `Bs\...` expanded from left to right. For duplicate types, the first occurrence shall remain in `Ts\...`.
 --
 
 
