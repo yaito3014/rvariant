@@ -224,7 +224,7 @@ namespace temp_ns {
 template<class... Ts>
 class rvariant;
 
-https://eel.is/c+\+draft/variant.syn[/* all features commented below defined as per standard */]
+/* all features commented below defined as per https://eel.is/c+\+draft/variant[[variant\]] */
     // variant_size, variant_size_v
     // variant_alternative, variant_alternative_v
     // get
@@ -240,7 +240,11 @@ https://eel.is/c+\+draft/variant.syn[/* all features commented below defined as 
 
     // visit
     // swap
-    // hash
+
+https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`] versions instead */]
+    // variant_npos
+    // monostate and monostate-related functionalities
+    // bad_variant_access
 
 /* extension */
 
@@ -264,12 +268,19 @@ template<class T, class... Ts>
 // TODO: I/O
 // ...
 
-https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`] versions instead */]
-    // variant_npos
-    // monostate and monostate-related functionalities
-    // bad_variant_access
+template<class... Ts>
+/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);
 
 } // temp_ns
+----
+
+[,cpp,subs="+macros"]
+----
+namespace std {
+
+template<class... Ts> struct hash<::temp_ns::rvariant<Ts...>>;
+
+} // std
 ----
 
 
@@ -350,13 +361,12 @@ public:
 } // temp_ns
 ----
 
-[[rvariant.requirements]]
-=== Requirements
 
-Let *_rv_* be an instance of `rvariant<Ts\...>`.
+[[rvariant.general]]
+=== General
 
-* *_rv_* follows all type traits of `std::variant`, unless otherwise noted.
-* All `Ts\...` must satisfy all constraints on `std::variant`, unless otherwise noted.
+* `rvariant<Ts\...>` follows all requirements of `std::variant`, unless otherwise noted.
+* All `Ts\...` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
 
 NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
 
@@ -400,7 +410,7 @@ constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);pass:quotes[[.
 --
 :spec-url: https://eel.is/c++draft/variant.ctor
 * [.candidate]#1-8)#
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 
 * [.candidate]#9)# Flexible copy constructor. If `w` does not hold a value, initializes the `rvariant` to not hold a value. Otherwise, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
 +
@@ -424,7 +434,7 @@ Exceptions ::
 --
 :spec-url: https://eel.is/c++draft/variant.ctor
 * [.candidate]#1-8)#
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 
 * [.candidate]#9)# Throws any exception thrown by direct-initializing any type in `Us\...`.
 
@@ -444,7 +454,7 @@ constexpr ~rvariant();pass:quotes[[.candidate\]#// 1#]
 --
 :spec-url: https://eel.is/c++draft/variant.dtor
 * [.candidate]#1)#
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 --
 
 
@@ -473,7 +483,7 @@ constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);pas
 --
 :spec-url: https://eel.is/c++draft/variant.assign
 * [.candidate]#1-3)#
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 
 * [.candidate]#4)# Flexible copy assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO
 
@@ -502,7 +512,7 @@ constexpr variant_alternative_t<I, rvariant<Types...>>&
 ----
 
 :spec-url: https://eel.is/c++draft/variant.mod
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 
 
 [[rvariant.status]]
@@ -515,7 +525,7 @@ constexpr std::size_t index() const noexcept;
 ----
 
 :spec-url: https://eel.is/c++draft/variant.status
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 
 
 [[rvariant.swap]]
@@ -527,7 +537,7 @@ constexpr void swap(rvariant&) noexcept(/* see below */);
 ----
 
 :spec-url: https://eel.is/c++draft/variant.swap
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
 
 
 [[rvariant.visit]]
@@ -543,34 +553,131 @@ constexpr R visit(this Self&&, Visitor&&);
 ----
 
 :spec-url: https://eel.is/c++draft/variant.visit
-include::_spec-proxy.adoc[]
+include::_std-variant-proxy.adoc[]
+
+
+[[rvariant.hash]]
+=== Hash support
+
+[,cpp,subs="+macros"]
+----
+namespace temp_ns {
+
+template<class... Ts>
+/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);pass:quotes[[.candidate\]#// 1#]
+
+} // temp_ns
+----
+
+[,cpp,subs="+macros"]
+----
+namespace std {
+
+template<class... Ts>
+struct hash<::temp_ns::rvariant<Ts...>>;pass:quotes[[.candidate\]#// 2#]
+
+} // std
+----
+
+[.candidates]
+--
+* [.candidate]#1)# Equivalent to `std::hash<rvariant<Ts\...>>{}(v)`.
++
+*_Note:_* Although the standard for `std::hash<std::variant<Ts\...>>` says it is not guaranteed to be `noexcept`, implementations tend to _strengthen_ the noexcept specifier, as it being technically allowed by the specification.
+
+:spec-url: https://eel.is/c++draft/variant.hash
+* [.candidate]#2)#
+include::_std-variant-proxy.adoc[]
+--
 
 
 [[rvariant.recursive]]
 == Class template `recursive_wrapper`
 
-[,cpp,subs="+quotes"]
+[,cpp,subs="+macros"]
 ----
 #include <compare>
+#include <memory>
 
 namespace temp_ns {
 
-template<class T>
+template<class T, class Allocator = std::allocator<T>>
 class recursive_wrapper
 {
-public:
-
-    // ...
-    // TODO
-    // ...
-
+  // provides the same functionality as https://eel.is/c+\+draft/indirect[`std::indirect`]
 };
+
+// equivalent to https://eel.is/c+\+draft/indirect[`std::indirect`]
+template<class Value>
+  recursive_wrapper(Value) -> recursive_wrapper<Value>;
+
+// equivalent to https://eel.is/c++draft/indirect[`std::indirect`]
+template<class Allocator, class Value>
+  recursive_wrapper(std::allocator_arg_t, Allocator, Value)
+    -> recursive_wrapper<
+      Value,
+      typename std::allocator_traits<Allocator>::template rebind_alloc<Value>
+    >;
 
 } // temp_ns
 ----
 
-=== Constructors
-TODO TODO TODO TODO TODO TODO
+[,cpp,subs="+macros"]
+----
+namespace temp_ns::pmr {
+
+template<class T>
+using recursive_wrapper = ::temp_ns::recursive_wrapper<T, std::pmr::polymorphic_allocator<T>>;
+
+} // temp_ns::pmr
+----
+
+[[rvariant.recursive.general]]
+=== General
+
+The class template `temp_ns::recursive_wrapper` and related components in the namespace scope provide same functionality and have equivalent requirements as `std::indirect`, except that:
+
+* The class name is `recursive_wrapper`.
+* `std::indirect` and `temp_ns::recursive_wrapper` are distinguishable in type level.
+
+NOTE: `temp_ns::recursive_wrapper` is *NOT* a type alias of `std::indirect` because such a declaration will not satisfy the characteristics described above.
+
+NOTE: Although `std::indirect` is a {cpp}26 feature, `temp_ns::recursive_wrapper` can be used in {cpp}20.
+
+
+[[rvariant.recursive.hash]]
+=== Hash support
+
+[,cpp,subs="+macros"]
+----
+namespace temp_ns {
+
+template<class T, class Allocator>
+/* constexpr */ std::size_t hash_value(recursive_wrapper<T, Allocator> const& rw);pass:quotes[[.candidate\]#// 1#]
+
+} // temp_ns
+----
+
+[,cpp,subs="+macros"]
+----
+namespace std {
+
+template<class T, class Allocator>
+struct hash<::temp_ns::recursive_wrapper<T, Allocator>>;pass:quotes[[.candidate\]#// 2#]
+
+} // std
+----
+
+[.candidates]
+--
+* [.candidate]#1)# Equivalent to `std::hash<recursive_wrapper<T, Allocator>>{}(rw)`.
++
+*_Note:_* Although the standard for `std::hash<std::indirect<T, Allocator>>` says it is not guaranteed to be `noexcept`, implementations tend to _strengthen_ the noexcept specifier, as it being technically allowed by the specification.
+
+:spec-url: https://eel.is/c++draft/indirect.hash
+* [.candidate]#2)#
+include::_std-indirect-proxy.adoc[]
+--
 
 
 [[rvariant.pack]]
