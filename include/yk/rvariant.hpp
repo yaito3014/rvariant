@@ -399,13 +399,13 @@ public:
 
     template<class... Us>
         requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() const& noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_copy_constructible_v<rvariant>) {
+    [[nodiscard]] constexpr rvariant<Us...> subset() const& noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_nothrow_copy_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, *this);
     }
 
     template<class... Us>
         requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() && noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_move_constructible_v<rvariant>) {
+    [[nodiscard]] constexpr rvariant<Us...> subset() && noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_nothrow_move_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, std::move(*this));
     }
 
