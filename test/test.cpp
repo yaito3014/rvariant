@@ -366,7 +366,7 @@ TEST_CASE("move assign") {
             S(S const&) noexcept(false) { throw std::exception{}; }
             S(S&&) noexcept {}
             S& operator=(S const&) noexcept(false) { throw std::exception{}; }
-            S& operator=(S&&) noexcept(false) { return *this; }
+            S& operator=(S&&) noexcept { return *this; }
         };
         {
             yk::rvariant<S, int> a = 42, b;
