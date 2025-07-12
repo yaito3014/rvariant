@@ -23,7 +23,7 @@ p, td.content {
   font-size: inherit;
 }
 
-a {
+a, .underline {
   text-decoration-skip-ink: none;
 }
 
@@ -80,22 +80,26 @@ li p:has(+ .ulist) {
   color: #008000;
 }
 
-.candidates .content > .ulist > ul {
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul {
   list-style-type: none;
 }
 
-.candidates .content > .ulist > ul > li {
-  padding-left: 3rem;
-  text-indent: -5.25rem;
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li {
+  padding-left: 2rem;
+  text-indent: -4.25rem;
 }
 
-.candidates .content > .ulist > ul > li :is(.paragraph, ul) {
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li {
+  margin-bottom: 1em;
+}
+
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li :is(.paragraph, ul) {
   text-indent: 0;
 }
 
 .candidates .candidate {
   display: inline-block;
-  width: 5rem;
+  width: 4rem;
   text-align: right;
   text-indent: 0;
   font-weight: bold;

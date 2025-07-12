@@ -95,6 +95,7 @@ s| Allows flexible construction +
 
 NOTE: A variant class cannot determine its own size when it contains incomplete types. Therefore, recursive variants always require dynamic memory allocation.
 
+
 = Reference
 
 == Feature cheat sheet
@@ -329,9 +330,9 @@ public:
 
   // xref:#rvariant.assign[flexible assignment]
   template<class... Us>
-    constexpr rvariant& operator=(rvariant<Us...> const& w);
+    constexpr rvariant& operator=(rvariant<Us...> const&);
   template<class... Us>
-    constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);
+    constexpr rvariant& operator=(rvariant<Us...>&&) noexcept(/* see below */);
 
   // xref:#rvariant.mod[modifiers]
   template<class T, class... Args>
@@ -373,6 +374,7 @@ public:
 
 * `rvariant<Ts\...>` follows all requirements of `std::variant`, unless otherwise noted.
 * All `Ts\...` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
+* [.underline]#Underlined texts# indicate important characteristics of our extensions.
 
 NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
 
@@ -418,19 +420,23 @@ constexpr rvariant(rvariant<Us...>&& w) noexcept(/* see below */);pass:quotes[[.
 * [.candidate]#1-8)#
 include::_std-variant-proxy.adoc[]
 
-* [.candidate]#9)# Flexible copy constructor.
+* [.candidate]#9)# _Flexible copy constructor_.
 +
-*_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the corresponding alternative as `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, initializes the `rvariant` to not hold a value.
+*_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the [.underline]#alternative corresponding to that of# `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, initializes the `rvariant` to not hold a value.
 +
 *_Remarks:_*
 
-** This constructor is defined as deleted unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
-** In case of duplicate alternative types, the corresponding index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.
+** This constructor is defined as deleted unless [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 
-* [.candidate]#10)# Flexible move constructor. Equivalent to #9, except that:
+** [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by `w`. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the corresponding type in `Ts\...`.#
+
+* [.candidate]#10)# _Flexible move constructor_.
 +
-** `_GET_<j>(w)` is replaced with `_GET_<j>(std::move(w))`, and
-** The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+Equivalent to #9, except that:
++
+[none]
+** -- `_GET_<j>(w)` is replaced with `_GET_<j>(std::move(w))`, and
+** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 --
 
 Exceptions ::
@@ -477,22 +483,61 @@ template<class T> constexpr rvariant& operator=(T&&) noexcept(/* see below */);p
 
 // Flexible copy assignment
 template<class... Us>
-constexpr rvariant& operator=(rvariant<Us...> const& w);pass:quotes[[.candidate\]#// 4#]
+constexpr rvariant& operator=(rvariant<Us...> const& rhs);pass:quotes[[.candidate\]#// 4#]
 
 // Flexible move assignment
 template<class... Us>
-constexpr rvariant& operator=(rvariant<Us...>&& w) noexcept(/* see below */);pass:quotes[[.candidate\]#// 5#]
+constexpr rvariant& operator=(rvariant<Us...>&& rhs) noexcept(/* see below */);pass:quotes[[.candidate\]#// 5#]
 ----
 
 [.candidates]
---
 :spec-url: https://eel.is/c++draft/variant.assign
 * [.candidate]#1-3)#
 include::_std-variant-proxy.adoc[]
 
-* [.candidate]#4)# Flexible copy assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO
+* [.candidate]#4)# _Flexible copy assignment operator_.
++
+Let _j_ be `rhs.index()`.
++
+--
+*_Constraints:_* [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true`.#
 
-* [.candidate]#5)# Flexible move assignment operator. TODO TODO TODO TODO TODO TODO TODO TODO
+*_Effects:_*
+[none]
+** -- If neither `*this` nor `rhs` holds a value, there is no effect.
+** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
+** -- Otherwise, if `rhs` holds the [.underline]#same alternative type# as `*this`, assigns the value contained in `rhs` to the value contained in `*this`. [.underline]#(_Note:_ `index()` is unchanged.)#
+** -- Otherwise, if either `std::is_nothrow_copy_constructible_v<U~_j_~>` is `true` or `std::is_nothrow_move_constructible_v<U~_j_~>` is `false`, equivalent to pass:quotes[`emplace[.underline\]##&lt;__i__&gt;##(_GET_<_j_>(rhs))`] [.underline]#where _i_ is the corresponding index that is determined according to the rules defined in xref:#rvariant.constructors[the flexible copy constructor]#.
+** -- Otherwise, equivalent to `operator=([.underline]#rvariant&lt;Us\...&gt;#(rhs))`.
+
+*_Postconditions:_* If `rhs.valueless_by_exception()` is `true`, `index() == rhs.index()`; [.underline]#otherwise, `*this` holds the same alternative type as `rhs`.#
+
+*_Returns:_* `*this`.
+
+*_Remarks:_* This operator is defined as deleted unless `std::is_copy_construcible_v<U~_j_~>` && `std::is_copy_assignable_v<U~_j_~>` is `true` for all _j_.
+--
+
+* [.candidate]#5)# _Flexible move assignment operator_.
++
+Let _j_ be `rhs.index()`.
++
+--
+*_Constraints:_* [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_move_constructible_v<U~_j_~> && std::is_move_assignable_v<U~_j_~>` is `true` for all _j_.
+
+*_Effects:_*
+[none]
+** -- If neither `*this` nor `rhs` holds a value, there is no effect.
+** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
+** -- Otherwise, if `rhs` holds the [.underline]#same alternative type# as `*this`, assigns pass:quotes[`_GET_<_j_>(std::move(rhs))`] to the value contained in `*this`. [.underline]#(_Note:_ `index()` is unchanged.)#
+** -- Otherwise, equivalent to pass:quotes[`emplace[.underline\]##&lt;__i__&gt;##(_GET_<_j_>(std::move(rhs)))`] [.underline]#where _i_ is the corresponding index that is determined according to the rules defined in xref:#rvariant.constructors[the flexible move constructor]#.
+
+*_Returns:_* `*this`.
+
+*_Remarks:_* The exception specification is equivalent to `std::is_nothrow_move_constructible_v<U~_j_~> && std::is_nothrow_move_assignable_v<U~_j_~>` for all _j_.
+
+[none]
+** -- If an exception is throw during the call to ``U~_j_~``'s move construction (with _j_ being `rhs.index()`), the `rvariant` will hold no value.
+** -- If an exception is thrown during the call to ``U~_j_~``'s move assignment, the state of the contained value is as defined by the exception safety guarantee of ``U~_j_~``'s move assignment; `index()` will be [.underline]#the corresponding index determined according to the rules defined in xref:#rvariant.constructors[the flexible move constructor].#
 --
 
 
@@ -564,21 +609,23 @@ constexpr rvariant<Us...> subset() && noexcept(/* see below */);pass:quotes[[.ca
 * [.candidate]#3)#
 *_Mandates:_* `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 +
-*_Effects:_* If `*this` holds a value, returns an object of `rvariant<Us\...>` that holds the corresponding alternative as `*this` and whose contained value is direct-initialized with `_GET_<i>(*this)`, where `i` is `this\->index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, returns an object of `rvariant<Us\...>` that does not hold a value.
+*_Effects:_* If `*this` holds a value, returns an object of `rvariant<Us\...>` that holds the [.underline]#corresponding# alternative as `*this` and whose contained value is direct-initialized with `_GET_<i>(*this)`, where `i` is `this\->index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, returns an object of `rvariant<Us\...>` that does not hold a value.
 +
 *_Remarks:_*
++
+[none]
+** -- [.underline]#This function does not participate in overload resolution unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true`.#
 
-** This function does not participate in overload resolution unless `xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true`.
+** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_copy_constructible_v<U~_j_~>` for all _j_ [.underline]#If `xref:#rvariant.helper.flexibility[equivalent_to]<rvariant<Us\...>, rvariant>` is `true`; otherwise, it is equivalent to `false`#.
 
-** If `pass:quotes[_equivalent-to_]<rvariant<Us\...>, rvariant>` is `true`, the exception specification is equivalent to the logical `AND` of `std::is_nothrow_copy_constructible_v<U~_j_~>` for all _j_. Otherwise, it is equivalent to `false`.
-
-** In case of duplicate alternative types, the corresponding index on the returned `rvariant<Us\...>` object shall be determined by the first occurrence of the same type in `Us\...`.
+** -- [.underline]#The corresponding index on the returned `rvariant<Us\...>` object shall be determined according to the rules defined in xref:#rvariant.constructors[the flexible copy constructor].#
 
 * [.candidate]#4)# Equivalent to the overload #3, except that:
 +
-** `_GET_<i>(*this)` is replaced with `_GET_<i>(std::move(*this))`, and
-** `std::is_copy_constructible_v` is replaced with `std::is_move_constructible_v`, and
-** `std::is_nothrow_copy_constructible_v` is replaced with `std::is_nothrow_move_constructible_v`.
+[none]
+** -- `_GET_<i>(*this)` is replaced with `_GET_<i>(std::move(*this))`, and
+** -- `std::is_copy_constructible_v` is replaced with `std::is_move_constructible_v`, and
+** -- `std::is_nothrow_copy_constructible_v` is replaced with `std::is_nothrow_move_constructible_v`.
 --
 
 Exceptions ::
@@ -707,11 +754,11 @@ class recursive_wrapper
   // provides the same functionality as https://eel.is/c+\+draft/indirect[`std::indirect`]
 };
 
-// equivalent to https://eel.is/c+\+draft/indirect[`std::indirect`]
+// equivalent to the https://eel.is/c+\+draft/indirect[`std::indirect`] counterpart
 template<class Value>
   recursive_wrapper(Value) -> recursive_wrapper<Value>;
 
-// equivalent to https://eel.is/c++draft/indirect[`std::indirect`]
+// equivalent to the https://eel.is/c++draft/indirect[`std::indirect`] counterpart
 template<class Allocator, class Value>
   recursive_wrapper(std::allocator_arg_t, Allocator, Value)
     -> recursive_wrapper<
@@ -735,12 +782,13 @@ using recursive_wrapper = ::temp_ns::recursive_wrapper<T, std::pmr::polymorphic_
 [[rvariant.recursive.general]]
 === General
 
-The class template `temp_ns::recursive_wrapper` and related components in the namespace scope provide same functionality and have equivalent requirements as `std::indirect`, except that:
+The class template `temp_ns::recursive_wrapper` and relevant components in the namespace scope provide same functionality and have equivalent requirements as `std::indirect`, except that:
 
-* The class name is `recursive_wrapper`.
-* `std::indirect` and `temp_ns::recursive_wrapper` are distinguishable in type level.
+[none]
+* -- The class name is `recursive_wrapper`.
+* -- `std::indirect` and `temp_ns::recursive_wrapper` are distinguishable in type level.
 
-NOTE: `temp_ns::recursive_wrapper` is *NOT* a type alias of `std::indirect` because such a declaration will not satisfy the characteristics described above.
+NOTE: `temp_ns::recursive_wrapper` is designed to be *NOT* a type alias of `std::indirect` because such a declaration would not satisfy the characteristics described above.
 
 NOTE: Although `std::indirect` is a {cpp}26 feature, `temp_ns::recursive_wrapper` can be used in {cpp}20.
 
@@ -798,7 +846,7 @@ using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 [.candidates]
 --
-* [.candidate]#1)# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only single type, unwraps the surrounding template.
+* [.candidate]#1)# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.
 +
 _Formally:_  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `xref:#rvariant.xo.pack[_pack-union-t_]<TT, A, B>`. `compact_alternative` defines the member type `::type` as the first type in `Ts\...` if `sizeof\...(Ts) == 1`; otherwise, it is defined as `TT<Ts\...>`.
 --
@@ -850,12 +898,12 @@ struct pass:quotes[_is-specialization-of_]; // exposition-onlypass:quotes[[.cand
 
 [.candidates]
 --
-* [.candidate]#1-2)# Inherits `std::true_type` if and only if `T` is a specialization of `TT`; otherwise, `std::false_type`.
+* [.candidate]#1-2)# Inherits `std::true_type` if and only if `T` is a specialization of `TT`; otherwise, inherits `std::false_type`.
 
 * [.candidate]#3)# If `_any-ttp_` is a template template parameter that consists of NTTP, equivalent to `_is-nttp-specialization-of_`; otherwise, equivalent to `_is-ttp-specialization-of_`.
 --
 
-NOTE: `_is-specialization-of_` is currently unimplementable due to lack of language feature; it requires C++26 reflection for a straightforward resolution. For now, it can be worked around by a compound `requires` expression.
+NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward resolution. For older versions, it can be worked around by a compound `requires` expression.
 
 
 = Additional information
