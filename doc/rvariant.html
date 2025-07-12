@@ -163,6 +163,8 @@ li p:has(+ .ulist) {
 <li><a href="#motivation">Motivation</a></li>
 <li><a href="#goals">Project goals</a></li>
 <li><a href="#comparison">Comparison of variant libraries</a></li>
+<li><a href="#why-is-recursive-wrapper-needed-1">Why is recursive_wrapper needed?</a></li>
+<li><a href="#why-is-recursive-wrapper-needed-2">Why can&#8217;t I just use std::unique_ptr instead of recursive_wrapper?</a></li>
 </ul>
 </li>
 <li><a href="#reference">Reference</a>
@@ -218,6 +220,14 @@ li p:has(+ .ulist) {
 <div class="paragraph">
 <p><code>rvariant</code> is a variant library that supports recursive types. It is API-compatible with <code>std::variant</code> and includes Boost-style interfaces that act as proxies to the standard-compatible API.</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// A well-known pattern to express recursive AST by using recursive variants.
+struct BinaryExpr; enum class Op;
+using Expr = temp_ns::rvariant&lt;int, double, temp_ns::recursive_wrapper&lt;BinaryExpr&gt;&gt;;
+struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -243,13 +253,13 @@ li p:has(+ .ulist) {
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Provide a modern, efficient, and battle-tested recursive variant library to enable developers to avoid using Boost.Variant in new applications.</p>
+<p><strong>Provide a modern, efficient, and battle-tested recursive variant library</strong> to enable developers to avoid using Boost.Variant in new applications.</p>
 </li>
 <li>
-<p>Replace existing usages of Boost.Variant in established frameworks, especially Boost.Spirit.X3.</p>
+<p><strong>Replace existing usages of Boost.Variant</strong> in established frameworks, especially Boost.Spirit.X3.</p>
 </li>
 <li>
-<p>Gain implementation experience with a recursive variant library to explore potential directions for future standardization.</p>
+<p><strong>Explore potential directions for future standardization,</strong> while gaining implementation experience with the renewed design.</p>
 </li>
 </ol>
 </div>
@@ -275,7 +285,7 @@ li p:has(+ .ulist) {
 <th class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html"><code><strong>Boost.Variant2</strong></code></a></p></th>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Required Version</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Minimum C++ version</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">C&#43;&#43;20</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">C&#43;&#43;17</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">C&#43;&#43;11<br>
@@ -283,14 +293,14 @@ li p:has(+ .ulist) {
 <td class="tableblock halign-left valign-top"><p class="tableblock">C&#43;&#43;11</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Compilation Speed</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Compilation speed</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fast</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fast</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="bad">Very Slow</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fast</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Can hold recursive types?</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Interface for recursive types</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="good">Yes</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="bad">No</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/doc/html/boost/recursive_wrapper.html"><strong class="good">Yes</strong></a></p></td>
@@ -304,7 +314,7 @@ li p:has(+ .ulist) {
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_never_valueless">No</a></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Exception Safety</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Exception safety</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Basic exception safety</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Basic exception safety</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="good">Strong exception safety</span><br>
@@ -313,7 +323,7 @@ li p:has(+ .ulist) {
 <a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety">(Double storage)</a></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Allows flexible construction<br>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Flexible construction<br>
 <code>V&lt;A,B&gt; = V&lt;B,A&gt;</code><br>
 <code>V&lt;A,B,C&gt; = V&lt;A,B&gt;</code></strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
@@ -325,17 +335,33 @@ li p:has(+ .ulist) {
 </table>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-A variant class cannot determine its own size when it contains incomplete types. Therefore, recursive variants always require dynamic memory allocation.
-</td>
-</tr>
-</table>
+</div>
+<div class="sect2">
+<h3 id="why-is-recursive-wrapper-needed-1"><a class="anchor" href="#why-is-recursive-wrapper-needed-1"></a>Why is recursive_wrapper needed?</h3>
+<div class="paragraph">
+<p>A variant class cannot determine its storage&#8217;s size when it contains incomplete types. Therefore, recursive alternatives always require a <strong>recursive wrapper class</strong> that holds the incomplete type by pointer and performs dynamic memory allocation on it.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="why-is-recursive-wrapper-needed-2"><a class="anchor" href="#why-is-recursive-wrapper-needed-2"></a>Why can&#8217;t I just use std::unique_ptr instead of recursive_wrapper?</h3>
+<div class="paragraph">
+<p><em>Theoretically</em>, a recursive wrapper class can be designed independently, i.e. having no correlation to the variant class itself. So there&#8217;s no theoretical reason to prevent you from using <code>std::unique_ptr</code> with <code>std::variant</code>.</p>
+</div>
+<div class="paragraph">
+<p>However, <strong>it is essential to have compatible interfaces in the variant class</strong>, because the lack of interfaces means that you must:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><em>wrap</em> the actual type with the wrapper class every single time you modify variants, and</p>
+</li>
+<li>
+<p><em>unwrap</em> the instances every single time you access the alternative returned by <code>get()</code> and <code>visit()</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>In other words, the commonly seen advice like <em>"use std::unique_ptr if you want to hold recursive types in std::variant"</em> is a <em>hack</em> that basically does <strong>nothing</strong> except for just holding the wrapper instance. As said above, such unadapted wrappers introduce <em>intrusive</em> boilerplates that infect the application layer, which is undesirable in practice.</p>
 </div>
 </div>
 </div>

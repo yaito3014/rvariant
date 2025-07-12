@@ -15,6 +15,15 @@ Yaito Kakeyama; Nana Sakisaka
 
 `rvariant` is a variant library that supports recursive types. It is API-compatible with `std::variant` and includes Boost-style interfaces that act as proxies to the standard-compatible API.
 
+[,cpp,subs="+macros"]
+----
+// A well-known pattern to express recursive AST by using recursive variants.
+struct BinaryExpr; enum class Op;
+using Expr = temp_ns::rvariant<int, double, temp_ns::recursive_wrapper<BinaryExpr>>;
+struct BinaryExpr { Expr lhs, rhs; Op op; };
+----
+
+
 [preface]
 = Introduction
 
@@ -30,11 +39,11 @@ Until 2025, no one had managed to introduce a modern alternative into either Boo
 
 [#goals]
 === Project goals
-1. Provide a modern, efficient, and battle-tested recursive variant library to enable developers to avoid using Boost.Variant in new applications.
+1. *Provide a modern, efficient, and battle-tested recursive variant library* to enable developers to avoid using Boost.Variant in new applications.
 
-2. Replace existing usages of Boost.Variant in established frameworks, especially Boost.Spirit.X3.
+2. *Replace existing usages of Boost.Variant* in established frameworks, especially Boost.Spirit.X3.
 
-3. Gain implementation experience with a recursive variant library to explore potential directions for future standardization.
+3. *Explore potential directions for future standardization,* while gaining implementation experience with the renewed design.
 
 
 [#comparison]
@@ -50,20 +59,20 @@ h| https://en.cppreference.com/w/cpp/utility/variant.html[`*std::variant*`]
 h| https://www.boost.org/doc/libs/develop/doc/html/variant.html[`*Boost.Variant*`]
 h| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html[`*Boost.Variant2*`]
 
-s| Required Version
+s| Minimum C++ version
 | {cpp}20
 | {cpp}17
 | {cpp}11 +
 icon:warning[] Mostly legacy code from 2003
 | {cpp}11
 
-s| Compilation Speed
+s| Compilation speed
 | Fast
 | Fast
 | [.bad]*Very Slow*
 | Fast
 
-s| Can hold recursive types?
+s| Interface for recursive types
 | [.good]*Yes*
 | [.bad]*No*
 | https://www.boost.org/doc/libs/develop/doc/html/boost/recursive_wrapper.html[[.good]*Yes*]
@@ -75,7 +84,7 @@ s| May be valueless?
 | https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty[No]
 | https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_never_valueless[No]
 
-s| Exception Safety
+s| Exception safety
 | Basic exception safety
 | Basic exception safety
 | [.good]#Strong exception safety# +
@@ -83,7 +92,7 @@ https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.desi
 | [.good]#Strong exception safety# +
 https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety[(Double storage)]
 
-s| Allows flexible construction +
+s| Flexible construction +
 `V<A,B> = V<B,A>` +
 `V<A,B,C> = V<A,B>`
 | Yes
@@ -93,7 +102,23 @@ s| Allows flexible construction +
 |===
 --
 
-NOTE: A variant class cannot determine its own size when it contains incomplete types. Therefore, recursive variants always require dynamic memory allocation.
+[[why-is-recursive-wrapper-needed-1]]
+### Why is recursive_wrapper needed?
+
+A variant class cannot determine its storage's size when it contains incomplete types. Therefore, recursive alternatives always require a *recursive wrapper class* that holds the incomplete type by pointer and performs dynamic memory allocation on it.
+
+[[why-is-recursive-wrapper-needed-2]]
+### Why can't I just use std::unique_ptr instead of recursive_wrapper?
+
+_Theoretically_, a recursive wrapper class can be designed independently, i.e. having no correlation to the variant class itself. So there's no theoretical reason to prevent you from using `std::unique_ptr` with `std::variant`.
+
+However, *it is essential to have compatible interfaces in the variant class*, because the lack of interfaces means that you must:
+
+* _wrap_ the actual type with the wrapper class every single time you modify variants, and
+
+* _unwrap_ the instances every single time you access the alternative returned by `get()` and `visit()`.
+
+In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that infect the application layer, which is undesirable in practice.
 
 
 = Reference
