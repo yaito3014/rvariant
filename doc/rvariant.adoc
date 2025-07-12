@@ -635,7 +635,7 @@ constexpr rvariant<Us...> subset() && noexcept(/* see below */);pass:quotes[[.ca
 * [.candidate]#3)#
 *_Mandates:_* `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 +
-*_Effects:_* If `*this` holds a value, returns an `rvariant<Us\...>` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_<i>(*this)`, where `i` is `this\->index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, returns an `rvariant<Us\...>` object that does not hold a value.
+*_Effects:_* If `*this` holds a value, returns an `rvariant<Us\...>` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_&lt;__i__&gt;(*this)`, where _i_ is `this\->index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, returns an `rvariant<Us\...>` object that does not hold a value.
 +
 *_Remarks:_*
 +
@@ -649,7 +649,7 @@ constexpr rvariant<Us...> subset() && noexcept(/* see below */);pass:quotes[[.ca
 * [.candidate]#4)# Equivalent to the overload #3, except that:
 +
 [none]
-** -- `_GET_<i>(*this)` is replaced with `_GET_<i>(std::move(*this))`, and
+** -- `_GET_&lt;__i__&gt;(*this)` is replaced with `_GET_&lt;__i__&gt;(std::move(*this))`, and
 ** -- `std::is_copy_constructible_v` is replaced with `std::is_move_constructible_v`, and
 ** -- `std::is_nothrow_copy_constructible_v` is replaced with `std::is_nothrow_move_constructible_v`.
 --

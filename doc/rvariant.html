@@ -983,7 +983,7 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(/* see below */);<s
 <p><span class="candidate">3)</span>
 <strong><em>Mandates:</em></strong> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> If <code>*this</code> holds a value, returns an <code>rvariant&lt;Us...&gt;</code> object that holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, with its contained value direct-initialized from <code><em>GET</em>&lt;i&gt;(*this)</code>, where <code>i</code> is <code>this-&gt;index()</code> and <code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>. Otherwise, returns an <code>rvariant&lt;Us...&gt;</code> object that does not hold a value.</p>
+<p><strong><em>Effects:</em></strong> If <code>*this</code> holds a value, returns an <code>rvariant&lt;Us...&gt;</code> object that holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, with its contained value direct-initialized from <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code>, where <em>i</em> is <code>this-&gt;index()</code> and <code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>. Otherwise, returns an <code>rvariant&lt;Us...&gt;</code> object that does not hold a value.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
@@ -1007,7 +1007,7 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(/* see below */);<s
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;<code><em>GET</em>&lt;i&gt;(*this)</code> is replaced with <code><em>GET</em>&lt;i&gt;(std::move(*this))</code>, and</p>
+<p>&#8201;&#8212;&#8201;<code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code> is replaced with <code><em>GET</em>&lt;<em>i</em>&gt;(std::move(*this))</code>, and</p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;<code>std::is_copy_constructible_v</code> is replaced with <code>std::is_move_constructible_v</code>, and</p>
