@@ -314,6 +314,40 @@ TEST_CASE("subset") {
     // TODO: valueless case
 }
 
+TEST_CASE("copy assign") {
+    // trivial case
+    {
+        yk::rvariant<int, float> a = 42, b = 3.14f;
+        REQUIRE_NOTHROW(a = b);  // different alternative
+        REQUIRE_NOTHROW(a = b);  // same alternative
+    }
+
+    // non-trivial case
+    {
+        struct S {
+            S() {}
+            S(S const&) noexcept {}
+            S(S&&) noexcept(false) { throw std::exception{}; }
+            S& operator=(S const&) noexcept { return *this; }
+            S& operator=(S&&) noexcept(false) { throw std::exception{}; }
+        };
+        yk::rvariant<S, int> a = 42, b;
+        REQUIRE_NOTHROW(a = b);  // different alternative; use copy constructor
+        REQUIRE_NOTHROW(a = b);  // same alternative; directly use copy assignment
+    }
+    {
+        struct S {
+            S() {}
+            S(S const&) noexcept(false) { throw std::exception{}; }
+            S(S&&) noexcept {}
+            S& operator=(S const&) noexcept { return *this; }
+            S& operator=(S&&) noexcept { return *this; }
+        };
+        yk::rvariant<S, int> a = 42, b;
+        REQUIRE_THROWS(a = b);  // different alternative; move temporary copy
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);

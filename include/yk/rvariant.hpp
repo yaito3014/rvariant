@@ -49,6 +49,12 @@ inline constexpr std::size_t variant_npos = -1;
 namespace detail {
 
 template<class... Ts>
+concept all_destructible = std::conjunction_v<std::is_destructible<Ts>...>;
+
+template<class... Ts>
+concept all_trivially_destructible = all_destructible<Ts...> && std::conjunction_v<std::is_trivially_destructible<Ts>...>;
+
+template<class... Ts>
 concept all_copy_constructible = std::conjunction_v<std::is_copy_constructible<Ts>...>;
 
 template<class... Ts>
@@ -59,6 +65,12 @@ concept all_move_constructible = std::conjunction_v<std::is_move_constructible<T
 
 template<class... Ts>
 concept all_trivially_move_constructible = all_move_constructible<Ts...> && std::conjunction_v<std::is_trivially_move_constructible<Ts>...>;
+
+template<class... Ts>
+concept all_copy_assignable = std::conjunction_v<std::is_copy_assignable<Ts>...>;
+
+template<class... Ts>
+concept all_trivially_copy_assignable = all_copy_assignable<Ts...> && std::conjunction_v<std::is_trivially_copy_assignable<Ts>...>;
 
 template<std::size_t I, class Dest, class Source>
 struct fun_impl {
@@ -391,11 +403,8 @@ public:
     constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
         : storage_(std::in_place_index<I>, il, std::forward<Args>(args)...), index_(I) {}
 
-    constexpr ~rvariant() = default;
-
-    constexpr ~rvariant()
-        requires (!std::conjunction_v<std::is_trivially_destructible<Ts>...>)
-    {
+private:
+    constexpr void destroy() {
         detail::raw_visit(
             index_,
             []<class Alt>(Alt&& alt) {
@@ -405,6 +414,63 @@ public:
                 }
             },
             *this);
+    }
+
+    constexpr void reset() {
+        destroy();
+        index_ = variant_npos;
+    }
+
+    constexpr rvariant& self() { return *this; }
+
+public:
+    constexpr rvariant& operator=(rvariant const&)
+        requires detail::all_trivially_copy_constructible<Ts...> && detail::all_trivially_copy_assignable<Ts...> && detail::all_trivially_destructible<Ts...>
+    = default;
+
+    constexpr rvariant& operator=(rvariant const&)
+        requires (!(detail::all_copy_constructible<Ts...> && detail::all_copy_assignable<Ts...>))
+    = delete;
+
+    constexpr rvariant& operator=(rvariant const& other)
+        requires detail::all_copy_constructible<Ts...> && detail::all_copy_assignable<Ts...>
+    {
+        detail::raw_visit(
+            other.index_,
+            [this]<class Alt>(Alt&& alt) {
+                constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
+                using T = std::remove_cvref_t<Alt>::type;
+                if constexpr (I == variant_npos) {
+                    reset();
+                } else {
+                    if (index_ == I) {
+                        // directly assign
+                        detail::raw_get<I>(self()).value = alt.value;
+                    } else {
+                        if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
+                            // copy is nothrow or move throws; use copy constructor
+                            reset();
+                            std::construct_at(&storage_, std::in_place_index<I>, alt.value);
+                        } else {
+                            // copy throws and move is nothrow; move temporary copy
+                            auto temporary = alt.value;
+                            reset();
+                            std::construct_at(&storage_, std::in_place_index<I>, std::move(temporary));
+                        }
+                    }
+                    index_ = other.index_;
+                }
+            },
+            other);
+        return *this;
+    }
+
+    constexpr ~rvariant() = default;
+
+    constexpr ~rvariant()
+        requires (!std::conjunction_v<std::is_trivially_destructible<Ts>...>)
+    {
+        reset();
     }
 
     constexpr bool valueless_by_exception() const noexcept { return index_ == variant_npos; }
