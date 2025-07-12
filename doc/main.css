@@ -129,7 +129,3 @@ li p:has(+ .ulist) {
 #toc.toc2 #toctitle {
   font-size: 1.375em;
 }
-
-#feature-overview ~ * code a {
-  font-weight: bold;
-}

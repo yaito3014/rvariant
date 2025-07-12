@@ -140,10 +140,6 @@ li p:has(+ .ulist) {
   font-size: 1.375em;
 }
 
-#feature-overview ~ * code a {
-  font-weight: bold;
-}
-
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
@@ -642,13 +638,16 @@ public:
 <div class="ulist">
 <ul>
 <li>
+<p><span class="underline">Underlined texts</span> indicate important characteristics of our extensions.</p>
+</li>
+<li>
 <p><code>rvariant&lt;Ts...&gt;</code> follows all requirements of <code>std::variant</code>, unless otherwise noted.</p>
 </li>
 <li>
 <p>All <code>Ts...</code> must satisfy all requirements on the corresponding parameter in <code>std::variant</code>, unless otherwise noted.</p>
 </li>
 <li>
-<p><span class="underline">Underlined texts</span> indicate important characteristics of our extensions.</p>
+<p><code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>.</p>
 </li>
 </ul>
 </div>
@@ -710,7 +709,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">9)</span> <em>Flexible copy constructor</em>.</p>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> If <code>w</code> holds a value, initializes the <code>rvariant</code> to hold the <span class="underline">alternative corresponding to that of</span> <code>w</code> and direct-initializes the contained value with <code><em>GET</em>&lt;j&gt;(w)</code>, where <code>j</code> is <code>w.index()</code> and <code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>. Otherwise, initializes the <code>rvariant</code> to not hold a value.</p>
+<p><strong><em>Effects:</em></strong> If <code>w</code> holds a value, initializes the <code>rvariant</code> to hold the <span class="underline">alternative corresponding to that of</span> <code>w</code> and direct-initializes the contained value with <code><em>GET</em>&lt;j&gt;(w)</code>, where <code>j</code> is <code>w.index()</code>. Otherwise, initializes the <code>rvariant</code> to not hold a value.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
@@ -721,7 +720,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;This constructor is defined as deleted unless <span class="underline"><code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline">The corresponding alternative for <code>rvariant</code> is the one that has the same type as the alternative held by <code>w</code>. In case of duplicate alternatives, the alternative index in <code>rvariant</code> shall be determined by the first occurrence of the corresponding type in <code>Ts...</code>.</span></p>
+<p>&#8201;&#8212;&#8201;<span class="underline">The corresponding alternative for <code>rvariant</code> is the one that has the same type as the alternative held by the subject. In case of duplicate alternatives, the alternative index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts...</code>.</span></p>
 </li>
 </ul>
 </div>
@@ -803,11 +802,11 @@ template&lt;class T&gt; constexpr rvariant&amp; operator=(T&amp;&amp;) noexcept(
 
 /* extensions */
 
-// Flexible copy assignment
+// Flexible copy assignment operator
 template&lt;class... Us&gt;
 constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt; const&amp; rhs);<span class="candidate">// 4</span>
 
-// Flexible move assignment
+// Flexible move assignment operator
 template&lt;class... Us&gt;
 constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt;&amp;&amp; rhs) noexcept(/* see below */);<span class="candidate">// 5</span></code></pre>
 </div>
@@ -821,7 +820,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">4)</span> <em>Flexible copy assignment operator</em>.</p>
 <div class="paragraph">
-<p>Let <em>j</em> be <code>rhs.index()</code>.</p>
+<p>Let <em>j</em> be <code>rhs.index()</code>. <span class="underline">Let <code>U<sub><em>k</em></sub></code> be the <em>k</em><sup>th</sup> type in <code>Us...</code>.</span></p>
 </div>
 <div class="openblock">
 <div class="content">
@@ -857,7 +856,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p><strong><em>Returns:</em></strong> <code>*this</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> This operator is defined as deleted unless <code>std::is_copy_construcible_v&lt;U<sub><em>j</em></sub>&gt;</code> &amp;&amp; <code>std::is_copy_assignable_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>.</p>
+<p><strong><em>Remarks:</em></strong> This operator is defined as deleted unless <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_copy_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>k</em></span>.</p>
 </div>
 </div>
 </div>
@@ -865,12 +864,12 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">5)</span> <em>Flexible move assignment operator</em>.</p>
 <div class="paragraph">
-<p>Let <em>j</em> be <code>rhs.index()</code>.</p>
+<p>Let <em>j</em> be <code>rhs.index()</code>. <span class="underline">Let <code>U<sub><em>k</em></sub></code> be the <em>k</em><sup>th</sup> type in <code>Us...</code>.</span></p>
 </div>
 <div class="openblock">
 <div class="content">
 <div class="paragraph">
-<p><strong><em>Constraints:</em></strong> <span class="underline"><code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_move_constructible_v&lt;U<sub><em>j</em></sub>&gt; &amp;&amp; std::is_move_assignable_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>.</p>
+<p><strong><em>Constraints:</em></strong> <span class="underline"><code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_move_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_move_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>k</em></span>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong></p>
@@ -895,7 +894,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p><strong><em>Returns:</em></strong> <code>*this</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> The exception specification is equivalent to <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt; &amp;&amp; std::is_nothrow_move_assignable_v&lt;U<sub><em>j</em></sub>&gt;</code> for all <em>j</em>.</p>
+<p><strong><em>Remarks:</em></strong> The exception specification is equivalent to <code>std::is_nothrow_move_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_nothrow_move_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> for all <span class="underline"><em>k</em></span>.</p>
 </div>
 <div class="ulist none">
 <ul class="none">
@@ -983,7 +982,7 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(/* see below */);<s
 <p><span class="candidate">3)</span>
 <strong><em>Mandates:</em></strong> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> If <code>*this</code> holds a value, returns an <code>rvariant&lt;Us...&gt;</code> object that holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, with its contained value direct-initialized from <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code>, where <em>i</em> is <code>this-&gt;index()</code> and <code><em>GET</em></code> is defined as per <a href="https://eel.is/c++draft/variant.get">[variant.get]</a>. Otherwise, returns an <code>rvariant&lt;Us...&gt;</code> object that does not hold a value.</p>
+<p><strong><em>Effects:</em></strong> If <code>*this</code> holds a value, returns an <code>rvariant&lt;Us...&gt;</code> object that holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, with its contained value direct-initialized from <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code>, where <em>i</em> is <code>this-&gt;index()</code>. Otherwise, returns an <code>rvariant&lt;Us...&gt;</code> object that does not hold a value.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>

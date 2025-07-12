@@ -397,9 +397,10 @@ public:
 [[rvariant.general]]
 === General
 
+* [.underline]#Underlined texts# indicate important characteristics of our extensions.
 * `rvariant<Ts\...>` follows all requirements of `std::variant`, unless otherwise noted.
 * All `Ts\...` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
-* [.underline]#Underlined texts# indicate important characteristics of our extensions.
+* `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
 
 NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
 
@@ -447,14 +448,14 @@ include::_std-variant-proxy.adoc[]
 
 * [.candidate]#9)# _Flexible copy constructor_.
 +
-*_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the [.underline]#alternative corresponding to that of# `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, initializes the `rvariant` to not hold a value.
+*_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the [.underline]#alternative corresponding to that of# `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()`. Otherwise, initializes the `rvariant` to not hold a value.
 +
 *_Remarks:_*
 +
 [none]
 ** -- This constructor is defined as deleted unless [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 
-** -- [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by `w`. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the corresponding type in `Ts\...`.#
+** -- [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by the subject. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.#
 
 * [.candidate]#10)# _Flexible move constructor_.
 +
@@ -507,11 +508,11 @@ template<class T> constexpr rvariant& operator=(T&&) noexcept(/* see below */);p
 
 /* extensions */
 
-// Flexible copy assignment
+// Flexible copy assignment operator
 template<class... Us>
 constexpr rvariant& operator=(rvariant<Us...> const& rhs);pass:quotes[[.candidate\]#// 4#]
 
-// Flexible move assignment
+// Flexible move assignment operator
 template<class... Us>
 constexpr rvariant& operator=(rvariant<Us...>&& rhs) noexcept(/* see below */);pass:quotes[[.candidate\]#// 5#]
 ----
@@ -523,7 +524,7 @@ include::_std-variant-proxy.adoc[]
 
 * [.candidate]#4)# _Flexible copy assignment operator_.
 +
-Let _j_ be `rhs.index()`.
+Let _j_ be `rhs.index()`. [.underline]#Let `U~_k_~` be the _k_^th^ type in `Us\...`.#
 +
 --
 *_Constraints:_* [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true`.#
@@ -540,15 +541,15 @@ Let _j_ be `rhs.index()`.
 
 *_Returns:_* `*this`.
 
-*_Remarks:_* This operator is defined as deleted unless `std::is_copy_construcible_v<U~_j_~>` && `std::is_copy_assignable_v<U~_j_~>` is `true` for all _j_.
+*_Remarks:_* This operator is defined as deleted unless pass:quotes[`std::is_copy_constructible_v[.underline\]##&lt;U~_k_~&gt;## && std::is_copy_assignable_v[.underline\]##&lt;U~_k_~&gt;##`] is `true` for all [.underline]#_k_#.
 --
 
 * [.candidate]#5)# _Flexible move assignment operator_.
 +
-Let _j_ be `rhs.index()`.
+Let _j_ be `rhs.index()`. [.underline]#Let `U~_k_~` be the _k_^th^ type in `Us\...`.#
 +
 --
-*_Constraints:_* [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_move_constructible_v<U~_j_~> && std::is_move_assignable_v<U~_j_~>` is `true` for all _j_.
+*_Constraints:_* [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# pass:quotes[`std::is_move_constructible_v[.underline\]##&lt;U~_k_~&gt;## && std::is_move_assignable_v[.underline\]##&lt;U~_k_~&gt;##`] is `true` for all [.underline]#_k_#.
 
 *_Effects:_*
 [none]
@@ -559,7 +560,7 @@ Let _j_ be `rhs.index()`.
 
 *_Returns:_* `*this`.
 
-*_Remarks:_* The exception specification is equivalent to `std::is_nothrow_move_constructible_v<U~_j_~> && std::is_nothrow_move_assignable_v<U~_j_~>` for all _j_.
+*_Remarks:_* The exception specification is equivalent to pass:quotes[`std::is_nothrow_move_constructible_v[.underline\]##&lt;U~_k_~&gt;## && std::is_nothrow_move_assignable_v[.underline\]##&lt;U~_k_~&gt;##`] for all [.underline]#_k_#.
 
 [none]
 ** -- If an exception is throw during the call to ``U~_j_~``'s move construction (with _j_ being `rhs.index()`), the `rvariant` will hold no value.
@@ -635,7 +636,7 @@ constexpr rvariant<Us...> subset() && noexcept(/* see below */);pass:quotes[[.ca
 * [.candidate]#3)#
 *_Mandates:_* `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 +
-*_Effects:_* If `*this` holds a value, returns an `rvariant<Us\...>` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_&lt;__i__&gt;(*this)`, where _i_ is `this\->index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, returns an `rvariant<Us\...>` object that does not hold a value.
+*_Effects:_* If `*this` holds a value, returns an `rvariant<Us\...>` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_&lt;__i__&gt;(*this)`, where _i_ is `this\->index()`. Otherwise, returns an `rvariant<Us\...>` object that does not hold a value.
 +
 *_Remarks:_*
 +
