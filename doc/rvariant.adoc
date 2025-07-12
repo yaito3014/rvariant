@@ -17,7 +17,7 @@ Yaito Kakeyama; Nana Sakisaka
 
 [,cpp,subs="+macros"]
 ----
-// A well-known pattern to express recursive AST by using recursive variants.
+// A common pattern for representing recursive ASTs using recursive variants.
 struct BinaryExpr; enum class Op;
 using Expr = temp_ns::rvariant<int, double, temp_ns::recursive_wrapper<BinaryExpr>>;
 struct BinaryExpr { Expr lhs, rhs; Op op; };

@@ -222,7 +222,7 @@ li p:has(+ .ulist) {
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// A well-known pattern to express recursive AST by using recursive variants.
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// A common pattern for representing recursive ASTs using recursive variants.
 struct BinaryExpr; enum class Op;
 using Expr = temp_ns::rvariant&lt;int, double, temp_ns::recursive_wrapper&lt;BinaryExpr&gt;&gt;;
 struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
