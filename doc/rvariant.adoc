@@ -450,10 +450,11 @@ include::_std-variant-proxy.adoc[]
 *_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the [.underline]#alternative corresponding to that of# `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()` and `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]]. Otherwise, initializes the `rvariant` to not hold a value.
 +
 *_Remarks:_*
++
+[none]
+** -- This constructor is defined as deleted unless [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 
-** This constructor is defined as deleted unless [.underline]#`xref:#rvariant.helper.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
-
-** [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by `w`. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the corresponding type in `Ts\...`.#
+** -- [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by `w`. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the corresponding type in `Ts\...`.#
 
 * [.candidate]#10)# _Flexible move constructor_.
 +

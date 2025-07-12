@@ -715,13 +715,13 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
 </div>
-<div class="ulist">
-<ul>
+<div class="ulist none">
+<ul class="none">
 <li>
-<p>This constructor is defined as deleted unless <span class="underline"><code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+<p>&#8201;&#8212;&#8201;This constructor is defined as deleted unless <span class="underline"><code><a href="#rvariant.helper.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
 </li>
 <li>
-<p><span class="underline">The corresponding alternative for <code>rvariant</code> is the one that has the same type as the alternative held by <code>w</code>. In case of duplicate alternatives, the alternative index in <code>rvariant</code> shall be determined by the first occurrence of the corresponding type in <code>Ts...</code>.</span></p>
+<p>&#8201;&#8212;&#8201;<span class="underline">The corresponding alternative for <code>rvariant</code> is the one that has the same type as the alternative held by <code>w</code>. In case of duplicate alternatives, the alternative index in <code>rvariant</code> shall be determined by the first occurrence of the corresponding type in <code>Ts...</code>.</span></p>
 </li>
 </ul>
 </div>
