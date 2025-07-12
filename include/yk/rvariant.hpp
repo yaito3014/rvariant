@@ -72,6 +72,12 @@ concept all_copy_assignable = std::conjunction_v<std::is_copy_assignable<Ts>...>
 template<class... Ts>
 concept all_trivially_copy_assignable = all_copy_assignable<Ts...> && std::conjunction_v<std::is_trivially_copy_assignable<Ts>...>;
 
+template<class... Ts>
+concept all_move_assignable = std::conjunction_v<std::is_move_assignable<Ts>...>;
+
+template<class... Ts>
+concept all_trivially_move_assignable = all_move_assignable<Ts...> && std::conjunction_v<std::is_trivially_move_assignable<Ts>...>;
+
 template<std::size_t I, class Dest, class Source>
 struct fun_impl {
     using dest_array = Dest[];
@@ -168,9 +174,8 @@ constexpr raw_visit_return_type<Visitor, Variant> raw_visit_dispatch(Visitor&& v
 }
 
 template<class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant> raw_visit_valueless(Visitor&& vis, Variant&&)  //
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, std::monostate>>)    //
-{
+constexpr raw_visit_return_type<Visitor, Variant> raw_visit_valueless(Visitor&& vis, Variant&&) noexcept(
+    std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, std::monostate>>) {
     return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, std::monostate>{});
 }
 
@@ -378,7 +383,7 @@ public:
             requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, rvariant>;
             requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
             requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
-            requires requires (T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
+            requires requires(T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
             requires std::is_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>;
         }
     constexpr rvariant(T&& x) noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<detail::accepted_index_v<T, rvariant>, Ts...>, T>)
@@ -457,8 +462,36 @@ public:
                             reset();
                             std::construct_at(&storage_, std::in_place_index<I>, std::move(temporary));
                         }
+                        index_ = I;
                     }
-                    index_ = other.index_;
+                }
+            },
+            other);
+        return *this;
+    }
+
+    constexpr rvariant& operator=(rvariant&&)
+        requires detail::all_trivially_move_constructible<Ts...> && detail::all_trivially_move_assignable<Ts...> && detail::all_trivially_destructible<Ts...>
+    = default;
+
+    constexpr rvariant& operator=(rvariant&& other) noexcept(
+        std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
+        requires detail::all_move_constructible<Ts...> && detail::all_move_assignable<Ts...>
+    {
+        detail::raw_visit(
+            other.index_,
+            [this]<class Alt>(Alt&& alt) {
+                constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
+                if constexpr (I == variant_npos) {
+                    reset();
+                } else {
+                    if (index_ == I) {
+                        detail::raw_get<I>(self()).value = std::move(alt).value;
+                    } else {
+                        reset();
+                        std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value);
+                        index_ = I;
+                    }
                 }
             },
             other);
@@ -508,7 +541,8 @@ public:
 
     template<class... Us>
         requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
-    [[nodiscard]] constexpr rvariant<Us...> subset() const& noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_nothrow_copy_constructible_v<rvariant>) {
+    [[nodiscard]] constexpr rvariant<Us...> subset() const& noexcept(equivalent_to<rvariant<Us...>, rvariant> &&
+                                                                     std::is_nothrow_copy_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, *this);
     }
 

@@ -348,6 +348,37 @@ TEST_CASE("copy assign") {
     }
 }
 
+TEST_CASE("move assign") {
+    // trivial case
+    {
+        yk::rvariant<int, float> a = 42, b = 3.14f;
+        REQUIRE_NOTHROW(a = std::move(b));  // different alternative
+    }
+    {
+        yk::rvariant<int, float> a = 42, b = 33 - 4;
+        REQUIRE_NOTHROW(a = std::move(b));  // same alternative
+    }
+
+    // non-trivial case
+    {
+        struct S {
+            S() {}
+            S(S const&) noexcept(false) { throw std::exception{}; }
+            S(S&&) noexcept {}
+            S& operator=(S const&) noexcept(false) { throw std::exception{}; }
+            S& operator=(S&&) noexcept(false) { return *this; }
+        };
+        {
+            yk::rvariant<S, int> a = 42, b;
+            REQUIRE_NOTHROW(a = std::move(b));  // different alternative; use move constructor
+        }
+        {
+            yk::rvariant<S, int> a, b;
+            REQUIRE_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
+        }
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);
