@@ -253,15 +253,20 @@ NOTE: [.underline]#Underlined texts# indicate important characteristics of ``rva
 [,cpp,subs="+macros,+attributes"]
 ----
 #include <compare>
-#include <type_traits> // for `std::add_pointer`, etc.
-#include <utility>     // for `std::in_place_type`, etc.
-#include <variant>     // for compatibility with {bad-variant-access}
+#include <memory>      // for pass:quotes[`std::allocator`], etc.
+#include <type_traits> // for pass:quotes[`std::add_pointer`], etc.
+#include <utility>     // for pass:quotes[`std::in_place_type`], etc.
+#include <variant>     // for compatibility with {bad-variant-access}, etc.
 
 namespace temp_ns {
 
 // <<rvariant.rvariant,[rvariant.rvariant]>>, class template pass:quotes[`rvariant`]
 template<class... Ts>
 class rvariant;
+
+// <<rvariant.recursive,[rvariant.recursive]>>, class template pass:quotes[`recursive_wrapper`]
+template<class T, class Allocator = std::allocator<T>>
+class recursive_wrapper;
 
 /* all features commented below defined as per https://eel.is/c+\+draft/variant[[variant\]] */
     // variant_size, variant_size_v
@@ -345,8 +350,13 @@ template<class Visitor, class... Variants>
 template<class R, class Visitor, class... Variants>
   constexpr R visit(Visitor&&, Variants&&...);
 
+// <<rvariant.hash,[rvariant.hash]>>, hash support
 template<class... Ts>
-/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);
+  /* constexpr */ std::size_t hash_value(rvariant<Ts...> const&);
+
+// <<rvariant.recursive.hash,[rvariant.recursive.hash]>>, hash support
+template<class T, class Allocator>
+  /* constexpr */ std::size_t hash_value(recursive_wrapper<T, Allocator> const&);
 
 // ...
 // TODO: I/O
@@ -370,7 +380,11 @@ template<template<class...> class TT, class A, class B>
 ----
 namespace std {
 
+// <<rvariant.hash,[rvariant.hash]>>, hash support
 template<class... Ts> struct hash<::temp_ns::rvariant<Ts...>>;
+
+// <<rvariant.recursive.hash,[rvariant.recursive.hash]>>, hash support
+template<class T, class Allocator> struct hash<::temp_ns::recursive_wrapper<T, Allocator>>;
 
 } // std
 ----
@@ -741,6 +755,8 @@ include::_std-variant-proxy.adoc[]
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<std::size_t I, class T>
 struct variant_alternative; // not defined
 
@@ -749,6 +765,8 @@ struct variant_alternative<I, T const>;pass:quotes[[.candidate\]#// 1#]
 
 template<std::size_t I, class... Ts>
 struct variant_alternative<I, rvariant<Ts...>>;pass:quotes[[.candidate\]#// 2#]
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -766,6 +784,8 @@ include::_std-variant-proxy.adoc[]
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<class U, class T>
 struct is_subset_of : std::false_type {};
 
@@ -783,6 +803,8 @@ concept subset_of = is_subset_of_v<U, T>;
 
 template<class T, class U>
 concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -794,8 +816,12 @@ concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<class T, class... Ts>
 constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -835,6 +861,8 @@ constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&
   get(rvariant<Ts...>& v);
@@ -850,6 +878,8 @@ constexpr variant_alternative_t<I, rvariant<Ts...>> const&
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
   get(rvariant<Ts...> const&& v);
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -860,10 +890,14 @@ constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<class T, class... Ts> constexpr T&        get(rvariant<Ts...>& v);
 template<class T, class... Ts> constexpr T&&       get(rvariant<Ts...>&& v);
 template<class T, class... Ts> constexpr T const&  get(rvariant<Ts...> const& v);
 template<class T, class... Ts> constexpr T const&& get(rvariant<Ts...> const&& v);
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -876,6 +910,8 @@ template<class T, class... Ts> constexpr T const&& get(rvariant<Ts...> const&& v
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<std::size_t I, class... Ts>
 constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
   get_if(rvariant<Ts...>*) noexcept;pass:quotes[[.candidate\]#// 1#]
@@ -891,6 +927,8 @@ constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
 template<std::size_t I, class... Ts>
 constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
   pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 4#]
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -905,6 +943,8 @@ constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<class T, class... Ts>
 constexpr std::add_pointer_t<T>
   get_if(rvariant<Ts...>* v) noexcept;pass:quotes[[.candidate\]#// 1#]
@@ -920,6 +960,8 @@ constexpr std::add_pointer_t<T>
 template<class T, class... Ts>
 constexpr std::add_pointer_t<T const>
   pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 4#]
+
+} // temp_ns
 ----
 
 [.candidates]
@@ -939,11 +981,17 @@ constexpr std::add_pointer_t<T const>
 
 [,cpp,subs="+macros,+attributes"]
 ----
+namespace temp_ns {
+
 template<class Visitor, class... Variants>
 constexpr {see-below} visit(Visitor&& vis, Variants&&... vars);pass:quotes[[.candidate\]#// 1#]
 
 template<class R, class Visitor, class... Variants>
 constexpr R visit(Visitor&& vis, Variants&&... vars);pass:quotes[[.candidate\]#// 2#]
+
+} // temp_ns
+
+// below are member functions of the class template <<rvariant.rvariant,pass:quotes[`rvariant`]>>:
 
 template<class Self, class Visitor>
 constexpr decltype(auto) visit(this Self&&, Visitor&&);pass:quotes[[.candidate\]#// 3#]
@@ -955,9 +1003,7 @@ constexpr R visit(this Self&&, Visitor&&);pass:quotes[[.candidate\]#// 4#]
 [.candidates]
 * [.candidate]#1-2)# TODO
 
-* [.candidate]#3)# TODO
-
-* [.candidate]#4)# TODO
+* [.candidate]#3-4)# Equivalent to the `std::variant` counterpart ^https://eel.is/c++draft/variant.visit[[spec\]]^, except that it forwards to `temp_ns::visit` instead of `std::visit`.
 
 
 [[rvariant.hash]]

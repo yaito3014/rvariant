@@ -542,15 +542,20 @@ std::size_t _ = <a href="#rvariant.hash">hash_value</a>(ab); // compatibility wi
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">#include &lt;compare&gt;
-#include &lt;type_traits&gt; // for `std::add_pointer`, etc.
-#include &lt;utility&gt;     // for `std::in_place_type`, etc.
-#include &lt;variant&gt;     // for compatibility with <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>
+#include &lt;memory&gt;      // for <code>std::allocator</code>, etc.
+#include &lt;type_traits&gt; // for <code>std::add_pointer</code>, etc.
+#include &lt;utility&gt;     // for <code>std::in_place_type</code>, etc.
+#include &lt;variant&gt;     // for compatibility with <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>, etc.
 
 namespace temp_ns {
 
 // <a href="#rvariant.rvariant">[rvariant.rvariant]</a>, class template <code>rvariant</code>
 template&lt;class... Ts&gt;
 class rvariant;
+
+// <a href="#rvariant.recursive">[rvariant.recursive]</a>, class template <code>recursive_wrapper</code>
+template&lt;class T, class Allocator = std::allocator&lt;T&gt;&gt;
+class recursive_wrapper;
 
 /* all features commented below defined as per <a href="https://eel.is/c++draft/variant">[variant]</a> */
     // variant_size, variant_size_v
@@ -634,8 +639,13 @@ template&lt;class Visitor, class... Variants&gt;
 template&lt;class R, class Visitor, class... Variants&gt;
   constexpr R visit(Visitor&amp;&amp;, Variants&amp;&amp;...);
 
+// <a href="#rvariant.hash">[rvariant.hash]</a>, hash support
 template&lt;class... Ts&gt;
-/* constexpr */ std::size_t hash_value(rvariant&lt;Ts...&gt; const&amp; v);
+  /* constexpr */ std::size_t hash_value(rvariant&lt;Ts...&gt; const&amp;);
+
+// <a href="#rvariant.recursive.hash">[rvariant.recursive.hash]</a>, hash support
+template&lt;class T, class Allocator&gt;
+  /* constexpr */ std::size_t hash_value(recursive_wrapper&lt;T, Allocator&gt; const&amp;);
 
 // ...
 // TODO: I/O
@@ -659,7 +669,11 @@ template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace std {
 
+// <a href="#rvariant.hash">[rvariant.hash]</a>, hash support
 template&lt;class... Ts&gt; struct hash&lt;::temp_ns::rvariant&lt;Ts...&gt;&gt;;
+
+// <a href="#rvariant.recursive.hash">[rvariant.recursive.hash]</a>, hash support
+template&lt;class T, class Allocator&gt; struct hash&lt;::temp_ns::recursive_wrapper&lt;T, Allocator&gt;&gt;;
 
 } // std</code></pre>
 </div>
@@ -1148,14 +1162,18 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;std::size_t I, class T&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;std::size_t I, class T&gt;
 struct variant_alternative; // not defined
 
 template&lt;std::size_t I, class T&gt;
 struct variant_alternative&lt;I, T const&gt;;<span class="candidate">// 1</span>
 
 template&lt;std::size_t I, class... Ts&gt;
-struct variant_alternative&lt;I, rvariant&lt;Ts...&gt;&gt;;<span class="candidate">// 2</span></code></pre>
+struct variant_alternative&lt;I, rvariant&lt;Ts...&gt;&gt;;<span class="candidate">// 2</span>
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1179,7 +1197,9 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class U, class T&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class U, class T&gt;
 struct is_subset_of : std::false_type {};
 
 template&lt;
@@ -1195,7 +1215,9 @@ template&lt;class U, class T&gt;
 concept subset_of = is_subset_of_v&lt;U, T&gt;;
 
 template&lt;class T, class U&gt;
-concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;</code></pre>
+concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1212,8 +1234,12 @@ concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;<
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class... Ts&gt;
-constexpr bool holds_alternative(rvariant&lt;Ts...&gt; const&amp; v) noexcept;</code></pre>
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class T, class... Ts&gt;
+constexpr bool holds_alternative(rvariant&lt;Ts...&gt; const&amp; v) noexcept;
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1263,7 +1289,9 @@ constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&amp;&amp;
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;std::size_t I, class... Ts&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;std::size_t I, class... Ts&gt;
 constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&amp;
   get(rvariant&lt;Ts...&gt;&amp; v);
 
@@ -1277,7 +1305,9 @@ constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&amp;
 
 template&lt;std::size_t I, class... Ts&gt;
 constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&amp;&amp;
-  get(rvariant&lt;Ts...&gt; const&amp;&amp; v);</code></pre>
+  get(rvariant&lt;Ts...&gt; const&amp;&amp; v);
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1292,10 +1322,14 @@ constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&amp;&amp;
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class... Ts&gt; constexpr T&amp;        get(rvariant&lt;Ts...&gt;&amp; v);
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class T, class... Ts&gt; constexpr T&amp;        get(rvariant&lt;Ts...&gt;&amp; v);
 template&lt;class T, class... Ts&gt; constexpr T&amp;&amp;       get(rvariant&lt;Ts...&gt;&amp;&amp; v);
 template&lt;class T, class... Ts&gt; constexpr T const&amp;  get(rvariant&lt;Ts...&gt; const&amp; v);
-template&lt;class T, class... Ts&gt; constexpr T const&amp;&amp; get(rvariant&lt;Ts...&gt; const&amp;&amp; v);</code></pre>
+template&lt;class T, class... Ts&gt; constexpr T const&amp;&amp; get(rvariant&lt;Ts...&gt; const&amp;&amp; v);
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1313,7 +1347,9 @@ template&lt;class T, class... Ts&gt; constexpr T const&amp;&amp; get(rvariant&lt
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;std::size_t I, class... Ts&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;std::size_t I, class... Ts&gt;
 constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&gt;
   get_if(rvariant&lt;Ts...&gt;*) noexcept;<span class="candidate">// 1</span>
 
@@ -1327,7 +1363,9 @@ constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt
 
 template&lt;std::size_t I, class... Ts&gt;
 constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&gt;
-  <span class="underline">get</span>(rvariant&lt;Ts...&gt; const* v) noexcept; // compatibility with <code>boost::get</code><span class="candidate">// 4</span></code></pre>
+  <span class="underline">get</span>(rvariant&lt;Ts...&gt; const* v) noexcept; // compatibility with <code>boost::get</code><span class="candidate">// 4</span>
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1348,7 +1386,9 @@ constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class... Ts&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class T, class... Ts&gt;
 constexpr std::add_pointer_t&lt;T&gt;
   get_if(rvariant&lt;Ts...&gt;* v) noexcept;<span class="candidate">// 1</span>
 
@@ -1362,7 +1402,9 @@ constexpr std::add_pointer_t&lt;T&gt;
 
 template&lt;class T, class... Ts&gt;
 constexpr std::add_pointer_t&lt;T const&gt;
-  <span class="underline">get</span>(rvariant&lt;Ts...&gt; const* v) noexcept; // compatibility with <code>boost::get</code><span class="candidate">// 4</span></code></pre>
+  <span class="underline">get</span>(rvariant&lt;Ts...&gt; const* v) noexcept; // compatibility with <code>boost::get</code><span class="candidate">// 4</span>
+
+} // temp_ns</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -1391,11 +1433,17 @@ constexpr std::add_pointer_t&lt;T const&gt;
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class Visitor, class... Variants&gt;
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class Visitor, class... Variants&gt;
 constexpr <span class="see-below">see below</span> visit(Visitor&amp;&amp; vis, Variants&amp;&amp;... vars);<span class="candidate">// 1</span>
 
 template&lt;class R, class Visitor, class... Variants&gt;
 constexpr R visit(Visitor&amp;&amp; vis, Variants&amp;&amp;... vars);<span class="candidate">// 2</span>
+
+} // temp_ns
+
+// below are member functions of the class template <a href="#rvariant.rvariant"><code>rvariant</code></a>:
 
 template&lt;class Self, class Visitor&gt;
 constexpr decltype(auto) visit(this Self&amp;&amp;, Visitor&amp;&amp;);<span class="candidate">// 3</span>
@@ -1410,10 +1458,7 @@ constexpr R visit(this Self&amp;&amp;, Visitor&amp;&amp;);<span class="candidate
 <p><span class="candidate">1-2)</span> TODO</p>
 </li>
 <li>
-<p><span class="candidate">3)</span> TODO</p>
-</li>
-<li>
-<p><span class="candidate">4)</span> TODO</p>
+<p><span class="candidate">3-4)</span> Equivalent to the <code>std::variant</code> counterpart <sup><a href="https://eel.is/c++draft/variant.visit">[spec]</a></sup>, except that it forwards to <code>temp_ns::visit</code> instead of <code>std::visit</code>.</p>
 </li>
 </ul>
 </div>
