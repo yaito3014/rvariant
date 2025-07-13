@@ -191,8 +191,8 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.swap">Swap</a></li>
 </ul>
 </li>
-<li><a href="#rvariant.flexibility">Flexibility traits</a></li>
 <li><a href="#rvariant.helper"><code>rvariant</code> helper classes</a></li>
+<li><a href="#rvariant.flexibility">Flexibility traits</a></li>
 <li><a href="#rvariant.get">Value access</a></li>
 <li><a href="#rvariant.visit">Visitation</a></li>
 <li><a href="#rvariant.hash">Hash support</a></li>
@@ -202,6 +202,7 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.recursive.hash">Hash support</a></li>
 </ul>
 </li>
+<li><a href="#rvariant.recursive.helper"><code>recursive_wrapper</code> helper classes</a></li>
 <li><a href="#rvariant.pack">Pack manipulation and deduping</a></li>
 <li><a href="#rvariant.io">I/O</a></li>
 <li><a href="#rvariant.xo">Exposition-only utilities</a>
@@ -540,9 +541,9 @@ class rvariant;
     // bad_variant_access
 
 /* extensions */
-/* behaves differently mostly because of the existence of `recursive_wrapper` */
+/* behaves differently mostly because of the existence of <code>recursive_wrapper</code> */
 
-// <a href="#rvariant.helper">[rvariant.helper]</a>, rvariant helper classes
+// <a href="#rvariant.helper">[rvariant.helper]</a>, <code>rvariant</code> helper classes
 template&lt;std::size_t I, class T&gt; struct variant_alternative; // not defined
 template&lt;std::size_t I, class T&gt; struct variant_alternative&lt;I, T const&gt;;
 template&lt;std::size_t I, class T&gt;
@@ -593,17 +594,17 @@ template&lt;class T, class... Ts&gt;
 
 template&lt;std::size_t I, class... Ts&gt;
   constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;       // compatibility with `boost::get`
+    <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;       // compatibility with <code>boost::get</code>
 template&lt;std::size_t I, class... Ts&gt;
   constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt; const*) noexcept; // compatibility with `boost::get`
+    <span class="underline">get</span>(rvariant&lt;Ts...&gt; const*) noexcept; // compatibility with <code>boost::get</code>
 
 template&lt;class T, class... Ts&gt;
   constexpr std::add_pointer_t&lt;T&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;       // compatibility with `boost::get`
+    <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;       // compatibility with <code>boost::get</code>
 template&lt;class T, class... Ts&gt;
   constexpr std::add_pointer_t&lt;T const&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt; const*) noexcept; // compatibility with `boost::get`
+    <span class="underline">get</span>(rvariant&lt;Ts...&gt; const*) noexcept; // compatibility with <code>boost::get</code>
 
 // <a href="#rvariant.visit">[rvariant.visit]</a>, visitation
 template&lt;class Visitor, class... Variants&gt;
@@ -611,12 +612,23 @@ template&lt;class Visitor, class... Variants&gt;
 template&lt;class R, class Visitor, class... Variants&gt;
   constexpr R visit(Visitor&amp;&amp;, Variants&amp;&amp;...);
 
+template&lt;class... Ts&gt;
+/* constexpr */ std::size_t hash_value(rvariant&lt;Ts...&gt; const&amp; v);
+
 // ...
 // TODO: I/O
 // ...
 
-template&lt;class... Ts&gt;
-/* constexpr */ std::size_t hash_value(rvariant&lt;Ts...&gt; const&amp; v);
+// <a href="#rvariant.recursive.helper">[rvariant.recursive.helper]</a>, <code>recursive_wrapper</code> helper classes
+template&lt;class T&gt; struct unwrap_recursive;
+template&lt;class T, class Allocator&gt; struct unwrap_recursive&lt;recursive_wrapper&lt;T, Allocator&gt;&gt;;
+template&lt;class T&gt; using unwrap_recursive_t = typename unwrap_recursive&lt;T&gt;::type;
+
+// <a href="#rvariant.pack">[rvariant.pack]</a>, pack manipulation and deduping
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+  struct compact_alternative;
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+  using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type;
 
 } // temp_ns</code></pre>
 </div>
@@ -1142,6 +1154,37 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 </div>
 </div>
 <div class="sect1">
+<h2 id="rvariant.helper"><a class="anchor" href="#rvariant.helper"></a><code>rvariant</code> helper classes</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;std::size_t I, class T&gt;
+struct variant_alternative; // not defined
+
+template&lt;std::size_t I, class T&gt;
+struct variant_alternative&lt;I, T const&gt;;<span class="candidate">// 1</span>
+
+template&lt;std::size_t I, class... Ts&gt;
+struct variant_alternative&lt;I, rvariant&lt;Ts...&gt;&gt;;<span class="candidate">// 2</span></code></pre>
+</div>
+</div>
+<div class="ulist candidates">
+<ul>
+<li>
+<p><span class="candidate">1)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant#helper-3">[spec]</a></sup></p>
+</li>
+<li>
+<p><span class="candidate">2)</span> The member typedef <code>type</code> denotes <code><span class="underline"><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>I</em></sub>&gt;</span></code>.</p>
+<div class="paragraph">
+<p><strong><em>Mandates:</em></strong> <code>I &lt; sizeof...(Ts)</code>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="rvariant.flexibility"><a class="anchor" href="#rvariant.flexibility"></a>Flexibility traits</h2>
 <div class="sectionbody">
 <div class="listingblock">
@@ -1175,49 +1218,24 @@ concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;<
 </div>
 </div>
 <div class="sect1">
-<h2 id="rvariant.helper"><a class="anchor" href="#rvariant.helper"></a><code>rvariant</code> helper classes</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;std::size_t I, class T&gt; struct variant_alternative&lt;I, T const&gt;;</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant#helper-3">[spec]</a></sup></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">variant_alternative&lt;I, rvariant&lt;Ts...&gt;&gt;::type</code></pre>
-</div>
-</div>
-<div class="ulist candidates">
-<ul>
-<li>
-<p></p>
-<div class="paragraph">
-<p><strong><em>Mandates:</em></strong> <code>I &lt; sizeof...(Ts)</code>.</p>
-</div>
-<div class="paragraph">
-<p><strong><em>Type:</em></strong> The type <code>T<sub><em>I</em></sub></code>. TODO</p>
-</div>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="rvariant.get"><a class="anchor" href="#rvariant.get"></a>Value access</h2>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class... Ts&gt;
-constexpr bool holds_alternative(rvariant&lt;Ts...&gt; const&amp; v) noexcept;<span class="candidate">// 1</span></code></pre>
+constexpr bool holds_alternative(rvariant&lt;Ts...&gt; const&amp; v) noexcept;</code></pre>
 </div>
 </div>
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1)</span> TODO</p>
+<p><span class="candidate"></span> <strong><em>Mandates:</em></strong> The type <code>T</code> occurs exactly once in <code><span class="underline"><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</span></code>.</p>
+<div class="paragraph">
+<p><strong><em>Returns:</em></strong> <code>true</code> if <code>v.index()</code> is equal to the zero-based index of <code>T</code> in <code><span class="underline"><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</span></code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+</div>
 </li>
 </ul>
 </div>
@@ -1517,6 +1535,30 @@ Equivalent to the <code>std::indirect</code> counterpart. <sup><a href="https://
 </div>
 </div>
 <div class="sect1">
+<h2 id="rvariant.recursive.helper"><a class="anchor" href="#rvariant.recursive.helper"></a><code>recursive_wrapper</code> helper classes</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class T&gt;
+struct unwrap_recursive
+{
+  using type = T;
+};
+
+template&lt;class T, class Allocator&gt;
+struct unwrap_recursive&lt;recursive_wrapper&lt;T, Allocator&gt;&gt;
+{
+  using type = T;
+};
+
+} // temp_ns</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="rvariant.pack"><a class="anchor" href="#rvariant.pack"></a>Pack manipulation and deduping</h2>
 <div class="sectionbody">
 <div class="listingblock">
@@ -1524,27 +1566,20 @@ Equivalent to the <code>std::indirect</code> counterpart. <sup><a href="https://
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
 
 template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-struct compact_alternative;<span class="candidate">// 1</span>
-
-template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type;
+struct compact_alternative;
 
 } // temp_ns</code></pre>
 </div>
 </div>
-<div class="openblock candidates">
-<div class="content">
-<div class="ulist">
+<div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1)</span> Effectively concatenates contained types in <code>A</code> and <code>B</code>, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.</p>
+<p><span class="candidate"></span> Effectively concatenates contained types in <code>A</code> and <code>B</code>, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.</p>
 <div class="paragraph">
-<p><em>Formally:</em>  Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code><a href="#rvariant.xo.pack"><em>pack-union-t</em></a>&lt;TT, A, B&gt;</code>. <code>compact_alternative</code> defines a member typedef <code>type</code> that names the first type in <code>Ts...</code> if <code>sizeof...(Ts) == 1</code>; otherwise, it names <code>TT&lt;Ts...&gt;</code>.</p>
+<p><strong><em>Definition:</em></strong>  Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code><a href="#rvariant.xo.pack"><em>pack-union-t</em></a>&lt;TT, A, B&gt;</code>. The member typedef <code>type</code> denotes <code>Ts...[0]</code> if <code>sizeof...(Ts) == 1</code>; otherwise, the member typedef <code>type</code> denotes <code>TT&lt;Ts...&gt;</code>.</p>
 </div>
 </li>
 </ul>
-</div>
-</div>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1555,6 +1590,18 @@ using compact_alternative_t = typename compact_alternative&lt;TT, A, B&gt;::type
 <td class="content">
 <div class="title">Notes on single-type variant</div>
 A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be <em>unwrapped</em> using <code>compact_alternative</code>. This is useful for resolving issues such as <a href="https://github.com/boostorg/spirit/issues/610">boostorg/spirit#610</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<code>compact_alternative</code> does not unwrap <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply <a href="#rvariant.recursive.helper"><code>unwrap_recursive_t</code></a> manually.
 </td>
 </tr>
 </table>
@@ -1580,19 +1627,15 @@ A variant with a single alternative may introduce unnecessary overhead when used
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-using <em>pack-union-t</em> = <span class="see-below">see below</span>; // exposition-only<span class="candidate">// 1</span></code></pre>
+using <em>pack-union-t</em> = <span class="see-below">see below</span>; // exposition-only</code></pre>
 </div>
 </div>
-<div class="openblock candidates">
-<div class="content">
-<div class="ulist">
+<div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1)</span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>is-specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code><em>pack-union-t</em></code> is <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the set union of <code>As...</code> and <code>Bs...</code> expanded from left to right. For duplicate types, the first occurrence shall remain in <code>Ts...</code>.</p>
+<p><span class="candidate"></span> Let <code>As</code> denote the pack of template parameters of <code>A</code> if <a href="#rvariant.xo.core"><code><em>is-specialization-of&lt;A, TT&gt;</em></code></a>, otherwise let <code>As</code> denote a pack of single type <code>A</code>. Let <code>Bs</code> denote likewise. <code><em>pack-union-t</em></code> denotes <code>TT&lt;Ts...&gt;</code>, where <code>Ts...</code> is the set union of <code>As...</code> and <code>Bs...</code> expanded from left to right. For duplicate types, the first occurrence shall remain in <code>Ts...</code>.</p>
 </li>
 </ul>
-</div>
-</div>
 </div>
 </div>
 <div class="sect2">

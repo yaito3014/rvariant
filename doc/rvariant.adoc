@@ -276,9 +276,9 @@ https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`]
     // bad_variant_access
 
 /* extensions */
-/* behaves differently mostly because of the existence of `recursive_wrapper` */
+/* behaves differently mostly because of the existence of pass:quotes[`recursive_wrapper`] */
 
-// xref:#rvariant.helper[[rvariant.helper\]], rvariant helper classes
+// xref:#rvariant.helper[[rvariant.helper\]], pass:quotes[`rvariant`] helper classes
 template<std::size_t I, class T> struct variant_alternative; // not defined
 template<std::size_t I, class T> struct variant_alternative<I, T const>;
 template<std::size_t I, class T>
@@ -329,17 +329,17 @@ template<class T, class... Ts>
 
 template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with `boost::get`
+    pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with pass:quotes[`boost::get`]
 template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with `boost::get`
+    pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with pass:quotes[`boost::get`]
 
 template<class T, class... Ts>
   constexpr std::add_pointer_t<T>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with `boost::get`
+    pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with pass:quotes[`boost::get`]
 template<class T, class... Ts>
   constexpr std::add_pointer_t<T const>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with `boost::get`
+    pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with pass:quotes[`boost::get`]
 
 // xref:#rvariant.visit[[rvariant.visit\]], visitation
 template<class Visitor, class... Variants>
@@ -347,12 +347,23 @@ template<class Visitor, class... Variants>
 template<class R, class Visitor, class... Variants>
   constexpr R visit(Visitor&&, Variants&&...);
 
+template<class... Ts>
+/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);
+
 // ...
 // TODO: I/O
 // ...
 
-template<class... Ts>
-/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);
+// xref:#rvariant.recursive.helper[[rvariant.recursive.helper\]], pass:quotes[`recursive_wrapper`] helper classes
+template<class T> struct unwrap_recursive;
+template<class T, class Allocator> struct unwrap_recursive<recursive_wrapper<T, Allocator>>;
+template<class T> using unwrap_recursive_t = typename unwrap_recursive<T>::type;
+
+// xref:#rvariant.pack[[rvariant.pack\]], pack manipulation and deduping
+template<template<class...> class TT, class A, class B>
+  struct compact_alternative;
+template<template<class...> class TT, class A, class B>
+  using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 } // temp_ns
 ----
@@ -737,6 +748,31 @@ constexpr void swap(rvariant&) noexcept({see-below});
 include::_std-variant-proxy.adoc[]
 
 
+[[rvariant.helper]]
+== `rvariant` helper classes
+
+[,cpp,subs="+macros,+attributes"]
+----
+template<std::size_t I, class T>
+struct variant_alternative; // not defined
+
+template<std::size_t I, class T>
+struct variant_alternative<I, T const>;pass:quotes[[.candidate\]#// 1#]
+
+template<std::size_t I, class... Ts>
+struct variant_alternative<I, rvariant<Ts...>>;pass:quotes[[.candidate\]#// 2#]
+----
+
+[.candidates]
+:spec-url: https://eel.is/c++draft/variant#helper-3
+* [.candidate]#1)#
+include::_std-variant-proxy.adoc[]
+
+* [.candidate]#2)# The member typedef `type` denotes pass:quotes,macros[`[.underline\]#xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;T~_I_~&gt;#`].
++
+*_Mandates:_* `I < sizeof\...(Ts)`.
+
+
 [[rvariant.flexibility]]
 == Flexibility traits
 
@@ -765,42 +801,21 @@ concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
 * [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
 
 
-[[rvariant.helper]]
-== `rvariant` helper classes
-
-[,cpp,subs="+macros,+attributes"]
-----
-template<std::size_t I, class T> struct variant_alternative<I, T const>;
-----
-
-:spec-url: https://eel.is/c++draft/variant#helper-3
-include::_std-variant-proxy.adoc[]
-
-
-[,cpp,subs="+macros,+attributes"]
-----
-variant_alternative<I, rvariant<Ts...>>::type
-----
-
-[.candidates]
-* {empty}
-+
-*_Mandates:_* `I < sizeof\...(Ts)`.
-+
-*_Type:_* The type `T~_I_~`. TODO
-
-
 [[rvariant.get]]
 == Value access
 
 [,cpp,subs="+macros,+attributes"]
 ----
 template<class T, class... Ts>
-constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;pass:quotes[[.candidate\]#// 1#]
+constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;
 ----
 
 [.candidates]
-* [.candidate]#1)# TODO
+* [.candidate]#{empty}# *_Mandates:_* The type `T` occurs exactly once in pass:quotes,macros[`[.underline\]#xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;Ts&gt;#`].
++
+*_Returns:_* `true` if `v.index()` is equal to the zero-based index of `T` in pass:quotes,macros[`[.underline\]#xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;Ts&gt;#`].
++
+*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of xref:#rvariant.recursive[`recursive_wrapper`].#
 
 
 [,cpp,subs="+macros,+attributes"]
@@ -1029,6 +1044,29 @@ include::_std-indirect-proxy.adoc[]
 --
 
 
+[[rvariant.recursive.helper]]
+== `recursive_wrapper` helper classes
+
+[,cpp,subs="+macros,+attributes"]
+----
+namespace temp_ns {
+
+template<class T>
+struct unwrap_recursive
+{
+  using type = T;
+};
+
+template<class T, class Allocator>
+struct unwrap_recursive<recursive_wrapper<T, Allocator>>
+{
+  using type = T;
+};
+
+} // temp_ns
+----
+
+
 [[rvariant.pack]]
 == Pack manipulation and deduping
 
@@ -1037,24 +1075,22 @@ include::_std-indirect-proxy.adoc[]
 namespace temp_ns {
 
 template<template<class...> class TT, class A, class B>
-struct compact_alternative;pass:quotes[[.candidate\]#// 1#]
-
-template<template<class...> class TT, class A, class B>
-using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
+struct compact_alternative;
 
 } // temp_ns
 ----
 
 [.candidates]
---
-* [.candidate]#1)# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.
+* [.candidate]#{empty}# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.
 +
-_Formally:_  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `xref:#rvariant.xo.pack[_pack-union-t_]<TT, A, B>`. `compact_alternative` defines a member typedef `type` that names the first type in `Ts\...` if `sizeof\...(Ts) == 1`; otherwise, it names `TT<Ts\...>`.
---
+*_Definition:_*  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `xref:#rvariant.xo.pack[_pack-union-t_]<TT, A, B>`. The member typedef `type` denotes `Ts\...[0]` if `sizeof\...(Ts) == 1`; otherwise, the member typedef `type` denotes `TT<Ts\...>`.
 
 [NOTE]
 .Notes on single-type variant
 A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
+
+[WARNING]
+`compact_alternative` does not unwrap xref:#rvariant.recursive[`recursive_wrapper`]. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply xref:#rvariant.recursive.helper[`unwrap_recursive_t`] manually.
 
 
 [[rvariant.io]]
@@ -1073,13 +1109,11 @@ This section demonstrates internal features used in the implementation.
 [,cpp,subs="+macros,+attributes"]
 ----
 template<template<class...> class TT, class A, class B>
-using pass:quotes[_pack-union-t_] = {see-below}; // exposition-onlypass:quotes[[.candidate\]#// 1#]
+using pass:quotes[_pack-union-t_] = {see-below}; // exposition-only
 ----
 
 [.candidates]
---
-* [.candidate]#1)# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_is-specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `_pack-union-t_` is `TT<Ts\...>`, where `Ts\...` is the set union of `As\...` and `Bs\...` expanded from left to right. For duplicate types, the first occurrence shall remain in `Ts\...`.
---
+* [.candidate]#{empty}# Let `As` denote the pack of template parameters of `A` if xref:#rvariant.xo.core[`_is-specialization-of<A, TT>_`], otherwise let `As` denote a pack of single type `A`. Let `Bs` denote likewise. `_pack-union-t_` denotes `TT<Ts\...>`, where `Ts\...` is the set union of `As\...` and `Bs\...` expanded from left to right. For duplicate types, the first occurrence shall remain in `Ts\...`.
 
 
 [[rvariant.xo.core]]
