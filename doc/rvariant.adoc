@@ -462,7 +462,7 @@ public:
 === General
 
 * Class template `rvariant` follows all requirements of `std::variant`, unless otherwise noted.
-* All `Ts\...` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
+* All types in `Ts` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
 * [.underline]#Let `T` denote an arbitrary type. If a user provides both `T` and `xref:#rvariant.recursive[recursive_wrapper]<T>` for the template parameter of `rvariant`, the program is ill-formed.#
 
 NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
@@ -517,9 +517,9 @@ include::_std-variant-proxy.adoc[]
 *_Remarks:_*
 +
 [none]
-** -- This constructor is defined as deleted unless [.underline]#`xref:#rvariant.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+** -- This constructor is defined as deleted unless [.underline]#`xref:#rvariant.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v[.underline]##<U~_j_~>##` is `true` for all [.underline]#_j_, where `U~_j_~` be the _j_^th^ type in `Us`#.
 
-** -- [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by the subject. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the same type in `Ts\...`.#
+** -- [.underline]#The corresponding alternative for `rvariant` is the one that has the same type as the alternative held by the subject. In case of duplicate alternatives, the alternative index in `rvariant` shall be determined by the first occurrence of the same type in `Ts`.#
 
 * [.candidate]#10)# _Flexible move constructor_.
 +
@@ -532,7 +532,7 @@ Equivalent to #9, except for:
 *_Remarks:_*
 +
 [none]
-** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v[.underline]##<U~_j_~>##` for all [.underline]#_j_, where `U~_j_~` be the _j_^th^ type in `Us`#.
 
 
 [[rvariant.dtor]]
@@ -693,18 +693,18 @@ constexpr rvariant<Us...> subset() && noexcept({see-below});pass:quotes[[.candid
 *_Throws:_* Any exception thrown by move-constructing any type in `Us`.
 
 * [.candidate]#3)#
-*_Mandates:_* `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
+*_Mandates:_* `std::is_copy_constructible_v[.underline]##<U~_j_~>##` is `true` for all [.underline]#_j_, where `U~_j_~` be the _j_^th^ type in `Us`#.
 +
-*_Effects:_* If `*this` holds a value, returns an `rvariant<Us\...>` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_&lt;__i__&gt;(*this)`, where _i_ is `this\->index()`. Otherwise, returns an `rvariant<Us\...>` object that does not hold a value.
+*_Effects:_* If `*this` holds a value, returns an `rvariant[.underline]##<Us\...>##` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_&lt;__i__&gt;(*this)`, where _i_ is `this\->index()`. Otherwise, returns an `rvariant[.underline]##<Us\...>##` object that does not hold a value.
 +
-*_Throws:_* {bad-variant-access} if `*this` holds an alternative that is not contained in `Us`; otherwise, throws any exception thrown by copy-constructing any type in `Us`.
+*_Throws:_* {bad-variant-access} if `*this` holds an alternative that is not contained in [.underline]#`Us`#; otherwise, throws any exception thrown by copy-constructing any type in [.underline]#`Us`#.
 +
 *_Remarks:_*
 +
 [none]
 ** -- [.underline]#This function does not participate in overload resolution unless `xref:#rvariant.flexibility[subset_of]<rvariant<Us\...>, rvariant>` is `true`.#
 
-** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_copy_constructible_v<U~_j_~>` for all _j_ [.underline]#If `xref:#rvariant.flexibility[equivalent_to]<rvariant<Us\...>, rvariant>` is `true`; otherwise, it is equivalent to `false`#.
+** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_copy_constructible_v[.underline]##<U~_j_~>##` for all [.underline]#_j_# [.underline]#If `xref:#rvariant.flexibility[equivalent_to]<rvariant<Us\...>, rvariant>` is `true`; otherwise, it is equivalent to `false`#.
 
 ** -- [.underline]#The corresponding index on the returned `rvariant<Us\...>` object shall be determined according to the rules defined in xref:#rvariant.ctor[the flexible copy constructor].#
 
@@ -712,7 +712,7 @@ constexpr rvariant<Us...> subset() && noexcept({see-below});pass:quotes[[.candid
 +
 *_Effects:_* `_GET_&lt;__i__&gt;(*this)` is replaced with `_GET_&lt;__i__&gt;(std::move(*this))`.
 +
-*_Throws:_* {bad-variant-access} if `*this` holds an alternative that is not contained in `Us`; otherwise, throws any exception thrown by move-constructing any type in `Us`.
+*_Throws:_* {bad-variant-access} if `*this` holds an alternative that is not contained in [.underline]#`Us`#; otherwise, throws any exception thrown by move-constructing any type in [.underline]#`Us`#.
 +
 *_Remarks:_*
 +
@@ -784,7 +784,7 @@ concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
 ----
 
 [.candidates]
-* [.candidate]#1)# *_Constraints:_* For every type `U` in `Us\...`, there exists at least one type `T` in `Ts\...` such that `U` is the same type as `T`.
+* [.candidate]#1)# *_Constraints:_* For every type `U` in `Us`, there exists at least one type `T` in `Ts` such that `U` is the same type as `T`.
 
 
 [[rvariant.get]]

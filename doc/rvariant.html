@@ -729,7 +729,7 @@ public:
 <p>Class template <code>rvariant</code> follows all requirements of <code>std::variant</code>, unless otherwise noted.</p>
 </li>
 <li>
-<p>All <code>Ts...</code> must satisfy all requirements on the corresponding parameter in <code>std::variant</code>, unless otherwise noted.</p>
+<p>All types in <code>Ts</code> must satisfy all requirements on the corresponding parameter in <code>std::variant</code>, unless otherwise noted.</p>
 </li>
 <li>
 <p><span class="underline">Let <code>T</code> denote an arbitrary type. If a user provides both <code>T</code> and <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T&gt;</code> for the template parameter of <code>rvariant</code>, the program is ill-formed.</span></p>
@@ -803,10 +803,10 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;This constructor is defined as deleted unless <span class="underline"><code><a href="#rvariant.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+<p>&#8201;&#8212;&#8201;This constructor is defined as deleted unless <span class="underline"><code><a href="#rvariant.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline">The corresponding alternative for <code>rvariant</code> is the one that has the same type as the alternative held by the subject. In case of duplicate alternatives, the alternative index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts...</code>.</span></p>
+<p>&#8201;&#8212;&#8201;<span class="underline">The corresponding alternative for <code>rvariant</code> is the one that has the same type as the alternative held by the subject. In case of duplicate alternatives, the alternative index in <code>rvariant</code> shall be determined by the first occurrence of the same type in <code>Ts</code>.</span></p>
 </li>
 </ul>
 </div>
@@ -828,7 +828,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_move_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
 </li>
 </ul>
 </div>
@@ -1051,12 +1051,12 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 </li>
 <li>
 <p><span class="candidate">3)</span>
-<strong><em>Mandates:</em></strong> <code>std::is_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> for all <em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us...</code>.</p>
+<strong><em>Mandates:</em></strong> <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> If <code>*this</code> holds a value, returns an <code>rvariant&lt;Us...&gt;</code> object that holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, with its contained value direct-initialized from <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code>, where <em>i</em> is <code>this-&gt;index()</code>. Otherwise, returns an <code>rvariant&lt;Us...&gt;</code> object that does not hold a value.</p>
+<p><strong><em>Effects:</em></strong> If <code>*this</code> holds a value, returns an <code>rvariant<span class="underline">&lt;Us...&gt;</span></code> object that holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, with its contained value direct-initialized from <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code>, where <em>i</em> is <code>this-&gt;index()</code>. Otherwise, returns an <code>rvariant<span class="underline">&lt;Us...&gt;</span></code> object that does not hold a value.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Throws:</em></strong> <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a> if <code>*this</code> holds an alternative that is not contained in <code>Us</code>; otherwise, throws any exception thrown by copy-constructing any type in <code>Us</code>.</p>
+<p><strong><em>Throws:</em></strong> <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a> if <code>*this</code> holds an alternative that is not contained in <span class="underline"><code>Us</code></span>; otherwise, throws any exception thrown by copy-constructing any type in <span class="underline"><code>Us</code></span>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
@@ -1067,7 +1067,7 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 <p>&#8201;&#8212;&#8201;<span class="underline">This function does not participate in overload resolution unless <code><a href="#rvariant.flexibility">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>.</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> for all <em>j</em> <span class="underline">If <code><a href="#rvariant.flexibility">equivalent_to</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>; otherwise, it is equivalent to <code>false</code></span>.</p>
+<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_copy_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> for all <span class="underline"><em>j</em></span> <span class="underline">If <code><a href="#rvariant.flexibility">equivalent_to</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>; otherwise, it is equivalent to <code>false</code></span>.</p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;<span class="underline">The corresponding index on the returned <code>rvariant&lt;Us...&gt;</code> object shall be determined according to the rules defined in <a href="#rvariant.ctor">the flexible copy constructor</a>.</span></p>
@@ -1081,7 +1081,7 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 <p><strong><em>Effects:</em></strong> <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code> is replaced with <code><em>GET</em>&lt;<em>i</em>&gt;(std::move(*this))</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Throws:</em></strong> <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a> if <code>*this</code> holds an alternative that is not contained in <code>Us</code>; otherwise, throws any exception thrown by move-constructing any type in <code>Us</code>.</p>
+<p><strong><em>Throws:</em></strong> <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a> if <code>*this</code> holds an alternative that is not contained in <span class="underline"><code>Us</code></span>; otherwise, throws any exception thrown by move-constructing any type in <span class="underline"><code>Us</code></span>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
@@ -1173,7 +1173,7 @@ concept equivalent_to = subset_of&lt;T, U&gt; &amp;&amp; subset_of&lt;U, T&gt;;<
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us...</code>, there exists at least one type <code>T</code> in <code>Ts...</code> such that <code>U</code> is the same type as <code>T</code>.</p>
+<p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us</code>, there exists at least one type <code>T</code> in <code>Ts</code> such that <code>U</code> is the same type as <code>T</code>.</p>
 </li>
 </ul>
 </div>
