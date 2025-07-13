@@ -113,7 +113,7 @@ li p:has(+ .ulist) {
   display: none;
 }
 
-.see-below {
+.see-below, .exposition-only {
   font-style: italic;
   font-weight: normal;
   color: rgb(129, 199, 129);

@@ -14,6 +14,8 @@ Yaito Kakeyama; Nana Sakisaka
 :reproducible:
 
 :see-below: pass:quotes[[.see-below]#see below#]
+:exposition-only: pass:quotes[[.exposition-only]#exposition only#]
+:bad-variant-access: pass:quotes,macros[https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`]]
 
 `rvariant` is a variant library that supports recursive types. It is API-compatible with `std::variant` and includes Boost-style interfaces that act as proxies to the standard-compatible API.
 
@@ -160,7 +162,7 @@ ab = AB{123};
 
 A& a = temp_ns::xref:#rvariant.get[get]<0>(ab);
 A& a = temp_ns::get<A>(ab);
-C& c = temp_ns::get<C>(ab);     // throws https://en.cppreference.com/w/cpp/utility/variant/bad_variant_access.html[`std::bad_variant_access`]
+C& c = temp_ns::get<C>(ab);     // throws {bad-variant-access}
 
 A* a = temp_ns::xref:#rvariant.get[get_if]<0>(&ab);
 A* a = temp_ns::get_if<A>(&ab);
@@ -240,7 +242,7 @@ std::size_t _ = xref:#rvariant.syn[hash_value(ab)]; // compatibility with boost
 [[rvariant.general]]
 == General
 * [.underline]#Underlined texts# indicate important characteristics of ``rvariant``'s extensions, in contrast to the `std::variant` counterparts.
-* `_GET_` is defined as per https://eel.is/c++draft/variant.get[[variant.get\]].
+* In [rvariant], `_GET_` denotes a set of exposition-only function templates (xref:#rvariant.get[[rvariant.get\]]).
 
 
 [[rvariant.syn]]
@@ -251,7 +253,7 @@ std::size_t _ = xref:#rvariant.syn[hash_value(ab)]; // compatibility with boost
 #include <compare>
 #include <type_traits> // for `std::add_pointer`, etc.
 #include <utility>     // for `std::in_place_type`, etc.
-#include <variant>     // for compatibility with `std::bad_variant_access`
+#include <variant>     // for compatibility with {bad-variant-access}
 
 namespace temp_ns {
 
@@ -273,7 +275,7 @@ class rvariant;
 https://eel.is/c++draft/variant.syn[/* not defined; use the pass:quotes[`std::`] versions instead */]
     // variant_npos
     // monostate and monostate-related functionalities
-    // bad_variant_access
+    // {bad-variant-access}
 
 /* extensions */
 /* behaves differently mostly because of the existence of pass:quotes[`recursive_wrapper`] */
@@ -304,14 +306,10 @@ template<std::size_t I, class... Ts>
   constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
     get(rvariant<Ts...> const&&);
 
-template<class T, class... Ts>
-  constexpr T& get(rvariant<Ts...>&);
-template<class T, class... Ts>
-  constexpr T&& get(rvariant<Ts...>&&);
-template<class T, class... Ts>
-  constexpr T const& get(rvariant<Ts...> const&);
-template<class T, class... Ts>
-  constexpr T const&& get(rvariant<Ts...> const&&);
+template<class T, class... Ts> constexpr T&        get(rvariant<Ts...>&);
+template<class T, class... Ts> constexpr T&&       get(rvariant<Ts...>&&);
+template<class T, class... Ts> constexpr T const&  get(rvariant<Ts...> const&);
+template<class T, class... Ts> constexpr T const&& get(rvariant<Ts...> const&&);
 
 template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
@@ -319,14 +317,6 @@ template<std::size_t I, class... Ts>
 template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
     get_if(rvariant<Ts...> const*) noexcept;
-
-template<class T, class... Ts>
-  constexpr std::add_pointer_t<T>
-    get_if(rvariant<Ts...>*) noexcept;
-template<class T, class... Ts>
-  constexpr std::add_pointer_t<T const>
-    get_if(rvariant<Ts...> const*) noexcept;
-
 template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
     pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with pass:quotes[`boost::get`]
@@ -334,6 +324,12 @@ template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
     pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with pass:quotes[`boost::get`]
 
+template<class T, class... Ts>
+  constexpr std::add_pointer_t<T>
+    get_if(rvariant<Ts...>*) noexcept;
+template<class T, class... Ts>
+  constexpr std::add_pointer_t<T const>
+    get_if(rvariant<Ts...> const*) noexcept;
 template<class T, class... Ts>
   constexpr std::add_pointer_t<T>
     pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with pass:quotes[`boost::get`]
@@ -508,7 +504,6 @@ constexpr rvariant(rvariant<Us...>&& w) noexcept({see-below});pass:quotes[[.cand
 ----
 
 [.candidates]
---
 :spec-url: https://eel.is/c++draft/variant.ctor
 * [.candidate]#1-8)#
 include::_std-variant-proxy.adoc[]
@@ -516,6 +511,8 @@ include::_std-variant-proxy.adoc[]
 * [.candidate]#9)# _Flexible copy constructor_.
 +
 *_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the [.underline]#alternative corresponding to that of# `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()`. Otherwise, initializes the `rvariant` to not hold a value.
++
+*_Throws:_* Any exception thrown by direct-initializing any type in [.underline]#`Us`#.
 +
 *_Remarks:_*
 +
@@ -526,25 +523,16 @@ include::_std-variant-proxy.adoc[]
 
 * [.candidate]#10)# _Flexible move constructor_.
 +
-Equivalent to #9, except that:
+Equivalent to #9, except for:
++
+*_Effects:_* `_GET_<j>(w)` is replaced with `_GET_<j>(std::move(w))`.
++
+*_Throws:_* Any exception thrown by move-constructing any type in [.underline]#`Us`#.
++
+*_Remarks:_*
 +
 [none]
-** -- `_GET_<j>(w)` is replaced with `_GET_<j>(std::move(w))`, and
 ** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_move_constructible_v<U~_j_~>` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
---
-
-Exceptions ::
-+
-[.candidates]
---
-:spec-url: https://eel.is/c++draft/variant.ctor
-* [.candidate]#1-8)#
-include::_std-variant-proxy.adoc[]
-
-* [.candidate]#9)# Throws any exception thrown by direct-initializing any type in `Us\...`.
-
-* [.candidate]#10)# Throws any exception thrown by move-constructing any type in `Us\...`.
---
 
 
 [[rvariant.dtor]]
@@ -696,14 +684,20 @@ constexpr rvariant<Us...> subset() && noexcept({see-below});pass:quotes[[.candid
 
 [.candidates]
 --
-* [.candidate]#1)# Returns `*this`.
+* [.candidate]#1)# *_Returns:_* `*this`.
++
+*_Throws:_* Any exception thrown by copy-constructing any type in `Us`.
 
-* [.candidate]#2)# Returns `std::move(*this)`.
+* [.candidate]#2)# *_Returns:_* `std::move(*this)`.
++
+*_Throws:_* Any exception thrown by move-constructing any type in `Us`.
 
 * [.candidate]#3)#
 *_Mandates:_* `std::is_copy_constructible_v<U~_j_~>` is `true` for all _j_, where `U~_j_~` be the _j_^th^ type in `Us\...`.
 +
 *_Effects:_* If `*this` holds a value, returns an `rvariant<Us\...>` object that holds the [.underline]#alternative corresponding to that of# `*this`, with its contained value direct-initialized from `_GET_&lt;__i__&gt;(*this)`, where _i_ is `this\->index()`. Otherwise, returns an `rvariant<Us\...>` object that does not hold a value.
++
+*_Throws:_* {bad-variant-access} if `*this` holds an alternative that is not contained in `Us`; otherwise, throws any exception thrown by copy-constructing any type in `Us`.
 +
 *_Remarks:_*
 +
@@ -714,25 +708,17 @@ constexpr rvariant<Us...> subset() && noexcept({see-below});pass:quotes[[.candid
 
 ** -- [.underline]#The corresponding index on the returned `rvariant<Us\...>` object shall be determined according to the rules defined in xref:#rvariant.ctor[the flexible copy constructor].#
 
-* [.candidate]#4)# Equivalent to the overload #3, except that:
+* [.candidate]#4)# Equivalent to the overload #3, except for:
++
+*_Effects:_* `_GET_&lt;__i__&gt;(*this)` is replaced with `_GET_&lt;__i__&gt;(std::move(*this))`.
++
+*_Throws:_* {bad-variant-access} if `*this` holds an alternative that is not contained in `Us`; otherwise, throws any exception thrown by move-constructing any type in `Us`.
++
+*_Remarks:_*
 +
 [none]
-** -- `_GET_&lt;__i__&gt;(*this)` is replaced with `_GET_&lt;__i__&gt;(std::move(*this))`, and
 ** -- `std::is_copy_constructible_v` is replaced with `std::is_move_constructible_v`, and
 ** -- `std::is_nothrow_copy_constructible_v` is replaced with `std::is_nothrow_move_constructible_v`.
---
-
-Exceptions ::
-+
-[.candidates]
---
-* [.candidate]#1)# Throws any exception thrown by copy-constructing any type in `Us\...`.
-
-* [.candidate]#2)# Throws any exception thrown by move-constructing any type in `Us\...`.
-
-* [.candidate]#3)# Throws https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`] if `*this` holds an alternative that is not contained in `Us\...`; otherwise, throws any exception thrown by copy-constructing any type in `Us\...`.
-
-* [.candidate]#4)# Throws https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`] if `*this` holds an alternative that is not contained in `Us\...`; otherwise, throws any exception thrown by move-constructing any type in `Us\...`.
 --
 
 
@@ -822,75 +808,128 @@ constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;
 ----
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&
-  get(rvariant<Ts...>& v);pass:quotes[[.candidate\]#// 1#]
+  pass:quotes[_GET_](rvariant<Ts...>& v);        // {exposition-only}
 
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&&
-  get(rvariant<Ts...>&& v);pass:quotes[[.candidate\]#// 2#]
+  pass:quotes[_GET_](rvariant<Ts...>&& v);       // {exposition-only}
 
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>> const&
-  get(rvariant<Ts...> const& v);pass:quotes[[.candidate\]#// 3#]
+  pass:quotes[_GET_](rvariant<Ts...> const& v);  // {exposition-only}
 
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
-  get(rvariant<Ts...> const&& v);pass:quotes[[.candidate\]#// 4#]
-
-template<class T, class... Ts> constexpr T& get(rvariant<Ts...>& v);pass:quotes[[.candidate\]#// 5#]
-template<class T, class... Ts> constexpr T&& get(rvariant<Ts...>&& v);pass:quotes[[.candidate\]#// 6#]
-template<class T, class... Ts> constexpr T const& get(rvariant<Ts...> const& v);pass:quotes[[.candidate\]#// 7#]
-template<class T, class... Ts> constexpr T const&& get(rvariant<Ts...> const&& v);pass:quotes[[.candidate\]#// 8#]
-
-template<std::size_t I, class... Ts>
-constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
-  get_if(rvariant<Ts...>*) noexcept;pass:quotes[[.candidate\]#// 9#]
-
-template<std::size_t I, class... Ts>
-constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
-  get_if(rvariant<Ts...> const* v) noexcept;pass:quotes[[.candidate\]#// 10#]
-
-template<class T, class... Ts>
-constexpr std::add_pointer_t<T>
-  get_if(rvariant<Ts...>* v) noexcept;pass:quotes[[.candidate\]#// 11#]
-
-template<class T, class... Ts>
-constexpr std::add_pointer_t<T const>
-  get_if(rvariant<Ts...> const* v) noexcept;pass:quotes[[.candidate\]#// 12#]
-
-
-template<std::size_t I, class... Ts>
-constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;         // compatibility with `boost::get`pass:quotes[[.candidate\]#// 13#]
-
-template<std::size_t I, class... Ts>
-constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with `boost::get`pass:quotes[[.candidate\]#// 14#]
-
-template<class T, class... Ts>
-constexpr std::add_pointer_t<T>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...>* v) noexcept;       // compatibility with `boost::get`pass:quotes[[.candidate\]#// 15#]
-
-template<class T, class... Ts>
-constexpr std::add_pointer_t<T const>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with `boost::get`pass:quotes[[.candidate\]#// 16#]
+  pass:quotes[_GET_](rvariant<Ts...> const&& v); // {exposition-only}
 ----
 
 [.candidates]
-* [.candidate]#1-4)# TODO
-
-* [.candidate]#5-8)# TODO
-
-* [.candidate]#9-10)# TODO
-
-* [.candidate]#11-12)# TODO
-
-* [.candidate]#13-14)# Provided for compatibility with `boost::get`.
+* [.candidate]#{empty}# *_Mandates:_* `I < sizeof\...(Ts)`.
 +
-*_Effects:_* Equivalent to `get_if<I>(v)`.
-
-* [.candidate]#15-16)# Provided for compatibility with `boost::get`.
+*_Preconditions:_* `v.index()` is `I`.
 +
-*_Effects:_* Equivalent to `get_if<T>(v)`.
+*_Returns:_* [.underline]#`xref:#rvariant.recursive.helper[_UNWRAP_RECURSIVE_](o)`, where `o` denotes a reference to the object stored in the `rvariant`#.
+
+
+[,cpp,subs="+macros,+attributes"]
+----
+template<std::size_t I, class... Ts>
+constexpr variant_alternative_t<I, rvariant<Ts...>>&
+  get(rvariant<Ts...>& v);
+
+template<std::size_t I, class... Ts>
+constexpr variant_alternative_t<I, rvariant<Ts...>>&&
+  get(rvariant<Ts...>&& v);
+
+template<std::size_t I, class... Ts>
+constexpr variant_alternative_t<I, rvariant<Ts...>> const&
+  get(rvariant<Ts...> const& v);
+
+template<std::size_t I, class... Ts>
+constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
+  get(rvariant<Ts...> const&& v);
+----
+
+[.candidates]
+* [.candidate]#{empty}# *_Mandates:_* `I < sizeof\...(Ts)`.
++
+*_Effects:_* If `v.index()` is `I`, returns [.underline]#`xref:#rvariant.recursive.helper[_UNWRAP_RECURSIVE_](o)`, where `o` denotes a reference to the object stored in the `rvariant`#. Otherwise, throws an exception of type {bad-variant-access}.
+
+
+[,cpp,subs="+macros,+attributes"]
+----
+template<class T, class... Ts> constexpr T&        get(rvariant<Ts...>& v);
+template<class T, class... Ts> constexpr T&&       get(rvariant<Ts...>&& v);
+template<class T, class... Ts> constexpr T const&  get(rvariant<Ts...> const& v);
+template<class T, class... Ts> constexpr T const&& get(rvariant<Ts...> const&& v);
+----
+
+[.candidates]
+* [.candidate]#{empty}# *_Mandates:_* The type `T` occurs exactly once in [.underline]#pass:quotes,macros[`xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;Ts&gt;`]#.
++
+*_Effects:_* [.underline]#Let `VT` denote the type of the value held by `v`. If pass:quotes,macros[`xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;VT&gt;`] is the same type as `T`#, returns [.underline]#`xref:#rvariant.recursive.helper[_UNWRAP_RECURSIVE_](o)`, where `o` denotes a reference to the object stored in the `rvariant`#. Otherwise, throws an exception of type {bad-variant-access}.
++
+*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of xref:#rvariant.recursive[`recursive_wrapper`].#
+
+
+[,cpp,subs="+macros,+attributes"]
+----
+template<std::size_t I, class... Ts>
+constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
+  get_if(rvariant<Ts...>*) noexcept;pass:quotes[[.candidate\]#// 1#]
+
+template<std::size_t I, class... Ts>
+constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
+  get_if(rvariant<Ts...> const* v) noexcept;pass:quotes[[.candidate\]#// 2#]
+
+template<std::size_t I, class... Ts>
+constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
+  pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;         // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 3#]
+
+template<std::size_t I, class... Ts>
+constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
+  pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 4#]
+----
+
+[.candidates]
+* [.candidate]#1-2)# *_Mandates:_* `I < sizeof\...(Ts)`.
++
+*_Returns:_* A pointer to the value [.underline]#denoted by `xref:#rvariant.recursive.helper[_UNWRAP_RECURSIVE_](o)`, where `o` denotes a reference to the object stored in the `rvariant`#, if `v != nullptr` and `v\->index() == I`. Otherwise, returns `nullptr`.
+
+* [.candidate]#3-4)# Provided for compatibility with `boost::get`.
++
+*_Returns:_* `get_if<I>(v)`.
+
+
+[,cpp,subs="+macros,+attributes"]
+----
+template<class T, class... Ts>
+constexpr std::add_pointer_t<T>
+  get_if(rvariant<Ts...>* v) noexcept;pass:quotes[[.candidate\]#// 1#]
+
+template<class T, class... Ts>
+constexpr std::add_pointer_t<T const>
+  get_if(rvariant<Ts...> const* v) noexcept;pass:quotes[[.candidate\]#// 2#]
+
+template<class T, class... Ts>
+constexpr std::add_pointer_t<T>
+  pass:quotes[[.underline\]#get#](rvariant<Ts...>* v) noexcept;       // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 3#]
+
+template<class T, class... Ts>
+constexpr std::add_pointer_t<T const>
+  pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 4#]
+----
+
+[.candidates]
+* [.candidate]#1-2)# *_Mandates:_* The type `T` occurs exactly once in [.underline]#pass:quotes,macros[`xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;Ts&gt;`]#.
++
+*_Effects:_* Equivalent to: `return get_if<__i__>(v);` with _i_ being the zero-based index of `T` in [.underline]#pass:quotes,macros[`xref:#rvariant.recursive.helper[unwrap_recursive_t\]&lt;Ts&gt;`]#.
++
+*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of xref:#rvariant.recursive[`recursive_wrapper`].#
+
+* [.candidate]#3-4)# Provided for compatibility with `boost::get`.
++
+*_Returns:_* `get_if<T>(v)`.
 
 
 [[rvariant.visit]]
@@ -1066,6 +1105,15 @@ struct unwrap_recursive<recursive_wrapper<T, Allocator>>
 } // temp_ns
 ----
 
+[,cpp,subs="+macros,+attributes"]
+----
+template<class T>
+constexpr {see-below} pass:quotes[_UNWRAP_RECURSIVE_](T&& o) noexcept; // {exposition-only}
+----
+
+[.candidates]
+* [.candidate]#{empty}# *_Effects:_* Denotes `*o`, if cv-unqualified non-reference type for `T` is a specialization of xref:#rvariant.recursive[`recursive_wrapper`]. Otherwise, denotes `o`.
+
 
 [[rvariant.pack]]
 == Pack manipulation and deduping
@@ -1095,7 +1143,7 @@ A variant with a single alternative may introduce unnecessary overhead when used
 
 [[rvariant.io]]
 == I/O
-TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+TODO
 
 
 [[rvariant.xo]]
@@ -1109,7 +1157,7 @@ This section demonstrates internal features used in the implementation.
 [,cpp,subs="+macros,+attributes"]
 ----
 template<template<class...> class TT, class A, class B>
-using pass:quotes[_pack-union-t_] = {see-below}; // exposition-only
+using pass:quotes[_pack-union-t_] = {see-below}; // {exposition-only}
 ----
 
 [.candidates]
@@ -1122,13 +1170,13 @@ using pass:quotes[_pack-union-t_] = {see-below}; // exposition-only
 [,cpp,subs="+macros,+attributes"]
 ----
 template<class T, template<class...> class TT>
-struct pass:quotes[_is-ttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 1#]
+struct pass:quotes[_is-ttp-specialization-of_];  // {exposition-only}pass:quotes[[.candidate\]#// 1#]
 
 template<class T, template<auto...> class TT>
-struct pass:quotes[_is-nttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 2#]
+struct pass:quotes[_is-nttp-specialization-of_]; // {exposition-only}pass:quotes[[.candidate\]#// 2#]
 
 template<class T, pass:quotes[_any-ttp_]>
-struct pass:quotes[_is-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 3#]
+struct pass:quotes[_is-specialization-of_];      // {exposition-only}pass:quotes[[.candidate\]#// 3#]
 ----
 
 [.candidates]
