@@ -113,6 +113,12 @@ li p:has(+ .ulist) {
   display: none;
 }
 
+.see-below {
+  font-style: italic;
+  font-weight: normal;
+  color: rgb(129, 199, 129);
+}
+
 .small-note {
   font-size: 0.9em;
   opacity: 0.8;
