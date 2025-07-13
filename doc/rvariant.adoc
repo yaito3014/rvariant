@@ -1239,8 +1239,16 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 
 = Additional information
 
+
+[[benchmark]]
 == Benchmark
 
 Non-recursive / Recursive
 
 GCC / Clang / MSVC
+
+
+[[about]]
+== About authors
+
+TODO
