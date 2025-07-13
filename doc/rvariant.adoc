@@ -13,9 +13,11 @@ Yaito Kakeyama; Nana Sakisaka
 :toclevels: 2
 :reproducible:
 
+:see-below: pass:quotes[[.see-below]#see below#]
+
 `rvariant` is a variant library that supports recursive types. It is API-compatible with `std::variant` and includes Boost-style interfaces that act as proxies to the standard-compatible API.
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 // A common pattern for representing recursive ASTs using recursive variants.
 struct BinaryExpr; enum class Op;
@@ -244,7 +246,7 @@ std::size_t _ = xref:#rvariant.syn[hash_value(ab)]; // compatibility with boost
 [[rvariant.syn]]
 == Header <temp_ns/rvariant.hpp> synopsis
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 #include <compare>
 #include <type_traits> // for `std::add_pointer`, etc.
@@ -341,7 +343,7 @@ template<class T, class... Ts>
 
 // xref:#rvariant.visit[[rvariant.visit\]], visitation
 template<class Visitor, class... Variants>
-  constexpr pass:quotes[[.see-below\]#see below#] visit(Visitor&&, Variants&&...);
+  constexpr {see-below} visit(Visitor&&, Variants&&...);
 template<class R, class Visitor, class... Variants>
   constexpr R visit(Visitor&&, Variants&&...);
 
@@ -355,7 +357,7 @@ template<class... Ts>
 } // temp_ns
 ----
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace std {
 
@@ -368,7 +370,7 @@ template<class... Ts> struct hash<::temp_ns::rvariant<Ts...>>;
 [[rvariant.rvariant]]
 == Class template `rvariant`
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace temp_ns {
 
@@ -377,12 +379,12 @@ class rvariant
 {
 public:
   // xref:#rvariant.ctor[[rvariant.ctor\]], constructors
-  constexpr rvariant::rvariant() noexcept(pass:quotes[[.see-below\]#see below#]);
+  constexpr rvariant::rvariant() noexcept({see-below});
   constexpr rvariant::rvariant(rvariant const&);
-  constexpr rvariant::rvariant(rvariant&&) noexcept(pass:quotes[[.see-below\]#see below#]);
+  constexpr rvariant::rvariant(rvariant&&) noexcept({see-below});
 
   template<class T>
-    constexpr rvariant(T&&) noexcept(pass:quotes[[.see-below\]#see below#]);
+    constexpr rvariant(T&&) noexcept({see-below});
 
   template<class T, class... Args>
     constexpr explicit rvariant(std::in_place_type_t<T>, Args&&...);
@@ -397,22 +399,22 @@ public:
   template<class... Us>
     constexpr rvariant(rvariant<Us...> const& w);
   template<class... Us>
-    constexpr rvariant(rvariant<Us...>&& w) noexcept(pass:quotes[[.see-below\]#see below#]);
+    constexpr rvariant(rvariant<Us...>&& w) noexcept({see-below});
 
   // xref:#rvariant.dtor[[rvariant.dtor\]], destructor
   constexpr ~rvariant();
 
   // xref:#rvariant.assign[[rvariant.assign\]], assignment
   constexpr rvariant& operator=(rvariant const&);
-  constexpr rvariant& operator=(rvariant&&) noexcept(pass:quotes[[.see-below\]#see below#]);
+  constexpr rvariant& operator=(rvariant&&) noexcept({see-below});
 
-  template<class T> constexpr rvariant& operator=(T&&) noexcept(pass:quotes[[.see-below\]#see below#]);
+  template<class T> constexpr rvariant& operator=(T&&) noexcept({see-below});
 
   // xref:#rvariant.assign[[rvariant.assign\]], flexible assignment
   template<class... Us>
     constexpr rvariant& operator=(rvariant<Us...> const&);
   template<class... Us>
-    constexpr rvariant& operator=(rvariant<Us...>&&) noexcept(pass:quotes[[.see-below\]#see below#]);
+    constexpr rvariant& operator=(rvariant<Us...>&&) noexcept({see-below});
 
   // xref:#rvariant.mod[[rvariant.mod\]], modifiers
   template<class T, class... Args>
@@ -431,12 +433,12 @@ public:
 
   // xref:#rvariant.subset[[rvariant.subset\]], subset
   template<class... Us>
-    constexpr rvariant<Us...> subset() const& noexcept(pass:quotes[[.see-below\]#see below#]);
+    constexpr rvariant<Us...> subset() const& noexcept({see-below});
   template<class... Us>
-    constexpr rvariant<Us...> subset() && noexcept(pass:quotes[[.see-below\]#see below#]);
+    constexpr rvariant<Us...> subset() && noexcept({see-below});
 
   // xref:#rvariant.swap[[rvariant.swap\]], swap
-  constexpr void swap(rvariant&) noexcept(pass:quotes[[.see-below\]#see below#]);
+  constexpr void swap(rvariant&) noexcept({see-below});
 
   // xref:#rvariant.visit[[rvariant.visit\]], visitation
   template<class Self, class Visitor>
@@ -462,14 +464,14 @@ NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and http
 [[rvariant.ctor]]
 === Constructors
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
-constexpr rvariant::rvariant() noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 1#]
+constexpr rvariant::rvariant() noexcept({see-below});pass:quotes[[.candidate\]#// 1#]
 constexpr rvariant::rvariant(rvariant const&);pass:quotes[[.candidate\]#// 2#]
-constexpr rvariant::rvariant(rvariant&&) noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 3#]
+constexpr rvariant::rvariant(rvariant&&) noexcept({see-below});pass:quotes[[.candidate\]#// 3#]
 
 template<class T>
-constexpr rvariant(T&&) noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 4#]
+constexpr rvariant(T&&) noexcept({see-below});pass:quotes[[.candidate\]#// 4#]
 
 template<class T, class... Args>
 constexpr explicit rvariant(std::in_place_type_t<T>, Args&&...);pass:quotes[[.candidate\]#// 5#]
@@ -491,7 +493,7 @@ constexpr rvariant(rvariant<Us...> const& w);pass:quotes[[.candidate\]#// 9#]
 
 // Flexible move constructor
 template<class... Us>
-constexpr rvariant(rvariant<Us...>&& w) noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 10#]
+constexpr rvariant(rvariant<Us...>&& w) noexcept({see-below});pass:quotes[[.candidate\]#// 10#]
 ----
 
 [.candidates]
@@ -537,7 +539,7 @@ include::_std-variant-proxy.adoc[]
 [[rvariant.dtor]]
 === Destructor
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 constexpr ~rvariant();pass:quotes[[.candidate\]#// 1#]
 ----
@@ -553,12 +555,12 @@ include::_std-variant-proxy.adoc[]
 [[rvariant.assign]]
 === Assignment
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 constexpr rvariant& operator=(rvariant const&);pass:quotes[[.candidate\]#// 1#]
-constexpr rvariant& operator=(rvariant&&) noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 2#]
+constexpr rvariant& operator=(rvariant&&) noexcept({see-below});pass:quotes[[.candidate\]#// 2#]
 
-template<class T> constexpr rvariant& operator=(T&&) noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 3#]
+template<class T> constexpr rvariant& operator=(T&&) noexcept({see-below});pass:quotes[[.candidate\]#// 3#]
 
 /* extensions */
 
@@ -568,7 +570,7 @@ constexpr rvariant& operator=(rvariant<Us...> const& rhs);pass:quotes[[.candidat
 
 // Flexible move assignment operator
 template<class... Us>
-constexpr rvariant& operator=(rvariant<Us...>&& rhs) noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 5#]
+constexpr rvariant& operator=(rvariant<Us...>&& rhs) noexcept({see-below});pass:quotes[[.candidate\]#// 5#]
 ----
 
 [.candidates]
@@ -625,7 +627,7 @@ Let _j_ be `rhs.index()`. [.underline]#Let `U~_k_~` be the _k_^th^ type in `Us\.
 [[rvariant.mod]]
 === Modifiers
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<class T, class... Args>
 constexpr T& emplace(Args&&...);
@@ -649,7 +651,7 @@ include::_std-variant-proxy.adoc[]
 [[rvariant.status]]
 === Value status
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 constexpr bool valueless_by_exception() const noexcept;
 constexpr std::size_t index() const noexcept;
@@ -662,7 +664,7 @@ include::_std-variant-proxy.adoc[]
 [[rvariant.subset]]
 === Subset
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<class... Us>
   requires std::same_as<rvariant<Us...>, rvariant>
@@ -674,11 +676,11 @@ constexpr rvariant subset() && noexcept(std::is_nothrow_move_constructible_v<rva
 
 template<class... Us>
   requires (!std::same_as<rvariant<Us...>, rvariant>)
-constexpr rvariant<Us...> subset() const& noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 3#]
+constexpr rvariant<Us...> subset() const& noexcept({see-below});pass:quotes[[.candidate\]#// 3#]
 
 template<class... Us>
   requires (!std::same_as<rvariant<Us...>, rvariant>)
-constexpr rvariant<Us...> subset() && noexcept(pass:quotes[[.see-below\]#see below#]);pass:quotes[[.candidate\]#// 4#]
+constexpr rvariant<Us...> subset() && noexcept({see-below});pass:quotes[[.candidate\]#// 4#]
 ----
 
 [.candidates]
@@ -726,9 +728,9 @@ Exceptions ::
 [[rvariant.swap]]
 === Swap
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
-constexpr void swap(rvariant&) noexcept(pass:quotes[[.see-below\]#see below#]);
+constexpr void swap(rvariant&) noexcept({see-below});
 ----
 
 :spec-url: https://eel.is/c++draft/variant.swap
@@ -738,7 +740,7 @@ include::_std-variant-proxy.adoc[]
 [[rvariant.flexibility]]
 == Flexibility traits
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<class U, class T>
 struct is_subset_of : std::false_type {};
@@ -766,7 +768,7 @@ concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
 [[rvariant.helper]]
 == `rvariant` helper classes
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<std::size_t I, class T> struct variant_alternative<I, T const>;
 ----
@@ -775,7 +777,7 @@ template<std::size_t I, class T> struct variant_alternative<I, T const>;
 include::_std-variant-proxy.adoc[]
 
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 variant_alternative<I, rvariant<Ts...>>::type
 ----
@@ -791,7 +793,7 @@ variant_alternative<I, rvariant<Ts...>>::type
 [[rvariant.get]]
 == Value access
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<class T, class... Ts>
 constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;pass:quotes[[.candidate\]#// 1#]
@@ -801,7 +803,7 @@ constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;pass:quotes[
 * [.candidate]#1)# TODO
 
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<std::size_t I, class... Ts>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&
@@ -879,10 +881,10 @@ constexpr std::add_pointer_t<T const>
 [[rvariant.visit]]
 == Visitation
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<class Visitor, class... Variants>
-constexpr pass:quotes[[.see-below\]#see below#] visit(Visitor&& vis, Variants&&... vars);pass:quotes[[.candidate\]#// 1#]
+constexpr {see-below} visit(Visitor&& vis, Variants&&... vars);pass:quotes[[.candidate\]#// 1#]
 
 template<class R, class Visitor, class... Variants>
 constexpr R visit(Visitor&& vis, Variants&&... vars);pass:quotes[[.candidate\]#// 2#]
@@ -905,7 +907,7 @@ constexpr R visit(this Self&&, Visitor&&);pass:quotes[[.candidate\]#// 4#]
 [[rvariant.hash]]
 == Hash support
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace temp_ns {
 
@@ -915,7 +917,7 @@ template<class... Ts>
 } // temp_ns
 ----
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace std {
 
@@ -940,7 +942,7 @@ include::_std-variant-proxy.adoc[]
 [[rvariant.recursive]]
 == Class template `recursive_wrapper`
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 #include <compare>
 #include <memory>
@@ -968,7 +970,7 @@ template<class Allocator, class Value>
 } // temp_ns
 ----
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace temp_ns::pmr {
 
@@ -995,7 +997,7 @@ NOTE: Although `std::indirect` is a {cpp}26 feature, `temp_ns::recursive_wrapper
 [[rvariant.recursive.hash]]
 === Hash support
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace temp_ns {
 
@@ -1005,7 +1007,7 @@ template<class T, class Allocator>
 } // temp_ns
 ----
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace std {
 
@@ -1030,7 +1032,7 @@ include::_std-indirect-proxy.adoc[]
 [[rvariant.pack]]
 == Pack manipulation and deduping
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 namespace temp_ns {
 
@@ -1068,10 +1070,10 @@ This section demonstrates internal features used in the implementation.
 [[rvariant.xo.pack]]
 === Pack utilities
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<template<class...> class TT, class A, class B>
-using pass:quotes[_pack-union-t_] = pass:quotes[[.see-below\]#see below#]; // exposition-onlypass:quotes[[.candidate\]#// 1#]
+using pass:quotes[_pack-union-t_] = {see-below}; // exposition-onlypass:quotes[[.candidate\]#// 1#]
 ----
 
 [.candidates]
@@ -1083,7 +1085,7 @@ using pass:quotes[_pack-union-t_] = pass:quotes[[.see-below\]#see below#]; // ex
 [[rvariant.xo.core]]
 === Core type traits
 
-[,cpp,subs="+macros"]
+[,cpp,subs="+macros,+attributes"]
 ----
 template<class T, template<class...> class TT>
 struct pass:quotes[_is-ttp-specialization-of_]; // exposition-onlypass:quotes[[.candidate\]#// 1#]
