@@ -413,7 +413,7 @@ public:
         : storage_(std::in_place_index<I>, il, std::forward<Args>(args)...), index_(I) {}
 
 private:
-    constexpr void destroy() {
+    constexpr void destroy() noexcept {
         detail::raw_visit(
             index_,
             []<class Alt>(Alt&& alt) {
@@ -425,9 +425,25 @@ private:
             *this);
     }
 
-    constexpr void reset() {
+    template<std::size_t I>
+    constexpr void destroy() noexcept {
+        if constexpr (I != std::variant_npos) {
+            using T = variant_alternative_t<I, rvariant>;
+            detail::raw_get<I>(*this).value.~T();
+        }
+    }
+
+    constexpr void reset() noexcept {
         destroy();
         index_ = std::variant_npos;
+    }
+
+    template<std::size_t I>
+    constexpr void reset() noexcept {
+        if constexpr (I != std::variant_npos) {
+            destroy<I>();
+            index_ = std::variant_npos;
+        }
     }
 
     constexpr rvariant& self() { return *this; }
@@ -596,6 +612,41 @@ public:
         std::construct_at(&storage_, std::in_place_index<I>, il, std::forward<Args>(args)...);
         index_ = I;
         return detail::raw_get<I>(*this).value;
+    }
+
+    constexpr void swap(rvariant& other) {
+        static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
+        detail::raw_visit(
+            index_,
+            [this, &other]<class ThisAlt>(ThisAlt&& thisAlt) {
+                detail::raw_visit(
+                    other.index_,
+                    [this, &thisAlt, &other]<class OtherAlt>(OtherAlt&& otherAlt) {
+                        constexpr std::size_t I = std::remove_cvref_t<ThisAlt>::index;
+                        constexpr std::size_t J = std::remove_cvref_t<OtherAlt>::index;
+
+                        if constexpr (I == J) {
+                            if constexpr (I != std::variant_npos) {
+                                using std::swap;
+                                swap(detail::raw_get<I>(self()).value, detail::raw_get<I>(other).value);
+                            }
+                        } else if constexpr (I == std::variant_npos) {
+                            emplace<J>(std::move(otherAlt).value);
+                            other.reset<J>();
+                        } else if constexpr (J == std::variant_npos) {
+                            other.emplace<I>(std::move(thisAlt).value);
+                            reset<I>();
+                        } else {
+                            auto temporary = std::move(thisAlt).value;
+                            reset<I>();
+                            emplace<J>(std::move(otherAlt).value);
+                            other.reset<J>();
+                            other.emplace<I>(std::move(temporary));
+                        }
+                    },
+                    other);
+            },
+            *this);
     }
 
     constexpr ~rvariant() = default;

@@ -423,3 +423,19 @@ TEST_CASE("get") {
         REQUIRE(yk::get<0>(std::move(std::as_const(var))) == 42);
     }
 }
+
+TEST_CASE("swap") {
+    {
+        yk::rvariant<int> a = 33, b = 4;
+        REQUIRE_NOTHROW(a.swap(b));
+        REQUIRE(yk::get<0>(a) == 4);
+        REQUIRE(yk::get<0>(b) == 33);
+    }
+    {
+        yk::rvariant<int, float> a = 42, b = 3.14f;
+        REQUIRE_NOTHROW(a.swap(b));
+        REQUIRE(yk::get<1>(a) == 3.14f);
+        REQUIRE(yk::get<0>(b) == 42);
+    }
+    // TODO: valueless case
+}
