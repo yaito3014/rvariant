@@ -560,6 +560,42 @@ public:
         return *this;
     }
 
+    template<class T, class... Args>
+        requires std::conjunction_v<std::is_constructible<T, Args...>, detail::exactly_once<T, Ts...>>
+    constexpr T& emplace(Args&&... args) {
+        constexpr std::size_t I = detail::find_index_v<T, Ts...>;
+        return emplace<I>(std::forward<Args>(args)...);
+    }
+
+    template<class T, class U, class... Args>
+        requires std::conjunction_v<std::is_constructible<T, std::initializer_list<U>&, Args...>, detail::exactly_once<T, Ts...>>
+    constexpr T& emplace(std::initializer_list<U> il, Args&&... args) {
+        constexpr std::size_t I = detail::find_index_v<T, Ts...>;
+        return emplace<I>(il, std::forward<Args>(args)...);
+    }
+
+    template<std::size_t I, class... Args>
+        requires std::is_constructible_v<variant_alternative_t<I, rvariant>, Args...>
+    constexpr variant_alternative_t<I, rvariant>& emplace(Args&&... args) {
+        static_assert(I < sizeof...(Ts));
+        if (!valueless_by_exception()) {
+            reset();
+        }
+        std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
+        return detail::raw_get<I>(*this).value;
+    }
+
+    template<std::size_t I, class U, class... Args>
+        requires std::is_constructible_v<variant_alternative_t<I, rvariant>, std::initializer_list<U>&, Args...>
+    constexpr variant_alternative_t<I, rvariant>& emplace(std::initializer_list<U> il, Args&&... args) {
+        static_assert(I < sizeof...(Ts));
+        if (!valueless_by_exception()) {
+            reset();
+        }
+        std::construct_at(&storage_, std::in_place_index<I>, il, std::forward<Args>(args)...);
+        return detail::raw_get<I>(*this).value;
+    }
+
     constexpr ~rvariant() = default;
 
     constexpr ~rvariant()

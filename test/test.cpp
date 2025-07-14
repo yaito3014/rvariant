@@ -395,6 +395,19 @@ TEST_CASE("flexible move assign") {
     }
 }
 
+TEST_CASE("emplace") {
+    {
+        yk::rvariant<int> a = 42;
+        REQUIRE_NOTHROW(a.emplace<int>(12));
+        REQUIRE_NOTHROW(a.emplace<0>(12));
+    }
+    {
+        yk::rvariant<std::vector<int>> a;
+        a.emplace<std::vector<int>>({3, 1, 4});
+        a.emplace<0>({3, 1, 4});
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);
