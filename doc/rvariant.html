@@ -396,10 +396,10 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p><em>wrap</em> the actual type with the wrapper class every single time you modify variants, and</p>
+<p><em>wrap</em> the actual type with the wrapper class every time you modify variants, and</p>
 </li>
 <li>
-<p><em>unwrap</em> the instances every single time you access the alternative returned by <code>get()</code> and <code>visit()</code>.</p>
+<p><em>unwrap</em> the instance every time you access an alternative with <code>get()</code> or <code>visit()</code>.</p>
 </li>
 </ul>
 </div>

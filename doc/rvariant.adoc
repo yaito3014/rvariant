@@ -122,9 +122,9 @@ _Theoretically_, a recursive wrapper class can be designed independently, i.e. h
 
 However, *it is essential to have compatible interfaces in the variant class*, because the lack of interfaces means that you must:
 
-* _wrap_ the actual type with the wrapper class every single time you modify variants, and
+* _wrap_ the actual type with the wrapper class every time you modify variants, and
 
-* _unwrap_ the instances every single time you access the alternative returned by `get()` and `visit()`.
+* _unwrap_ the instance every time you access an alternative with `get()` or `visit()`.
 
 In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that infect the application layer, which is undesirable in practice.
 
