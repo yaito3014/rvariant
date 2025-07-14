@@ -300,7 +300,7 @@ private:
     friend struct variant_npos_setter;
 
 public:
-    static_assert((std::is_destructible_v<Ts> && ...));
+    static_assert(std::conjunction_v<std::is_destructible<Ts>...>);
     static_assert(sizeof...(Ts) > 0);
 
     constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
