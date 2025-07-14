@@ -414,6 +414,14 @@ TEST_CASE("flexible move assign") {
     }
 }
 
+TEST_CASE("generic assign") {
+    {
+        yk::rvariant<int, float> a = 42;
+        a = 33 - 4;  // same alternative
+        a = 3.14f;   // different alternative
+    }
+}
+
 TEST_CASE("emplace") {
     {
         yk::rvariant<int> a = 42;
