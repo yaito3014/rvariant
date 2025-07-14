@@ -582,6 +582,7 @@ public:
             reset();
         }
         std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
+        index_ = I;
         return detail::raw_get<I>(*this).value;
     }
 
@@ -593,6 +594,7 @@ public:
             reset();
         }
         std::construct_at(&storage_, std::in_place_index<I>, il, std::forward<Args>(args)...);
+        index_ = I;
         return detail::raw_get<I>(*this).value;
     }
 
