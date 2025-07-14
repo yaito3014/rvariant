@@ -904,7 +904,7 @@ constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(<span class="see-
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup></p>
 </li>
 <li>
-<p><span class="candidate">4)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup> except for:</p>
+<p><span class="candidate">4)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup> except that:</p>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> <code>holds_alternative<span class="underline">&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>j</em></sub>&gt;&gt;</span>(*this)</code> is <code>true</code>.</p>
 </div>
@@ -1008,7 +1008,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">10)</span> <em>Flexible move constructor</em>.</p>
 <div class="paragraph">
-<p>Equivalent to #9, except for:</p>
+<p>Equivalent to #9, except that:</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong> <code><em>GET</em>&lt;j&gt;(w)</code> is replaced with <code><em>GET</em>&lt;j&gt;(std::move(w))</code>.</p>
@@ -1077,7 +1077,7 @@ constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt;&amp;&amp; rhs) noexcept(
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup></p>
 </li>
 <li>
-<p><span class="candidate">3)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup> except for:</p>
+<p><span class="candidate">3)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup> except that:</p>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> <code>holds_alternative<span class="underline">&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>j</em></sub>&gt;&gt;</span>(*this)</code> is <code>true</code>, with <code>T<sub><em>j</em></sub></code> selected by the imaginary function overload resolution described above.</p>
 </div>
@@ -1225,8 +1225,16 @@ where <code><em>I</em></code> is the zero-based index of <code>T</code> in <span
 </div>
 </li>
 <li>
-<p><span class="candidate">3-4)</span>
-Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup></p>
+<p><span class="candidate">3)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup> except that:</p>
+<div class="paragraph">
+<p><strong><em>Returns:</em></strong> <span class="underline">Let <code>o</code> denote</span> a reference to the new contained value. <span class="underline">Returns <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>.</span></p>
+</div>
+</li>
+<li>
+<p><span class="candidate">4)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup> except that:</p>
+<div class="paragraph">
+<p><strong><em>Returns:</em></strong> <span class="underline">Let <code>o</code> denote</span> a reference to the new contained value. <span class="underline">Returns <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>.</span></p>
+</div>
 </li>
 </ul>
 </div>
@@ -1309,7 +1317,7 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 </div>
 </li>
 <li>
-<p><span class="candidate">4)</span> Equivalent to the overload #3, except for:</p>
+<p><span class="candidate">4)</span> Equivalent to the overload #3, except that:</p>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong> <code><em>GET</em>&lt;<em>i</em>&gt;(*this)</code> is replaced with <code><em>GET</em>&lt;<em>i</em>&gt;(std::move(*this))</code>.</p>
 </div>
