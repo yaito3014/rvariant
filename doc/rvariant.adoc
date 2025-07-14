@@ -128,6 +128,11 @@ However, *it is essential to have compatible interfaces in the variant class*, b
 
 In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that infect the application layer, which is undesirable in practice.
 
+[[why-is-rvariant-needed-1]]
+### Why can't rvariant be a thin wrapper around std::variant?
+
+If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g. inheritance or composition), such a specification could never be standardized.
+
 
 = Feature cheat sheet
 This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.
