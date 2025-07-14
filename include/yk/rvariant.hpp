@@ -44,8 +44,6 @@ struct variant_alternative<I, rvariant<Ts...>> : detail::pack_indexing<I, Ts...>
     static_assert(I < sizeof...(Ts));
 };
 
-inline constexpr std::size_t variant_npos = -1;
-
 namespace detail {
 
 template<class... Ts>
@@ -181,8 +179,8 @@ constexpr raw_visit_return_type<Visitor, Variant> raw_visit_dispatch(Visitor&& v
 
 template<class Visitor, class Variant>
 constexpr raw_visit_return_type<Visitor, Variant> raw_visit_valueless(Visitor&& vis, Variant&&) noexcept(
-    std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, std::monostate>>) {
-    return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, std::monostate>{});
+    std::is_nothrow_invocable_v<Visitor, alternative<std::variant_npos, std::monostate>>) {
+    return std::invoke(std::forward<Visitor>(vis), alternative<std::variant_npos, std::monostate>{});
 }
 
 template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
@@ -288,7 +286,7 @@ private:
         constexpr void mark_succeeded() noexcept { succeeded_ = true; }
 
         constexpr ~variant_npos_setter() noexcept {
-            if (!succeeded_) parent_->index_ = variant_npos;
+            if (!succeeded_) parent_->index_ = std::variant_npos;
         }
 
     private:
@@ -320,7 +318,7 @@ public:
         detail::raw_visit(
             index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
-                if constexpr (I != variant_npos) {
+                if constexpr (I != std::variant_npos) {
                     std::construct_at(&storage_, std::in_place_index<I>, alt.value);
                 }
             },
@@ -338,7 +336,7 @@ public:
         detail::raw_visit(
             index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
-                if constexpr (I != variant_npos) {
+                if constexpr (I != std::variant_npos) {
                     std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value);
                 }
             },
@@ -356,7 +354,7 @@ public:
         detail::raw_visit(
             other.index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
-                if constexpr (I != variant_npos) {
+                if constexpr (I != std::variant_npos) {
                     std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, alt.value);
                 }
             },
@@ -375,7 +373,7 @@ public:
         detail::raw_visit(
             other.index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T>&& alt) {
-                if constexpr (I != variant_npos) {
+                if constexpr (I != std::variant_npos) {
                     std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
                 }
             },
@@ -419,7 +417,7 @@ private:
         detail::raw_visit(
             index_,
             []<class Alt>(Alt&& alt) {
-                if constexpr (std::remove_cvref_t<Alt>::index != variant_npos) {
+                if constexpr (std::remove_cvref_t<Alt>::index != std::variant_npos) {
                     using T = typename std::remove_cvref_t<Alt>::type;
                     alt.value.~T();
                 }
@@ -429,7 +427,7 @@ private:
 
     constexpr void reset() {
         destroy();
-        index_ = variant_npos;
+        index_ = std::variant_npos;
     }
 
     constexpr rvariant& self() { return *this; }
@@ -451,7 +449,7 @@ public:
             [this]<class Alt>(Alt&& alt) {
                 constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
                 using T = std::remove_cvref_t<Alt>::type;
-                if constexpr (I == variant_npos) {
+                if constexpr (I == std::variant_npos) {
                     reset();
                 } else {
                     if (index_ == I) {
@@ -488,7 +486,7 @@ public:
             other.index_,
             [this]<class Alt>(Alt&& alt) {
                 constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
-                if constexpr (I == variant_npos) {
+                if constexpr (I == std::variant_npos) {
                     reset();
                 } else {
                     if (index_ == I) {
@@ -512,15 +510,15 @@ public:
         reset();
     }
 
-    constexpr bool valueless_by_exception() const noexcept { return index_ == variant_npos; }
+    constexpr bool valueless_by_exception() const noexcept { return index_ == std::variant_npos; }
     constexpr std::size_t index() const noexcept { return index_; }
 
 private:
-    constexpr rvariant(detail::valueless_t) noexcept : storage_(detail::valueless), index_(variant_npos) {}
+    constexpr rvariant(detail::valueless_t) noexcept : storage_(detail::valueless), index_(std::variant_npos) {}
 
     template<class... Us>
     static constexpr auto subset_visitor = []<class Alt>(Alt&& alt) -> rvariant<Us...> /* noexcept is TODO */ {
-        if constexpr (std::remove_cvref_t<Alt>::index == variant_npos) {
+        if constexpr (std::remove_cvref_t<Alt>::index == std::variant_npos) {
             return rvariant<Us...>(detail::valueless);
         } else {
             constexpr std::size_t pos = detail::convert_index<rvariant, rvariant<Us...>>(std::remove_cvref_t<Alt>::index);
@@ -566,7 +564,7 @@ public:
 
 private:
     detail::variant_storage_t<std::index_sequence_for<Ts...>, Ts...> storage_;
-    std::size_t index_ = variant_npos;
+    std::size_t index_ = std::variant_npos;
 };
 
 template<std::size_t I, class... Ts>
