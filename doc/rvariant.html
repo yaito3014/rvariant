@@ -445,9 +445,9 @@ ab = AB{123};
 
 // recursive types
 {
-    struct BinaryExpr;
-    using Expr = temp_ns::rvariant&lt;A, B, C, temp_ns::<a href="#rvariant.recursive">recursive_wrapper</a>&lt;BinaryExpr&gt;&gt;;
-    struct BinaryExpr { Expr lhs, rhs; };
+    struct BinaryExpr; enum class Op;
+    using Expr = temp_ns::rvariant&lt;int, double, temp_ns::<a href="#rvariant.recursive">recursive_wrapper</a>&lt;BinaryExpr&gt;&gt;;
+    struct BinaryExpr { Expr lhs, rhs; Op op; };
 }
 
 A&amp; a = temp_ns::<a href="#rvariant.get">get</a>&lt;0&gt;(ab);
@@ -1424,7 +1424,7 @@ constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&amp;&amp;
 <p><strong><em>Preconditions:</em></strong> <code>v.index()</code> is <code>I</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Returns:</em></strong> <span class="underline"><code><a href="#rvariant.recursive.helper"><em>UNWRAP_RECURSIVE</em></a>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>.</p>
+<p><strong><em>Returns:</em></strong> <span class="underline"><code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>.</p>
 </div>
 </li>
 </ul>
@@ -1457,7 +1457,7 @@ constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&amp;&amp;
 <li>
 <p><span class="candidate"></span> <strong><em>Mandates:</em></strong> <code>I &lt; sizeof...(Ts)</code>.</p>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> If <code>v.index()</code> is <code>I</code>, returns <span class="underline"><code><a href="#rvariant.recursive.helper"><em>UNWRAP_RECURSIVE</em></a>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>. Otherwise, throws an exception of type <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>.</p>
+<p><strong><em>Effects:</em></strong> If <code>v.index()</code> is <code>I</code>, returns <span class="underline"><code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>. Otherwise, throws an exception of type <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>.</p>
 </div>
 </li>
 </ul>
@@ -1479,7 +1479,7 @@ template&lt;class T, class... Ts&gt; constexpr T const&amp;&amp; get(rvariant&lt
 <li>
 <p><span class="candidate"></span> <strong><em>Mandates:</em></strong> The type <code>T</code> occurs exactly once in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> <span class="underline">Let <code>VT</code> denote the type of the value held by <code>v</code>. If <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT&gt;</code> is the same type as <code>T</code></span>, returns <span class="underline"><code><a href="#rvariant.recursive.helper"><em>UNWRAP_RECURSIVE</em></a>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>. Otherwise, throws an exception of type <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>.</p>
+<p><strong><em>Effects:</em></strong> <span class="underline">Let <code>VT</code> denote the type of the value held by <code>v</code>. If <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT&gt;</code> is the same type as <code>T</code></span>, returns <span class="underline"><code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>. Otherwise, throws an exception of type <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
@@ -1515,7 +1515,7 @@ constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt
 <li>
 <p><span class="candidate">1-2)</span> <strong><em>Mandates:</em></strong> <code>I &lt; sizeof...(Ts)</code>.</p>
 <div class="paragraph">
-<p><strong><em>Returns:</em></strong> A pointer to the value <span class="underline">denoted by <code><a href="#rvariant.recursive.helper"><em>UNWRAP_RECURSIVE</em></a>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>, if <code>v != nullptr</code> and <code>v-&gt;index() == I</code>. Otherwise, returns <code>nullptr</code>.</p>
+<p><strong><em>Returns:</em></strong> A pointer to the value <span class="underline">denoted by <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>, if <code>v != nullptr</code> and <code>v-&gt;index() == I</code>. Otherwise, returns <code>nullptr</code>.</p>
 </div>
 </li>
 <li>
