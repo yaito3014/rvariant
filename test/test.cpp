@@ -319,7 +319,9 @@ TEST_CASE("copy assign") {
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
         REQUIRE_NOTHROW(a = b);  // different alternative
+        REQUIRE(a.index() == 1);
         REQUIRE_NOTHROW(a = b);  // same alternative
+        REQUIRE(a.index() == 1);
     }
 
     // non-trivial case
@@ -353,10 +355,12 @@ TEST_CASE("move assign") {
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
         REQUIRE_NOTHROW(a = std::move(b));  // different alternative
+        REQUIRE(a.index() == 1);
     }
     {
         yk::rvariant<int, float> a = 42, b = 33 - 4;
         REQUIRE_NOTHROW(a = std::move(b));  // same alternative
+        REQUIRE(a.index() == 0);
     }
 
     // non-trivial case
@@ -371,10 +375,12 @@ TEST_CASE("move assign") {
         {
             yk::rvariant<S, int> a = 42, b;
             REQUIRE_NOTHROW(a = std::move(b));  // different alternative; use move constructor
+            REQUIRE(a.index() == 0);
         }
         {
             yk::rvariant<S, int> a, b;
             REQUIRE_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
+            REQUIRE(a.index() == 0);
         }
     }
 }
@@ -384,6 +390,13 @@ TEST_CASE("flexible copy assign") {
         yk::rvariant<int> a = 42;
         yk::rvariant<int, float> b = 3.14f;
         REQUIRE_NOTHROW(b = a);
+        REQUIRE(b.index() == 0);
+    }
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int, float, int> b(std::in_place_index<2>, 33 - 4);
+        b = a;
+        REQUIRE(b.index() == 2);  // b's contained value is directly assigned from a's contained value, no alternative changed
     }
 }
 
