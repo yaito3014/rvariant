@@ -544,6 +544,7 @@ public:
                             reset();
                             std::construct_at(&storage_, std::in_place_index<J>, std::move(temporary));
                         }
+                        index_ = J;
                     }
                 }
             },
@@ -568,6 +569,7 @@ public:
                     } else {
                         reset();
                         std::construct_at(&storage_, std::in_place_index<J>, std::move(alt).value);
+                        index_ = J;
                     }
                 }
             },
