@@ -506,14 +506,9 @@ public:
                         detail::raw_get<I>(self()).value = alt.value;
                     } else {
                         if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
-                            // copy is nothrow or move throws; use copy constructor
-                            reset();
-                            std::construct_at(&storage_, std::in_place_index<I>, alt.value);
+                            emplace<I>(alt.value);
                         } else {
-                            // copy throws and move is nothrow; move temporary copy
-                            auto temporary = alt.value;
-                            reset();
-                            std::construct_at(&storage_, std::in_place_index<I>, std::move(temporary));
+                            emplace<I>(T(alt.value));
                         }
                         index_ = I;
                     }
@@ -541,9 +536,7 @@ public:
                     if (index_ == I) {
                         detail::raw_get<I>(self()).value = std::move(alt).value;
                     } else {
-                        reset();
-                        std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value);
-                        index_ = I;
+                        emplace<I>(std::move(alt).value);
                     }
                 }
             },
@@ -585,16 +578,10 @@ public:
                     if (!was_same_alternative) {
                         constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
                         if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
-                            // copy is nothrow or move throws; use copy constructor
-                            reset();
-                            std::construct_at(&storage_, std::in_place_index<J>, alt.value);
+                            emplace<J>(alt.value);
                         } else {
-                            // copy throws and move is nothrow; move temporary copy
-                            auto temporary = alt.value;
-                            reset();
-                            std::construct_at(&storage_, std::in_place_index<J>, std::move(temporary));
+                            emplace<J>(T(alt.value));
                         }
-                        index_ = J;
                     }
                 }
             },
@@ -636,9 +623,7 @@ public:
 
                     if (!was_same_alternative) {
                         constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
-                        reset();
-                        std::construct_at(&storage_, std::in_place_index<J>, std::move(alt).value);
-                        index_ = J;
+                        emplace<I>(std::move(alt).value);
                     }
                 }
             },
