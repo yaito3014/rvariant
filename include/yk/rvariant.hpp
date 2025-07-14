@@ -15,6 +15,9 @@
 
 namespace yk {
 
+template<class T, class Allocator>
+class recursive_wrapper;
+
 template<class... Ts>
 class rvariant;
 
@@ -256,6 +259,12 @@ struct unwrap_one_pack<TT<T>> {
     using type = T;
 };
 
+template<class T, class... Ts>
+struct has_recursive_wrapper_duplicate : std::false_type {};
+
+template<class T, class Allocator, class... Ts>
+struct has_recursive_wrapper_duplicate<recursive_wrapper<T, Allocator>, Ts...> : is_in<T, Ts...> {};
+
 }  // namespace detail
 
 template<class T, class U>
@@ -281,6 +290,10 @@ using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 template<class... Ts>
 class rvariant {
+    static_assert(!std::disjunction_v<detail::has_recursive_wrapper_duplicate<Ts, Ts...>...>, "rvariant cannot have both T and recursive_wrapper of T.");
+    static_assert(std::conjunction_v<std::is_destructible<Ts>...>);
+    static_assert(sizeof...(Ts) > 0);
+
 private:
     class variant_npos_setter {
     public:
@@ -300,9 +313,6 @@ private:
     friend struct variant_npos_setter;
 
 public:
-    static_assert(std::conjunction_v<std::is_destructible<Ts>...>);
-    static_assert(sizeof...(Ts) > 0);
-
     constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
         requires std::is_default_constructible_v<detail::pack_indexing_t<0, Ts...>>
         : storage_{}, index_(0) {}
