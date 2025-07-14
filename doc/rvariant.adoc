@@ -1074,14 +1074,17 @@ constexpr R visit(Visitor&& vis, Variants&&... vars);pass:quotes[[.candidate\]#/
 // below are member functions of the class template <<rvariant.rvariant,pass:quotes[`rvariant`]>>:
 
 template<class Self, class Visitor>
-constexpr decltype(auto) visit(this Self&&, Visitor&&);pass:quotes[[.candidate\]#// 3#]
+constexpr decltype(auto) visit(this Self&& self, Visitor&& vis);pass:quotes[[.candidate\]#// 3#]
 
 template<class R, class Self, class Visitor>
-constexpr R visit(this Self&&, Visitor&&);pass:quotes[[.candidate\]#// 4#]
+constexpr R visit(this Self&& self, Visitor&& vis);pass:quotes[[.candidate\]#// 4#]
 ----
 
 [.candidates]
-* [.candidate]#1-2)# TODO
+* [.candidate]#1-2)# Equivalent to the `std::variant` counterpart ^https://eel.is/c++draft/variant.visit[[spec\]]^, except that:
++
+[none]
+** -- `_GET_<__m__>(std::forward<V>(vars))` is replaced with `{UNWRAP_RECURSIVE}(_GET_<__m__>(std::forward<V>(vars)))`.
 
 * [.candidate]#3-4)# Equivalent to the `std::variant` counterpart ^https://eel.is/c++draft/variant.visit[[spec\]]^, except that it forwards to `temp_ns::visit` instead of `std::visit`.
 

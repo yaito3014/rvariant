@@ -1588,16 +1588,23 @@ constexpr R visit(Visitor&amp;&amp; vis, Variants&amp;&amp;... vars);<span class
 // below are member functions of the class template <a href="#rvariant.rvariant"><code>rvariant</code></a>:
 
 template&lt;class Self, class Visitor&gt;
-constexpr decltype(auto) visit(this Self&amp;&amp;, Visitor&amp;&amp;);<span class="candidate">// 3</span>
+constexpr decltype(auto) visit(this Self&amp;&amp; self, Visitor&amp;&amp; vis);<span class="candidate">// 3</span>
 
 template&lt;class R, class Self, class Visitor&gt;
-constexpr R visit(this Self&amp;&amp;, Visitor&amp;&amp;);<span class="candidate">// 4</span></code></pre>
+constexpr R visit(this Self&amp;&amp; self, Visitor&amp;&amp; vis);<span class="candidate">// 4</span></code></pre>
 </div>
 </div>
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1-2)</span> TODO</p>
+<p><span class="candidate">1-2)</span> Equivalent to the <code>std::variant</code> counterpart <sup><a href="https://eel.is/c++draft/variant.visit">[spec]</a></sup>, except that:</p>
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<code><em>GET</em>&lt;<em>m</em>&gt;(std::forward&lt;V&gt;(vars))</code> is replaced with <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(<em>GET</em>&lt;<em>m</em>&gt;(std::forward&lt;V&gt;(vars)))</code>.</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
 <p><span class="candidate">3-4)</span> Equivalent to the <code>std::variant</code> counterpart <sup><a href="https://eel.is/c++draft/variant.visit">[spec]</a></sup>, except that it forwards to <code>temp_ns::visit</code> instead of <code>std::visit</code>.</p>
