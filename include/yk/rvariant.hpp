@@ -67,10 +67,13 @@ template<class... Ts>
 concept all_trivially_move_constructible = all_move_constructible<Ts...> && std::conjunction_v<std::is_trivially_move_constructible<Ts>...>;
 
 template<class... Ts>
-concept all_copy_assignable = std::conjunction_v<std::is_copy_assignable<Ts>...>;
+concept variant_copy_assignable = std::conjunction_v<std::conjunction<std::is_copy_constructible<Ts>, std::is_copy_assignable<Ts>>...>;
 
 template<class... Ts>
-concept all_trivially_copy_assignable = all_copy_assignable<Ts...> && std::conjunction_v<std::is_trivially_copy_assignable<Ts>...>;
+concept variant_trivially_copy_assignable =
+    variant_copy_assignable<Ts...> &&
+    std::conjunction_v<
+        std::conjunction<std::is_trivially_copy_constructible<Ts>, std::is_trivially_copy_assignable<Ts>, std::is_trivially_destructible<Ts>>...>;
 
 template<class... Ts>
 concept all_move_assignable = std::conjunction_v<std::is_move_assignable<Ts>...>;
@@ -430,15 +433,15 @@ private:
 
 public:
     constexpr rvariant& operator=(rvariant const&)
-        requires detail::all_trivially_copy_constructible<Ts...> && detail::all_trivially_copy_assignable<Ts...> && detail::all_trivially_destructible<Ts...>
+        requires detail::variant_trivially_copy_assignable<Ts...>
     = default;
 
     constexpr rvariant& operator=(rvariant const&)
-        requires (!(detail::all_copy_constructible<Ts...> && detail::all_copy_assignable<Ts...>))
+        requires (!detail::variant_copy_assignable<Ts...>)
     = delete;
 
     constexpr rvariant& operator=(rvariant const& other)
-        requires detail::all_copy_constructible<Ts...> && detail::all_copy_assignable<Ts...>
+        requires detail::variant_copy_assignable<Ts...>
     {
         detail::raw_visit(
             other.index_,
