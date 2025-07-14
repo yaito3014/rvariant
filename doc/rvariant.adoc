@@ -569,7 +569,7 @@ constexpr rvariant(rvariant<Us...>&& w) noexcept({see-below});pass:quotes[[.cand
 * [.candidate]#1-3)#
 include::_std-variant-proxy.adoc[]
 
-* [.candidate]#4)# @saki7 thinks this is almost equivalent to the standard counterpart, except for the points below. TODO: need implementation to confirm this.
+* [.candidate]#4)# Equivalent to the `std::variant` counterpart, ^https://eel.is/c++draft/variant.ctor[[spec\]]^ except for:
 +
 *_Postconditions:_* `holds_alternative[.underline]##<{unwrap_recursive_t}<T~_j_~>>##(*this)` is `true`.
 
@@ -685,7 +685,7 @@ constexpr rvariant& operator=(rvariant<Us...>&& rhs) noexcept({see-below});pass:
 * [.candidate]#1-2)#
 include::_std-variant-proxy.adoc[]
 
-* [.candidate]#3)# @saki7 thinks this is almost equivalent to the standard counterpart, except for the points below. TODO: need implementation to confirm this.
+* [.candidate]#3)# Equivalent to the `std::variant` counterpart, ^https://eel.is/c++draft/variant.assign[[spec\]]^ except for:
 +
 *_Postconditions:_* `holds_alternative[.underline]##<{unwrap_recursive_t}<T~_j_~>>##(*this)` is `true`, with `T~_j_~` selected by the imaginary function overload resolution described above.
 

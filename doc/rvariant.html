@@ -904,7 +904,7 @@ constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(<span class="see-
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup></p>
 </li>
 <li>
-<p><span class="candidate">4)</span> @saki7 thinks this is almost equivalent to the standard counterpart, except for the points below. TODO: need implementation to confirm this.</p>
+<p><span class="candidate">4)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup> except for:</p>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> <code>holds_alternative<span class="underline">&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>j</em></sub>&gt;&gt;</span>(*this)</code> is <code>true</code>.</p>
 </div>
@@ -1077,7 +1077,7 @@ constexpr rvariant&amp; operator=(rvariant&lt;Us...&gt;&amp;&amp; rhs) noexcept(
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup></p>
 </li>
 <li>
-<p><span class="candidate">3)</span> @saki7 thinks this is almost equivalent to the standard counterpart, except for the points below. TODO: need implementation to confirm this.</p>
+<p><span class="candidate">3)</span> Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup> except for:</p>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> <code>holds_alternative<span class="underline">&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>j</em></sub>&gt;&gt;</span>(*this)</code> is <code>true</code>, with <code>T<sub><em>j</em></sub></code> selected by the imaginary function overload resolution described above.</p>
 </div>
