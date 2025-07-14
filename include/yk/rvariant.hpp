@@ -76,10 +76,13 @@ concept variant_trivially_copy_assignable =
         std::conjunction<std::is_trivially_copy_constructible<Ts>, std::is_trivially_copy_assignable<Ts>, std::is_trivially_destructible<Ts>>...>;
 
 template<class... Ts>
-concept all_move_assignable = std::conjunction_v<std::is_move_assignable<Ts>...>;
+concept variant_move_assignable = std::conjunction_v<std::conjunction<std::is_move_constructible<Ts>, std::is_move_assignable<Ts>>...>;
 
 template<class... Ts>
-concept all_trivially_move_assignable = all_move_assignable<Ts...> && std::conjunction_v<std::is_trivially_move_assignable<Ts>...>;
+concept variant_trivially_move_assignable =
+    variant_move_assignable<Ts...> &&
+    std::conjunction_v<
+        std::conjunction<std::is_trivially_move_constructible<Ts>, std::is_trivially_move_assignable<Ts>, std::is_trivially_destructible<Ts>>...>;
 
 template<std::size_t I, class Dest, class Source>
 struct fun_impl {
@@ -474,12 +477,12 @@ public:
     }
 
     constexpr rvariant& operator=(rvariant&&)
-        requires detail::all_trivially_move_constructible<Ts...> && detail::all_trivially_move_assignable<Ts...> && detail::all_trivially_destructible<Ts...>
+        requires detail::variant_trivially_move_assignable<Ts...>
     = default;
 
     constexpr rvariant& operator=(rvariant&& other) noexcept(
-        std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
-        requires detail::all_move_constructible<Ts...> && detail::all_move_assignable<Ts...>
+        std::conjunction_v<std::conjunction<std::is_nothrow_move_constructible<Ts>, std::is_nothrow_move_assignable<Ts>>...>)
+        requires detail::variant_move_assignable<Ts...>
     {
         detail::raw_visit(
             other.index_,
