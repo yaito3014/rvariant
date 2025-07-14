@@ -464,6 +464,7 @@ public:
             index_,
             [this, &arg]<class Alt>(Alt&& alt) {
                 constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
+                constexpr std::size_t J = detail::accepted_index_v<T, rvariant>;
                 using Assignee = typename std::remove_cvref_t<Alt>::type;
                 using Assigner = detail::accepted_type<T, rvariant>;
                 if constexpr (I != std::variant_npos) {
@@ -471,9 +472,9 @@ public:
                         alt.value = std::forward<T>(arg);
                     } else {
                         if constexpr (std::is_nothrow_constructible_v<Assigner, T> || !std::is_nothrow_move_constructible_v<Assigner>) {
-                            emplace<I>(std::forward<T>(arg));
+                            emplace<J>(std::forward<T>(arg));
                         } else {
-                            emplace<I>(Assigner(std::forward<T>(arg)));
+                            emplace<J>(Assigner(std::forward<T>(arg)));
                         }
                     }
                 }
