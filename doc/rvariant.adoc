@@ -524,7 +524,7 @@ public:
 
 * Class template `rvariant` follows all requirements of `std::variant`, unless otherwise noted.
 * All types in `Ts` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
-* [.underline]#Let `T` denote an arbitrary type. If a user provides both `T` and `{recursive_wrapper}<T>` for the template parameter of `rvariant`, the program is ill-formed.#
+* [.underline]#Let `T` and `A` denote arbitrary types. If a user provides both `T` and `{recursive_wrapper}<T, A>` for the template parameter of `rvariant`, the program is ill-formed.#
 
 NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
 
