@@ -859,9 +859,9 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </div>
 </li>
 <li>
-<p><span class="candidate">5)</span> <span class="underline">Let <code>WT</code> denote <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> if there is any occurrence of <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> in <code>Ts...</code>; otherwise, let <code>WT</code> denote <code>T</code>.</span></p>
+<p><span class="candidate">5)</span> <span class="underline">Let <code>WT</code> denote <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T&gt;</code> if there is any occurrence of <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T&gt;</code> in <code>Ts...</code>; otherwise, let <code>WT</code> denote <code>T</code>.</span></p>
 <div class="paragraph">
-<p><strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+<p><strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
 </div>
 <div class="paragraph">
 <p><strong><em>Constraints:</em></strong></p>
@@ -894,9 +894,9 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </div>
 </li>
 <li>
-<p><span class="candidate">6)</span> <span class="underline">Let <code>WT</code> denote <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> if there is any occurrence of <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> in <code>Ts...</code>; otherwise, let <code>WT</code> denote <code>T</code>.</span></p>
+<p><span class="candidate">6)</span> <span class="underline">Let <code>WT</code> denote <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T&gt;</code> if there is any occurrence of <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T&gt;</code> in <code>Ts...</code>; otherwise, let <code>WT</code> denote <code>T</code>.</span></p>
 <div class="paragraph">
-<p><strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+<p><strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
 </div>
 <div class="paragraph">
 <p><strong><em>Constraints:</em></strong></p>
@@ -1135,22 +1135,49 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class T, class... Args&gt;
-constexpr T&amp; emplace(Args&amp;&amp;...);
+constexpr T&amp; emplace(Args&amp;&amp;... args);<span class="candidate">// 1</span>
 
 template&lt;class T, class U, class... Args&gt;
-constexpr T&amp; emplace(std::initializer_list&lt;U&gt;, Args&amp;&amp;...);
+constexpr T&amp; emplace(std::initializer_list&lt;U&gt; il, Args&amp;&amp;... args);<span class="candidate">// 2</span>
 
 template&lt;std::size_t I, class... Args&gt;
 constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&amp;
-  emplace(Args&amp;&amp;...);
+  emplace(Args&amp;&amp;... args);<span class="candidate">// 3</span>
 
 template&lt;std::size_t I, class U, class... Args&gt;
 constexpr variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&amp;
-  emplace(std::initializer_list&lt;U&gt;, Args&amp;&amp;...);</code></pre>
+  emplace(std::initializer_list&lt;U&gt; il, Args&amp;&amp;... args);<span class="candidate">// 4</span></code></pre>
 </div>
+</div>
+<div class="ulist candidates">
+<ul>
+<li>
+<p><span class="candidate">1)</span> <strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
+<div class="paragraph">
+<p><strong><em>Constraints:</em></strong> <code>std::is_constructible_v&lt;T, Args...&gt;</code> is <code>true</code>, and <code>T</code> occurs exactly once in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
 </div>
 <div class="paragraph">
-<p>Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup></p>
+<p><strong><em>Effects:</em></strong> Equivalent to:<br>
+&nbsp;&nbsp;<code>return emplace&lt;<em>I</em>&gt;(std::forward&lt;Args&gt;(args)...);</code><br>
+where <code><em>I</em></code> is the zero-based index of <code>T</code> in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
+</div>
+</li>
+<li>
+<p><span class="candidate">2)</span> <strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
+<div class="paragraph">
+<p><strong><em>Constraints:</em></strong> <code>std::is_constructible_v&lt;T, std::initializer_list&lt;U&gt;&amp;, Args...&gt;</code> is <code>true</code>, and <code>T</code> occurs exactly once in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Effects:</em></strong> Equivalent to:<br>
+&nbsp;&nbsp;<code>return emplace&lt;<em>I</em>&gt;(il, std::forward&lt;Args&gt;(args)...);</code><br>
+where <code><em>I</em></code> is the zero-based index of <code>T</code> in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
+</div>
+</li>
+<li>
+<p><span class="candidate">3-4)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.mod">[spec]</a></sup></p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -1365,7 +1392,7 @@ constexpr bool holds_alternative(rvariant&lt;Ts...&gt; const&amp; v) noexcept;
 <p><strong><em>Returns:</em></strong> <code>true</code> if <code>v.index()</code> is equal to the zero-based index of <code>T</code> in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
 </div>
 </li>
 </ul>
@@ -1455,7 +1482,7 @@ template&lt;class T, class... Ts&gt; constexpr T const&amp;&amp; get(rvariant&lt
 <p><strong><em>Effects:</em></strong> <span class="underline">Let <code>VT</code> denote the type of the value held by <code>v</code>. If <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT&gt;</code> is the same type as <code>T</code></span>, returns <span class="underline"><code><a href="#rvariant.recursive.helper"><em>UNWRAP_RECURSIVE</em></a>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>. Otherwise, throws an exception of type <a href="https://eel.is/c++draft/variant.bad.access"><code>std::bad_variant_access</code></a>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
 </div>
 </li>
 </ul>
@@ -1530,7 +1557,7 @@ constexpr std::add_pointer_t&lt;T const&gt;
 <p><strong><em>Effects:</em></strong> Equivalent to: <code>return get_if&lt;<em>i</em>&gt;(v);</code> with <em>i</em> being the zero-based index of <code>T</code> in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;</code></span>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+<p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
 </div>
 </li>
 <li>
@@ -1785,7 +1812,7 @@ constexpr <span class="see-below">see below</span> <em>UNWRAP_RECURSIVE</em>(T&a
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate"></span> <strong><em>Effects:</em></strong> Denotes <code>*o</code>, if cv-unqualified non-reference type for <code>T</code> is a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>. Otherwise, denotes <code>o</code>.</p>
+<p><span class="candidate"></span> <strong><em>Effects:</em></strong> Denotes <code>*o</code>, if cv-unqualified non-reference type for <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>. Otherwise, denotes <code>o</code>.</p>
 </li>
 </ul>
 </div>
@@ -1834,7 +1861,7 @@ A variant with a single alternative may introduce unnecessary overhead when used
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-<code>compact_alternative</code> does not unwrap <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply <a href="#rvariant.recursive.helper"><code>unwrap_recursive_t</code></a> manually.
+<code>compact_alternative</code> does not unwrap <code><a href="#rvariant.recursive">recursive_wrapper</a></code>. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a></code> manually.
 </td>
 </tr>
 </table>

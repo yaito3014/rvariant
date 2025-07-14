@@ -528,9 +528,9 @@ include::_std-variant-proxy.adoc[]
 +
 *_Postconditions:_* `holds_alternative[.underline]##<<<rvariant.recursive.helper,unwrap_recursive_t>><T~_j_~>>##(*this)` is `true`.
 
-* [.candidate]#5)# [.underline]#Let `WT` denote <<rvariant.recursive,`recursive_wrapper<T>`>> if there is any occurrence of <<rvariant.recursive,`recursive_wrapper<T>`>> in `Ts\...`; otherwise, let `WT` denote `T`.#
+* [.candidate]#5)# [.underline]#Let `WT` denote `<<rvariant.recursive,recursive_wrapper>><T>` if there is any occurrence of `<<rvariant.recursive,recursive_wrapper>><T>` in `Ts\...`; otherwise, let `WT` denote `T`.#
 +
-*_Mandates:_* [.underline]#`T` is not a specialization of <<rvariant.recursive,`recursive_wrapper`>>.#
+*_Mandates:_* [.underline]#`T` is not a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
 +
 *_Constraints:_*
 +
@@ -548,9 +548,9 @@ include::_std-variant-proxy.adoc[]
 +
 *_Remarks:_*  If [.underline]#`WT`#'s selected constructor is a constexpr constructor, this constructor is a constexpr constructor.
 
-* [.candidate]#6)# [.underline]#Let `WT` denote <<rvariant.recursive,`recursive_wrapper<T>`>> if there is any occurrence of <<rvariant.recursive,`recursive_wrapper<T>`>> in `Ts\...`; otherwise, let `WT` denote `T`.#
+* [.candidate]#6)# [.underline]#Let `WT` denote `<<rvariant.recursive,recursive_wrapper>><T>` if there is any occurrence of `<<rvariant.recursive,recursive_wrapper>><T>` in `Ts\...`; otherwise, let `WT` denote `T`.#
 +
-*_Mandates:_* [.underline]#`T` is not a specialization of <<rvariant.recursive,`recursive_wrapper`>>.#
+*_Mandates:_* [.underline]#`T` is not a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
 +
 *_Constraints:_*
 +
@@ -700,21 +700,40 @@ Let _j_ be `rhs.index()`. [.underline]#Let `U~_k_~` be the _k_^th^ type in `Us\.
 [,cpp,subs="+macros,+attributes"]
 ----
 template<class T, class... Args>
-constexpr T& emplace(Args&&...);
+constexpr T& emplace(Args&&... args);pass:quotes[[.candidate\]#// 1#]
 
 template<class T, class U, class... Args>
-constexpr T& emplace(std::initializer_list<U>, Args&&...);
+constexpr T& emplace(std::initializer_list<U> il, Args&&... args);pass:quotes[[.candidate\]#// 2#]
 
 template<std::size_t I, class... Args>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&
-  emplace(Args&&...);
+  emplace(Args&&... args);pass:quotes[[.candidate\]#// 3#]
 
 template<std::size_t I, class U, class... Args>
 constexpr variant_alternative_t<I, rvariant<Ts...>>&
-  emplace(std::initializer_list<U>, Args&&...);
+  emplace(std::initializer_list<U> il, Args&&... args);pass:quotes[[.candidate\]#// 4#]
 ----
 
+[.candidates]
 :spec-url: https://eel.is/c++draft/variant.mod
+
+* [.candidate]#1)# *_Mandates:_* [.underline]#`T` is not a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
++
+*_Constraints:_* `std::is_constructible_v<T, Args\...>` is `true`, and `T` occurs exactly once in [.underline]#`<<rvariant.recursive.helper,unwrap_recursive_t>><Ts>`#.
++
+*_Effects:_* Equivalent to: +
+pass:quotes[&nbsp;&nbsp;]`return emplace<__I__>(std::forward<Args>(args)\...);` +
+where `_I_` is the zero-based index of `T` in [.underline]#`<<rvariant.recursive.helper,unwrap_recursive_t>><Ts>`#.
+
+* [.candidate]#2)# *_Mandates:_* [.underline]#`T` is not a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
++
+*_Constraints:_* `std::is_constructible_v<T, std::initializer_list<U>&, Args\...>` is `true`, and `T` occurs exactly once in [.underline]#`<<rvariant.recursive.helper,unwrap_recursive_t>><Ts>`#.
++
+*_Effects:_* Equivalent to: +
+pass:quotes[&nbsp;&nbsp;]`return emplace<__I__>(il, std::forward<Args>(args)\...);` +
+where `_I_` is the zero-based index of `T` in [.underline]#`<<rvariant.recursive.helper,unwrap_recursive_t>><Ts>`#.
+
+* [.candidate]#3-4)#
 include::_std-variant-proxy.adoc[]
 
 
@@ -886,7 +905,7 @@ constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept;
 +
 *_Returns:_* `true` if `v.index()` is equal to the zero-based index of `T` in [.underline]#`<<rvariant.recursive.helper,unwrap_recursive_t>><Ts>`#.
 +
-*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of <<rvariant.recursive,`recursive_wrapper`>>.#
+*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
 
 
 [,cpp,subs="+macros,+attributes"]
@@ -962,7 +981,7 @@ template<class T, class... Ts> constexpr T const&& get(rvariant<Ts...> const&& v
 +
 *_Effects:_* [.underline]#Let `VT` denote the type of the value held by `v`. If `<<rvariant.recursive.helper,unwrap_recursive_t>><VT>` is the same type as `T`#, returns [.underline]#`<<rvariant.recursive.helper,_UNWRAP_RECURSIVE_>>(o)`, where `o` denotes a reference to the object stored in the `rvariant`#. Otherwise, throws an exception of type {bad-variant-access}.
 +
-*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of <<rvariant.recursive,`recursive_wrapper`>>.#
+*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
 
 
 [,cpp,subs="+macros,+attributes"]
@@ -1026,7 +1045,7 @@ constexpr std::add_pointer_t<T const>
 +
 *_Effects:_* Equivalent to: `return get_if<__i__>(v);` with _i_ being the zero-based index of `T` in [.underline]#`<<rvariant.recursive.helper,unwrap_recursive_t>><Ts>`#.
 +
-*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of <<rvariant.recursive,`recursive_wrapper`>>.#
+*_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of `<<rvariant.recursive,recursive_wrapper>>`.#
 
 * [.candidate]#3-4)# Provided for compatibility with `boost::get`.
 +
@@ -1217,7 +1236,7 @@ constexpr {see-below} pass:quotes[_UNWRAP_RECURSIVE_](T&& o) noexcept; // {expos
 ----
 
 [.candidates]
-* [.candidate]#{empty}# *_Effects:_* Denotes `*o`, if cv-unqualified non-reference type for `T` is a specialization of <<rvariant.recursive,`recursive_wrapper`>>. Otherwise, denotes `o`.
+* [.candidate]#{empty}# *_Effects:_* Denotes `*o`, if cv-unqualified non-reference type for `T` is a specialization of `<<rvariant.recursive,recursive_wrapper>>`. Otherwise, denotes `o`.
 
 
 [[rvariant.pack]]
@@ -1243,7 +1262,7 @@ struct compact_alternative;
 A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
 
 [WARNING]
-`compact_alternative` does not unwrap <<rvariant.recursive,`recursive_wrapper`>>. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply <<rvariant.recursive.helper,`unwrap_recursive_t`>> manually.
+`compact_alternative` does not unwrap `<<rvariant.recursive,recursive_wrapper>>`. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply `<<rvariant.recursive.helper,unwrap_recursive_t>>` manually.
 
 
 [[rvariant.io]]
