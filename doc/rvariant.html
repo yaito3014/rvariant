@@ -127,12 +127,27 @@ li p:has(+ .ulist) {
   text-indent: 0;
 }
 
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li > p:has(+:is(.openblock, .ulist)),
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li > .paragraph:has(+:is(.openblock, .ulist)) > p {
+  margin-bottom: 0.25em;
+}
+
+.sect2 > p:has(+:is(.openblock, .ulist)),
+.sect2 > .paragraph:has(+:is(.openblock, .ulist)) > p {
+  margin-bottom: 1em;
+}
+
+:where(.sectionbody, .sect1, .sect2, .sect3, .sect4) > .ulist:not(.candidates) {
+  margin-left: 1em;
+}
+
 .candidates .candidate {
   display: inline-block;
   width: 4rem;
   text-align: right;
   text-indent: 0;
   font-weight: bold;
+  margin-left: 0;
 }
 
 .conum[data-value] {
@@ -802,23 +817,23 @@ See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr rvariant::rvariant() noexcept(<span class="see-below">see below</span>);<span class="candidate">// 1</span>
-constexpr rvariant::rvariant(rvariant const&amp;);<span class="candidate">// 2</span>
-constexpr rvariant::rvariant(rvariant&amp;&amp;) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 3</span>
+constexpr rvariant::rvariant(rvariant const&amp; w);<span class="candidate">// 2</span>
+constexpr rvariant::rvariant(rvariant&amp;&amp; w) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 3</span>
 
 template&lt;class T&gt;
-constexpr rvariant(T&amp;&amp;) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 4</span>
+constexpr rvariant(T&amp;&amp; t) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 4</span>
 
 template&lt;class T, class... Args&gt;
-constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, Args&amp;&amp;...);<span class="candidate">// 5</span>
+constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, Args&amp;&amp;... args);<span class="candidate">// 5</span>
 
 template&lt;class T, class U, class... Args&gt;
-constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);<span class="candidate">// 6</span>
+constexpr explicit rvariant(std::in_place_type_t&lt;T&gt;, std::initializer_list&lt;U&gt; il, Args&amp;&amp;...);<span class="candidate">// 6</span>
 
 template&lt;std::size_t I, class... Args&gt;
-constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, Args&amp;&amp;...);<span class="candidate">// 7</span>
+constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, Args&amp;&amp;... args);<span class="candidate">// 7</span>
 
 template&lt;std::size_t I, class U, class... Args&gt;
-constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_list&lt;U&gt;, Args&amp;&amp;...);<span class="candidate">// 8</span>
+constexpr explicit rvariant(std::in_place_index_t&lt;I&gt;, std::initializer_list&lt;U&gt; il, Args&amp;&amp;... args);<span class="candidate">// 8</span>
 
 /* extensions */
 
@@ -834,7 +849,84 @@ constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(<span class="see-
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1-8)</span>
+<p><span class="candidate">1-3)</span>
+Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup></p>
+</li>
+<li>
+<p><span class="candidate">4)</span> @saki7 thinks the exact same implementation as the standard should work for constructing the <code>recursive_wrapper</code>-wrapped alternative with plain <code>T&amp;&amp;</code>. TODO: need confirmation; please implement it and see what happens.</p>
+</li>
+<li>
+<p><span class="candidate">5)</span> <span class="underline">Let <code>WT</code> denote <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> if there is any occurrence of <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> in <code>Ts...</code>; otherwise, let <code>WT</code> denote <code>T</code>.</span></p>
+<div class="paragraph">
+<p><strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong><em>Constraints:</em></strong></p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;There is exactly one occurrence of <code>T</code> in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;...</code></span> and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_constructible_v&lt;<span class="underline">WT</span>, Args...&gt;</code> is <code>true</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><strong><em>Effects:</em></strong> Direct-non-list-initializes the contained value of type <span class="underline"><code>WT</code></span> with <code>std::forward&lt;Args&gt;(args)...</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Postconditions:</em></strong> <code>holds_alternative&lt;T&gt;(*this)</code> is <code>true</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Throws:</em></strong> Any exception thrown by calling the selected constructor of <span class="underline"><code>WT</code></span>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Remarks:</em></strong>  If <span class="underline"><code>WT</code></span>'s selected constructor is a constexpr constructor, this constructor is a constexpr constructor.</p>
+</div>
+</li>
+<li>
+<p><span class="candidate">6)</span> <span class="underline">Let <code>WT</code> denote <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> if there is any occurrence of <a href="#rvariant.recursive"><code>recursive_wrapper&lt;T&gt;</code></a> in <code>Ts...</code>; otherwise, let <code>WT</code> denote <code>T</code>.</span></p>
+<div class="paragraph">
+<p><strong><em>Mandates:</em></strong> <span class="underline"><code>T</code> is not a specialization of <a href="#rvariant.recursive"><code>recursive_wrapper</code></a>.</span></p>
+</div>
+<div class="paragraph">
+<p><strong><em>Constraints:</em></strong></p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;There is exactly one occurrence of <code>T</code> in <span class="underline"><code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;...</code></span> and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_constructible_v&lt;<span class="underline">WT</span>, std::initializer_list&lt;U&gt;&amp;, Args...&gt;</code> is <code>true</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><strong><em>Effects:</em></strong> Direct-non-list-initializes the contained value of type <span class="underline"><code>WT</code></span> with <code>il, std::forward&lt;Args&gt;(args)...</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Postconditions:</em></strong> <code>holds_alternative&lt;T&gt;(*this)</code> is <code>true</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Throws:</em></strong> Any exception thrown by calling the selected constructor of <span class="underline"><code>WT</code></span>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Remarks:</em></strong>  If <span class="underline"><code>WT</code></span>'s selected constructor is a constexpr constructor, this constructor is a constexpr constructor.</p>
+</div>
+</li>
+<li>
+<p><span class="candidate">7-8)</span>
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup></p>
 </li>
 <li>
@@ -935,14 +1027,14 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="paragraph">
 <p>Let <em>j</em> be <code>rhs.index()</code>. <span class="underline">Let <code>U<sub><em>k</em></sub></code> be the <em>k</em><sup>th</sup> type in <code>Us...</code>.</span></p>
 </div>
-<div class="openblock">
-<div class="content">
 <div class="paragraph">
 <p><strong><em>Constraints:</em></strong> <span class="underline"><code><a href="#rvariant.flex">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>.</span></p>
 </div>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong></p>
 </div>
+<div class="openblock">
+<div class="content">
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -962,6 +1054,8 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </li>
 </ul>
 </div>
+</div>
+</div>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> If <code>rhs.valueless_by_exception()</code> is <code>true</code>, <code>index() == rhs.index()</code>; <span class="underline">otherwise, <code>*this</code> holds the same alternative type as <code>rhs</code>.</span></p>
 </div>
@@ -971,22 +1065,20 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong> This operator is defined as deleted unless <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_copy_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>k</em></span>.</p>
 </div>
-</div>
-</div>
 </li>
 <li>
 <p><span class="candidate">5)</span> <em>Flexible move assignment operator</em>.</p>
 <div class="paragraph">
 <p>Let <em>j</em> be <code>rhs.index()</code>. <span class="underline">Let <code>U<sub><em>k</em></sub></code> be the <em>k</em><sup>th</sup> type in <code>Us...</code>.</span></p>
 </div>
-<div class="openblock">
-<div class="content">
 <div class="paragraph">
 <p><strong><em>Constraints:</em></strong> <span class="underline"><code><a href="#rvariant.flex">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_move_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_move_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>k</em></span>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong></p>
 </div>
+<div class="openblock">
+<div class="content">
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -1003,12 +1095,16 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </li>
 </ul>
 </div>
+</div>
+</div>
 <div class="paragraph">
 <p><strong><em>Returns:</em></strong> <code>*this</code>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong> The exception specification is equivalent to <code>std::is_nothrow_move_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_nothrow_move_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> for all <span class="underline"><em>k</em></span>.</p>
 </div>
+<div class="openblock">
+<div class="content">
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -1081,9 +1177,7 @@ template&lt;class... Us&gt;
 constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-below">see below</span>);<span class="candidate">// 4</span></code></pre>
 </div>
 </div>
-<div class="openblock candidates">
-<div class="content">
-<div class="ulist">
+<div class="ulist candidates">
 <ul>
 <li>
 <p><span class="candidate">1)</span> <strong><em>Returns:</em></strong> <code>*this</code>.</p>
@@ -1109,6 +1203,8 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
 </div>
+<div class="openblock">
+<div class="content">
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -1122,6 +1218,8 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 </li>
 </ul>
 </div>
+</div>
+</div>
 </li>
 <li>
 <p><span class="candidate">4)</span> Equivalent to the overload #3, except for:</p>
@@ -1134,6 +1232,8 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
 </div>
+<div class="openblock">
+<div class="content">
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -1144,10 +1244,10 @@ constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-be
 </li>
 </ul>
 </div>
+</div>
+</div>
 </li>
 </ul>
-</div>
-</div>
 </div>
 </div>
 <div class="sect2">

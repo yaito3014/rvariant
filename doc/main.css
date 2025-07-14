@@ -117,12 +117,27 @@ li p:has(+ .ulist) {
   text-indent: 0;
 }
 
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li > p:has(+:is(.openblock, .ulist)),
+:is(.candidates > .content > .ulist, .candidates.ulist) > ul > li > .paragraph:has(+:is(.openblock, .ulist)) > p {
+  margin-bottom: 0.25em;
+}
+
+.sect2 > p:has(+:is(.openblock, .ulist)),
+.sect2 > .paragraph:has(+:is(.openblock, .ulist)) > p {
+  margin-bottom: 1em;
+}
+
+:where(.sectionbody, .sect1, .sect2, .sect3, .sect4) > .ulist:not(.candidates) {
+  margin-left: 1em;
+}
+
 .candidates .candidate {
   display: inline-block;
   width: 4rem;
   text-align: right;
   text-indent: 0;
   font-weight: bold;
+  margin-left: 0;
 }
 
 .conum[data-value] {
