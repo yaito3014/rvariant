@@ -514,6 +514,16 @@ TEST_CASE("recursive wrapper") {
         auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
         REQUIRE(f(yk::recursive_wrapper<double>(3.14)));
     }
+    {
+        yk::rvariant<yk::recursive_wrapper<int>> var = 42;
+        var = 33 - 4;
+        REQUIRE(yk::holds_alternative<int>(var));
+    }
+    {
+        yk::rvariant<yk::recursive_wrapper<int>> var = 42;
+        var = yk::recursive_wrapper<int>{};
+        REQUIRE(yk::holds_alternative<int>(var));
+    }
 }
 
 TEST_CASE("unwrap recursive") {
