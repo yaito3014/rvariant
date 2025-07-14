@@ -1,9 +1,12 @@
 #ifndef YK_RECURSIVE_WRAPPER_HPP
 #define YK_RECURSIVE_WRAPPER_HPP
 
+#include "yk/detail/is_specialization_of.hpp"
+
 #include <compare>
 #include <initializer_list>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace yk {
@@ -11,7 +14,19 @@ namespace yk {
 // TODO: replace std::indirect with yk::indirect
 template<class T, class Allocator = std::allocator<T>>
 class recursive_wrapper : private std::indirect<T, Allocator> {
+    static_assert(std::is_object_v<T>);
+    static_assert(!std::is_array_v<T>);
+    static_assert(!std::is_same_v<T, std::in_place_t>);
+    static_assert(!detail::is_ttp_specialization_of_v<T, std::in_place_type_t>);
+    static_assert(!std::is_const_v<T> && !std::is_volatile_v<T>);
+    static_assert(std::is_same_v<T, typename std::allocator_traits<Allocator>::value_type>);
+
     using base_type = std::indirect<T, Allocator>;
+
+    constexpr base_type& base() & noexcept { return static_cast<base_type&>(*this); }
+    constexpr base_type const& base() const& noexcept { return static_cast<base_type const&>(*this); }
+    constexpr base_type&& base() && noexcept { return static_cast<base_type&&>(*this); }
+    constexpr base_type const&& base() const&& noexcept { return static_cast<base_type const&&>(*this); }
 
 public:
     using base_type::allocator_type;
@@ -64,7 +79,11 @@ public:
 
     using base_type::operator=;
 
-    using base_type::operator*;
+    template<class Self>
+    constexpr auto&& operator*(this Self&& self) noexcept {
+        return *std::forward<Self>(self).base();
+    }
+
     using base_type::operator->;
     using base_type::get_allocator;
     using base_type::valueless_after_move;
@@ -101,6 +120,32 @@ recursive_wrapper(Value) -> recursive_wrapper<Value>;
 
 template<class Allocator, class Value>
 recursive_wrapper(std::allocator_arg_t, Allocator, Value) -> recursive_wrapper<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
+
+template<class T>
+struct unwrap_recursive {
+    using type = T;
+};
+
+template<class T, class Allocator>
+struct unwrap_recursive<recursive_wrapper<T, Allocator>> {
+    using type = T;
+};
+
+template<class T>
+using unwrap_recursive_t = typename unwrap_recursive<T>::type;
+
+namespace detail {
+
+template<class T>
+[[nodiscard]] constexpr decltype(auto) unwrap_recursive(T&& o) noexcept {
+    if constexpr (is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) {
+        return *std::forward<T>(o);
+    } else {
+        return std::forward<T>(o);
+    }
+}
+
+}  // namespace detail
 
 }  // namespace yk
 
