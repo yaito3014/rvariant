@@ -29,10 +29,10 @@ class recursive_wrapper : private std::indirect<T, Allocator> {
     constexpr base_type const&& base() const&& noexcept { return static_cast<base_type const&&>(*this); }
 
 public:
-    using base_type::allocator_type;
-    using base_type::const_pointer;
-    using base_type::pointer;
-    using base_type::value_type;
+    using typename base_type::allocator_type;
+    using typename base_type::const_pointer;
+    using typename base_type::pointer;
+    using typename base_type::value_type;
 
     using base_type::base_type;
 
