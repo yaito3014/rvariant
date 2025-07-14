@@ -36,6 +36,10 @@ public:
 
     using base_type::base_type;
 
+    constexpr /* not explicit */ recursive_wrapper()
+        requires std::is_default_constructible_v<Allocator>
+    = default;
+
     template<class U = T>
         requires requires {
             requires (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>);
@@ -43,7 +47,7 @@ public:
             requires std::is_constructible_v<T, U>;
             requires std::is_default_constructible_v<Allocator>;
         }
-    constexpr explicit recursive_wrapper(U&& x) : base_type(std::forward<U>(x)) {}
+    constexpr explicit(!std::is_convertible_v<U, T>) recursive_wrapper(U&& x) : base_type(std::forward<U>(x)) {}
 
     template<class U = T>
         requires requires {
