@@ -7,6 +7,10 @@ body {
   color: rgb(11, 11, 11);
 }
 
+h1, h2, h3, h4, h5, h6 {
+  overflow: hidden;
+}
+
 h1, h2, p, td.content, span.alt, summary {
   letter-spacing: inherit;
 }
@@ -76,6 +80,7 @@ li p:has(+ .ulist) {
 
 .slug {
   float: right;
+  margin-left: .25em;
   user-select: none;
 }
 
