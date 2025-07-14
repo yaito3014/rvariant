@@ -123,12 +123,12 @@ union variadic_union<TriviallyDestructible> {
 
 template<bool TriviallyDestructible, class T, class... Ts>
 union variadic_union<TriviallyDestructible, T, Ts...> {
-    constexpr variadic_union() : first() {}
+    constexpr variadic_union() : first(std::in_place) {}
 
     constexpr variadic_union(valueless_t) : rest(valueless) {}
 
     template<class... Args>
-    constexpr variadic_union(std::in_place_index_t<0>, Args&&... args) : first(std::forward<Args>(args)...) {}
+    constexpr variadic_union(std::in_place_index_t<0>, Args&&... args) : first(std::in_place, std::forward<Args>(args)...) {}
 
     template<std::size_t I, class... Args>
     constexpr variadic_union(std::in_place_index_t<I>, Args&&... args) : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...) {}
@@ -147,6 +147,10 @@ template<std::size_t I, class T>
 struct alternative {
     static constexpr std::size_t index = I;
     using type = T;
+
+    template<class... Args>
+    constexpr explicit alternative(std::in_place_t, Args&&... args) : value(std::forward<Args>(args)...) {}
+
     T value;
 };
 
@@ -186,7 +190,7 @@ constexpr raw_visit_return_type<Visitor, Variant> raw_visit_dispatch(Visitor&& v
 template<class Visitor, class Variant>
 constexpr raw_visit_return_type<Visitor, Variant> raw_visit_valueless(Visitor&& vis, Variant&&) noexcept(
     std::is_nothrow_invocable_v<Visitor, alternative<std::variant_npos, std::monostate>>) {
-    return std::invoke(std::forward<Visitor>(vis), alternative<std::variant_npos, std::monostate>{});
+    return std::invoke(std::forward<Visitor>(vis), alternative<std::variant_npos, std::monostate>{std::in_place});
 }
 
 template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
