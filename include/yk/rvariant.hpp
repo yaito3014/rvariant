@@ -480,7 +480,7 @@ public:
                 using Assignee = typename std::remove_cvref_t<Alt>::type;
                 using Assigner = detail::accepted_type<T, rvariant>;
                 if constexpr (I != std::variant_npos) {
-                    if constexpr (std::same_as<Assignee, Assigner>) {
+                    if constexpr (std::is_same_v<Assignee, Assigner>) {
                         alt.value = std::forward<T>(arg);
                     } else {
                         if constexpr (std::is_nothrow_constructible_v<Assigner, T> || !std::is_nothrow_move_constructible_v<Assigner>) {
