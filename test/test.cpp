@@ -9,6 +9,7 @@
 #include <yk/detail/is_in.hpp>
 #include <yk/detail/pack_indexing.hpp>
 
+#include <yk/recursive_wrapper.hpp>
 #include <yk/rvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -474,4 +475,9 @@ TEST_CASE("swap") {
         REQUIRE(yk::get<0>(b) == 42);
     }
     // TODO: valueless case
+}
+
+TEST_CASE("recursive wrapper") {
+    yk::recursive_wrapper<int> a(42);
+    REQUIRE_FALSE(a.valueless_after_move());
 }
