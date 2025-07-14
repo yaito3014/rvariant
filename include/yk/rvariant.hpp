@@ -782,26 +782,32 @@ private:
     std::size_t index_ = std::variant_npos;
 };
 
+template<class T, class... Ts>
+[[nodiscard]] constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept {
+    static_assert(detail::exactly_once_v<T, Ts...>);
+    return v.index() == detail::find_index_v<T, Ts...>;
+}
+
 template<std::size_t I, class... Ts>
-constexpr variant_alternative_t<I, rvariant<Ts...>>& get(rvariant<Ts...>& var) {
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>& get(rvariant<Ts...>& var) {
     if (I != var.index()) throw std::bad_variant_access{};
     return detail::raw_get<I>(var).value;
 }
 
 template<std::size_t I, class... Ts>
-constexpr variant_alternative_t<I, rvariant<Ts...>>&& get(rvariant<Ts...>&& var) {
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>&& get(rvariant<Ts...>&& var) {
     if (I != var.index()) throw std::bad_variant_access{};
     return detail::raw_get<I>(std::move(var)).value;
 }
 
 template<std::size_t I, class... Ts>
-constexpr variant_alternative_t<I, rvariant<Ts...>> const& get(rvariant<Ts...> const& var) {
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const& get(rvariant<Ts...> const& var) {
     if (I != var.index()) throw std::bad_variant_access{};
     return detail::raw_get<I>(var).value;
 }
 
 template<std::size_t I, class... Ts>
-constexpr variant_alternative_t<I, rvariant<Ts...>> const&& get(rvariant<Ts...> const&& var) {
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const&& get(rvariant<Ts...> const&& var) {
     if (I != var.index()) throw std::bad_variant_access{};
     return detail::raw_get<I>(std::move(var)).value;
 }
