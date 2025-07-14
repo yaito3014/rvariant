@@ -379,6 +379,22 @@ TEST_CASE("move assign") {
     }
 }
 
+TEST_CASE("flexible copy assign") {
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int, float> b = 3.14f;
+        REQUIRE_NOTHROW(b = a);
+    }
+}
+
+TEST_CASE("flexible move assign") {
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int, float> b = 3.14f;
+        REQUIRE_NOTHROW(b = std::move(a));
+    }
+}
+
 TEST_CASE("raw get") {
     yk::rvariant<int, float> var = 42;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);

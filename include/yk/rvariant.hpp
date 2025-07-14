@@ -502,6 +502,64 @@ public:
         return *this;
     }
 
+    template<class... Us>
+        requires detail::variant_copy_assignable<Us...> && subset_of<rvariant<Us...>, rvariant>
+    constexpr rvariant& operator=(rvariant<Us...> const& other) {
+        detail::raw_visit(
+            other.index_,
+            [this]<class Alt>(Alt&& alt) {
+                constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
+                if constexpr (I == std::variant_npos) {
+                    reset();
+                } else {
+                    constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
+                    if (index_ == J) {
+                        // directly assign
+                        detail::raw_get<J>(self()).value = alt.value;
+                    } else {
+                        using T = std::remove_cvref_t<Alt>::type;
+                        if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
+                            // copy is nothrow or move throws; use copy constructor
+                            reset();
+                            std::construct_at(&storage_, std::in_place_index<J>, alt.value);
+                        } else {
+                            // copy throws and move is nothrow; move temporary copy
+                            auto temporary = alt.value;
+                            reset();
+                            std::construct_at(&storage_, std::in_place_index<J>, std::move(temporary));
+                        }
+                    }
+                }
+            },
+            other);
+        return *this;
+    }
+
+    template<class... Us>
+        requires detail::variant_move_assignable<Us...> && subset_of<rvariant<Us...>, rvariant>
+    constexpr rvariant& operator=(rvariant<Us...>&& other) noexcept(
+        std::conjunction_v<std::conjunction<std::is_nothrow_move_constructible<Us>, std::is_nothrow_move_assignable<Us>>...>) {
+        detail::raw_visit(
+            other.index_,
+            [this]<class Alt>(Alt&& alt) {
+                constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
+                if constexpr (I == std::variant_npos) {
+                    reset();
+                } else {
+                    constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
+                    if (index_ == J) {
+                        detail::raw_get<J>(self()).value = std::move(alt).value;
+                    } else {
+                        reset();
+                        std::construct_at(&storage_, std::in_place_index<J>, std::move(alt).value);
+                    }
+                }
+            },
+            other);
+
+        return *this;
+    }
+
     constexpr ~rvariant() = default;
 
     constexpr ~rvariant()
