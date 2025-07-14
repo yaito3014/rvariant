@@ -109,6 +109,18 @@ TEST_CASE("variadic union") {
         STATIC_REQUIRE_FALSE(std::is_move_constructible_v<VD>);  // cannot move without index
         STATIC_REQUIRE(std::is_destructible_v<VD>);
     }
+    {
+        struct S {
+            S(int, float) {}
+        };
+        using VD = yk::detail::variadic_union<true, S>;
+        STATIC_REQUIRE(std::is_default_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
+        STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
+        STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, int, float>);
+    }
 }
 
 TEST_CASE("default construction") {
@@ -523,6 +535,24 @@ TEST_CASE("recursive wrapper") {
         yk::rvariant<yk::recursive_wrapper<int>> var = 42;
         var = yk::recursive_wrapper<int>{};
         REQUIRE(yk::holds_alternative<int>(var));
+    }
+
+    {
+        struct S {
+            S(int i, double d) {}
+        };
+
+        yk::rvariant<S> var(std::in_place_index<0>, 42, 3.14);
+    }
+
+    {
+        yk::recursive_wrapper<int> wrapper(std::in_place, 42);
+        REQUIRE(*wrapper == 42);
+        yk::rvariant<yk::recursive_wrapper<int>> a(std::in_place_index<0>);
+        yk::rvariant<yk::recursive_wrapper<int>> b(std::in_place_index<0>, 42);
+        yk::rvariant<yk::recursive_wrapper<int>> c(std::in_place_index<0>, std::in_place);
+        yk::rvariant<yk::recursive_wrapper<int>> d(std::in_place_index<0>, std::in_place, 42);
+        yk::rvariant<yk::recursive_wrapper<int>> e(std::in_place_index<0>, std::allocator_arg, std::allocator<int>{});
     }
 }
 
