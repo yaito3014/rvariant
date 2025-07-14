@@ -198,17 +198,23 @@ li p:has(+ .ulist) {
 <li><a href="#introduction">Introduction</a>
 <ul class="sectlevel2">
 <li><a href="#motivation">Motivation</a></li>
-<li><a href="#goals">Project goals</a></li>
-<li><a href="#comparison">Comparison of variant libraries</a></li>
+<li><a href="#goals">Project Goals</a></li>
+<li><a href="#comparison">Comparison of Variant Libraries</a></li>
+</ul>
+</li>
+<li><a href="#rationale">Rationale</a>
+<ul class="sectlevel2">
 <li><a href="#why-is-recursive-wrapper-needed-1">Why is recursive_wrapper needed?</a></li>
 <li><a href="#why-is-recursive-wrapper-needed-2">Why can&#8217;t I just use std::unique_ptr instead of recursive_wrapper?</a></li>
 <li><a href="#why-is-rvariant-needed-1">Why can&#8217;t rvariant be a thin wrapper around std::variant?</a></li>
+<li><a href="#why-is-rvariant-needed-2">Why can&#8217;t rvariant be submitted directly to the C++ Standards Committee?</a></li>
+<li><a href="#why-is-rvariant-needed-3">Why is rvariant being proposed to Boost?</a></li>
 </ul>
 </li>
-<li><a href="#feature-cheat-sheet">Feature cheat sheet</a>
+<li><a href="#feature-cheat-sheet">Feature Cheat Sheet</a>
 <ul class="sectlevel1">
-<li><a href="#basic-features">Basic features</a></li>
-<li><a href="#advanced-features">Advanced features</a></li>
+<li><a href="#basic-features">Basic Features</a></li>
+<li><a href="#advanced-features">Advanced Features</a></li>
 </ul>
 </li>
 <li><a href="#rvariant">Reference <span class="slug">[rvariant]</span></a>
@@ -249,10 +255,10 @@ li p:has(+ .ulist) {
 </li>
 </ul>
 </li>
-<li><a href="#additional-information">Additional information</a>
+<li><a href="#additional-information">Additional Information</a>
 <ul class="sectlevel1">
 <li><a href="#benchmark">Benchmark</a></li>
-<li><a href="#about">About authors</a></li>
+<li><a href="#about">About the Authors</a></li>
 </ul>
 </li>
 </ul>
@@ -283,7 +289,7 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <p>Since its introduction in 2004, <code>boost::variant</code> has been used for a wide range of type-safe union use cases.</p>
 </div>
 <div class="paragraph">
-<p>Starting with C&#43;&#43;17, most of those can be replaced with <code>std::variant</code>, <em>except</em> for <strong>recursive types</strong>. As a result, many users of generic frameworks that inherently require recursive variants&#8212;&#8203;most notably Boost.Spirit&#8212;&#8203;have continued using <code>boost::variant</code>, despite its significant impact on compile times.</p>
+<p>Starting with C&#43;&#43;17, most of those can be replaced with <code>std::variant</code>, <em>except</em> for <strong>recursive types</strong>. As a result, many users of generic frameworks that require recursive variants&#8212;&#8203;most notably Boost.Spirit&#8212;&#8203;have continued using <code>boost::variant</code>, despite its significant impact on compile times.</p>
 </div>
 <div class="paragraph">
 <p>The compile-time slowness of <code>boost::variant</code> stems from long-standing technical debt: it relies heavily on preprocessor magic in Boost.MPL. This wizardry is so tightly coupled with <code>boost::variant</code>'s internals that any attempt to modernize it would be unrealistic; it would effectively require a complete rewrite.</p>
@@ -293,7 +299,7 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="goals"><a class="anchor" href="#goals"></a>Project goals</h3>
+<h3 id="goals"><a class="anchor" href="#goals"></a>Project Goals</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -303,13 +309,13 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <p><strong>Replace existing usages of Boost.Variant</strong> in established frameworks, especially Boost.Spirit.X3.</p>
 </li>
 <li>
-<p><strong>Explore potential directions for future standardization,</strong> while gaining implementation experience with the renewed design.</p>
+<p><strong>Explore potential directions for future standardization,</strong> while gaining implementation experience with the modernized design.</p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="comparison"><a class="anchor" href="#comparison"></a>Comparison of variant libraries</h3>
+<h3 id="comparison"><a class="anchor" href="#comparison"></a>Comparison of Variant Libraries</h3>
 <div class="openblock scroll-x">
 <div class="content">
 <table class="tableblock frame-ends grid-all stretch">
@@ -325,8 +331,8 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <td class="tableblock halign-left valign-top"></td>
 <th class="tableblock halign-left valign-top"><p class="tableblock"><code><strong>temp_ns::rvariant</strong></code></p></th>
 <th class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://en.cppreference.com/w/cpp/utility/variant.html"><code><strong>std::variant</strong></code></a></p></th>
-<th class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/doc/html/variant.html"><code><strong>Boost.Variant</strong></code></a></p></th>
-<th class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html"><code><strong>Boost.Variant2</strong></code></a></p></th>
+<th class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/1_88_0/doc/html/variant.html"><code><strong>Boost.Variant</strong></code></a></p></th>
+<th class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/1_88_0/libs/variant2/doc/html/variant2.html"><code><strong>Boost.Variant2</strong></code></a></p></th>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Minimum C++ version</strong></p></td>
@@ -347,24 +353,24 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Interface for recursive types</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="good">Yes</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="bad">No</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/doc/html/boost/recursive_wrapper.html"><strong class="good">Yes</strong></a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/1_88_0/doc/html/variant/tutorial.html#variant.tutorial.recursive"><strong class="good">Yes</strong></a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong class="bad">No</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>May be valueless?</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception.html">Yes</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty">No</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_never_valueless">No</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/1_88_0/doc/html/variant/design.html#variant.design.never-empty">No</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.boost.org/doc/libs/1_88_0/libs/variant2/doc/html/variant2.html#design_never_valueless">No</a></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Exception safety</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Basic exception safety</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Basic exception safety</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="good">Strong exception safety</span><br>
-<a href="https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty.heap-backup-solution">(Temporary heap backup)</a></p></td>
+<a href="https://www.boost.org/doc/libs/1_88_0/doc/html/variant/design.html#variant.design.never-empty.heap-backup-solution">(Temporary heap backup)</a></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><span class="good">Strong exception safety</span><br>
-<a href="https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety">(Double storage)</a></p></td>
+<a href="https://www.boost.org/doc/libs/1_88_0/libs/variant2/doc/html/variant2.html#design_strong_exception_safety">(Double storage)</a></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Flexible construction<br>
@@ -380,6 +386,11 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 </div>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="rationale"><a class="anchor" href="#rationale"></a>Rationale</h2>
+<div class="sectionbody">
 <div class="sect2">
 <h3 id="why-is-recursive-wrapper-needed-1"><a class="anchor" href="#why-is-recursive-wrapper-needed-1"></a>Why is recursive_wrapper needed?</h3>
 <div class="paragraph">
@@ -411,12 +422,45 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <div class="sect2">
 <h3 id="why-is-rvariant-needed-1"><a class="anchor" href="#why-is-rvariant-needed-1"></a>Why can&#8217;t rvariant be a thin wrapper around std::variant?</h3>
 <div class="paragraph">
+<p>Ultimately, <code>rvariant</code> is designed to be a strict superset of <code>std::variant</code>, not just to act as a third-party drop-in replacement.</p>
+</div>
+<div class="paragraph">
 <p>If <code>rvariant</code> is specified correctly, it has the potential to become the <strong>only variant library in the C++ standard</strong> capable of handling <em>both</em> recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around <code>std::variant</code> (e.g. inheritance or composition), such a specification could never be standardized.</p>
 </div>
+<div class="paragraph">
+<p>For this purpose, the documentation of <code>rvariant</code> is presented in a diff-style format that mirrors <code>std::variant</code>, with differences clearly marked using <span class="underline">underlines</span>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="why-is-rvariant-needed-2"><a class="anchor" href="#why-is-rvariant-needed-2"></a>Why can&#8217;t rvariant be submitted directly to the C++ Standards Committee?</h3>
+<div class="paragraph">
+<p>Historically, <strong>the concept of recursive variants in C&#43;&#43; has been closely tied to <a href="https://www.boost.org/doc/libs/1_88_0/doc/html/variant/tutorial.html#variant.tutorial.recursive">Boost.Variant</a> and <a href="https://www.boost.org/doc/libs/1_88_0/libs/spirit/doc/html/spirit/qi/tutorials/mini_xml___asts_.html#spirit.qi.tutorials.mini_xml___asts_.the_structures">Boost.Spirit.Qi</a></strong>. It has been investigated, implemented, and used across Boost Libraries and by end users for <em>decades</em>. For this reason, we believe it&#8217;s best to first gather feedback from the Boost community.</p>
+</div>
+<div class="paragraph">
+<p>Moreover, we expect the working group to seek implementation experience, which inevitably involves the current state of Boost.Variant and related components. Submitting <code>rvariant</code> independently would likely result in the committee re-evaluating the outdated status quo. In our view, this could leave too much room for design ambiguity, potentially making the process unnecessarily time-consuming.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="why-is-rvariant-needed-3"><a class="anchor" href="#why-is-rvariant-needed-3"></a>Why is rvariant being proposed to Boost?</h3>
+<div class="paragraph">
+<p>One of the co-authors of <code>rvariant</code>, Nana Sakisaka, has been contributing to the maintenance of Boost.Spirit since May 2025. Modernizing recursive variant support is a foundational part of upgrading the Boost.Spirit.X3 codebase, and has become a major technical interest in ongoing maintenance efforts.</p>
+</div>
+<div class="paragraph">
+<p>Originally, <code>rvariant</code> was developed as an internal replacement within Boost.Spirit, as a sub-component with no broader exposure. However, it was later decided to submit it for formal review to benefit the wider community.</p>
+</div>
+<div class="paragraph">
+<p>Although Boost.Spirit.X3 has a <a href="https://www.boost.org/doc/libs/1_88_0/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html">somewhat updated counterpart</a>, it was never designed around a formal specification and still retains some <a href="https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131">legacy implementation</a> from earlier stages of the development.</p>
+</div>
+<div class="paragraph">
+<p>Boost.Spirit is just one example of a parser combinator library, and represents only the tip of the iceberg. Many kinds of libraries inherently require recursive variants: any library that constructs <strong>statically typed recursive data structures</strong> would benefit from them. Furthermore, once C&#43;&#43;26 reflection becomes available, such data structures will likely become even more common.</p>
+</div>
+<div class="paragraph">
+<p>A proper solution to these challenges requires a fully-featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a starting point for broader discussion about recursive variants in Boost and beyond.</p>
 </div>
 </div>
 </div>
-<h1 id="feature-cheat-sheet" class="sect0"><a class="anchor" href="#feature-cheat-sheet"></a>Feature cheat sheet</h1>
+</div>
+<h1 id="feature-cheat-sheet" class="sect0"><a class="anchor" href="#feature-cheat-sheet"></a>Feature Cheat Sheet</h1>
 <div class="openblock partintro">
 <div class="content">
 <div class="paragraph">
@@ -425,7 +469,7 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="basic-features"><a class="anchor" href="#basic-features"></a>Basic features</h2>
+<h2 id="basic-features"><a class="anchor" href="#basic-features"></a>Basic Features</h2>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
@@ -486,7 +530,7 @@ temp_ns::<a href="#rvariant.visit">visit</a>(visitor, ab); // function visit</co
 </div>
 </div>
 <div class="sect1">
-<h2 id="advanced-features"><a class="anchor" href="#advanced-features"></a>Advanced features</h2>
+<h2 id="advanced-features"><a class="anchor" href="#advanced-features"></a>Advanced Features</h2>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
@@ -813,7 +857,7 @@ public:
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</code></a> and <a href="https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts"><code>boost::variant</code></a>
+See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</code></a> and <a href="https://www.boost.org/doc/libs/1_88_0/doc/html/variant/reference.html#variant.concepts"><code>boost::variant</code></a>
 </td>
 </tr>
 </table>
@@ -1955,7 +1999,7 @@ struct <em>is-specialization-of</em>;      // <span class="exposition-only">expo
 </div>
 </div>
 </div>
-<h1 id="additional-information" class="sect0"><a class="anchor" href="#additional-information"></a>Additional information</h1>
+<h1 id="additional-information" class="sect0"><a class="anchor" href="#additional-information"></a>Additional Information</h1>
 <div class="sect1">
 <h2 id="benchmark"><a class="anchor" href="#benchmark"></a>Benchmark</h2>
 <div class="sectionbody">
@@ -1968,7 +2012,7 @@ struct <em>is-specialization-of</em>;      // <span class="exposition-only">expo
 </div>
 </div>
 <div class="sect1">
-<h2 id="about"><a class="anchor" href="#about"></a>About authors</h2>
+<h2 id="about"><a class="anchor" href="#about"></a>About the Authors</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>TODO</p>

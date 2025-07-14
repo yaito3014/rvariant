@@ -13,6 +13,8 @@ Yaito Kakeyama; Nana Sakisaka
 :toclevels: 2
 :reproducible:
 
+:boost-version: 1_88_0
+
 :see-below: pass:quotes[[.see-below]#see below#]
 :exposition-only: pass:quotes[[.exposition-only]#exposition only#]
 :bad-variant-access: pass:quotes,macros[https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`]]
@@ -38,7 +40,7 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };
 === Motivation
 Since its introduction in 2004, `boost::variant` has been used for a wide range of type-safe union use cases.
 
-Starting with {cpp}17, most of those can be replaced with `std::variant`, _except_ for *recursive types*. As a result, many users of generic frameworks that inherently require recursive variants--most notably Boost.Spirit--have continued using `boost::variant`, despite its significant impact on compile times.
+Starting with {cpp}17, most of those can be replaced with `std::variant`, _except_ for *recursive types*. As a result, many users of generic frameworks that require recursive variants--most notably Boost.Spirit--have continued using `boost::variant`, despite its significant impact on compile times.
 
 The compile-time slowness of `boost::variant` stems from long-standing technical debt: it relies heavily on preprocessor magic in Boost.MPL. This wizardry is so tightly coupled with ``boost::variant``'s internals that any attempt to modernize it would be unrealistic; it would effectively require a complete rewrite.
 
@@ -46,16 +48,16 @@ Until 2025, no one had managed to introduce a modern alternative into either Boo
 
 
 [#goals]
-=== Project goals
+=== Project Goals
 1. *Provide a modern, efficient, and battle-tested recursive variant library* to enable developers to avoid using Boost.Variant in new applications.
 
 2. *Replace existing usages of Boost.Variant* in established frameworks, especially Boost.Spirit.X3.
 
-3. *Explore potential directions for future standardization,* while gaining implementation experience with the renewed design.
+3. *Explore potential directions for future standardization,* while gaining implementation experience with the modernized design.
 
 
 [#comparison]
-=== Comparison of variant libraries
+=== Comparison of Variant Libraries
 
 [.scroll-x]
 --
@@ -64,8 +66,8 @@ Until 2025, no one had managed to introduce a modern alternative into either Boo
 |
 h| `*temp_ns::rvariant*`
 h| https://en.cppreference.com/w/cpp/utility/variant.html[`*std::variant*`]
-h| https://www.boost.org/doc/libs/develop/doc/html/variant.html[`*Boost.Variant*`]
-h| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html[`*Boost.Variant2*`]
+h| https://www.boost.org/doc/libs/{boost-version}/doc/html/variant.html[`*Boost.Variant*`]
+h| https://www.boost.org/doc/libs/{boost-version}/libs/variant2/doc/html/variant2.html[`*Boost.Variant2*`]
 
 s| Minimum C++ version
 | {cpp}23
@@ -83,22 +85,22 @@ s| Compilation speed
 s| Interface for recursive types
 | [.good]*Yes*
 | [.bad]*No*
-| https://www.boost.org/doc/libs/develop/doc/html/boost/recursive_wrapper.html[[.good]*Yes*]
+| https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/tutorial.html#variant.tutorial.recursive[[.good]*Yes*]
 | [.bad]*No*
 
 s| May be valueless?
 | Yes
 | https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception.html[Yes]
-| https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty[No]
-| https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_never_valueless[No]
+| https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/design.html#variant.design.never-empty[No]
+| https://www.boost.org/doc/libs/{boost-version}/libs/variant2/doc/html/variant2.html#design_never_valueless[No]
 
 s| Exception safety
 | Basic exception safety
 | Basic exception safety
 | [.good]#Strong exception safety# +
-https://www.boost.org/doc/libs/develop/doc/html/variant/design.html#variant.design.never-empty.heap-backup-solution[(Temporary heap backup)]
+https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/design.html#variant.design.never-empty.heap-backup-solution[(Temporary heap backup)]
 | [.good]#Strong exception safety# +
-https://www.boost.org/doc/libs/develop/libs/variant2/doc/html/variant2.html#design_strong_exception_safety[(Double storage)]
+https://www.boost.org/doc/libs/{boost-version}/libs/variant2/doc/html/variant2.html#design_strong_exception_safety[(Double storage)]
 
 s| Flexible construction +
 `V<A,B> = V<B,A>` +
@@ -110,10 +112,16 @@ s| Flexible construction +
 |===
 --
 
+
+[[rationale]]
+## Rationale
+
+
 [[why-is-recursive-wrapper-needed-1]]
 ### Why is recursive_wrapper needed?
 
 A variant class cannot determine its storage's size when it contains incomplete types. Therefore, recursive alternatives always require a *recursive wrapper class* that holds the incomplete type by pointer and performs dynamic memory allocation on it.
+
 
 [[why-is-recursive-wrapper-needed-2]]
 ### Why can't I just use std::unique_ptr instead of recursive_wrapper?
@@ -128,16 +136,44 @@ However, *it is essential to have compatible interfaces in the variant class*, b
 
 In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that infect the application layer, which is undesirable in practice.
 
+
 [[why-is-rvariant-needed-1]]
 ### Why can't rvariant be a thin wrapper around std::variant?
 
+Ultimately, `rvariant` is designed to be a strict superset of `std::variant`, not just to act as a third-party drop-in replacement.
+
 If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g. inheritance or composition), such a specification could never be standardized.
 
+For this purpose, the documentation of `rvariant` is presented in a diff-style format that mirrors `std::variant`, with differences clearly marked using [.underline]#underlines#.
 
-= Feature cheat sheet
+
+[[why-is-rvariant-needed-2]]
+### Why can't rvariant be submitted directly to the C++ Standards Committee?
+
+Historically, *the concept of recursive variants in {cpp} has been closely tied to https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/tutorial.html#variant.tutorial.recursive[Boost.Variant] and link:pass:attributes[https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/html/spirit/qi/tutorials/mini_xml___asts_.html#spirit.qi.tutorials.mini_xml___asts_.the_structures][Boost.Spirit.Qi]*. It has been investigated, implemented, and used across Boost Libraries and by end users for _decades_. For this reason, we believe it's best to first gather feedback from the Boost community.
+
+Moreover, we expect the working group to seek implementation experience, which inevitably involves the current state of Boost.Variant and related components. Submitting `rvariant` independently would likely result in the committee re-evaluating the outdated status quo. In our view, this could leave too much room for design ambiguity, potentially making the process unnecessarily time-consuming.
+
+
+[[why-is-rvariant-needed-3]]
+### Why is rvariant being proposed to Boost?
+
+One of the co-authors of `rvariant`, Nana Sakisaka, has been contributing to the maintenance of Boost.Spirit since May 2025. Modernizing recursive variant support is a foundational part of upgrading the Boost.Spirit.X3 codebase, and has become a major technical interest in ongoing maintenance efforts.
+
+Originally, `rvariant` was developed as an internal replacement within Boost.Spirit, as a sub-component with no broader exposure. However, it was later decided to submit it for formal review to benefit the wider community.
+
+Although Boost.Spirit.X3 has a https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html[somewhat updated counterpart], it was never designed around a formal specification and still retains some https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131[legacy implementation] from earlier stages of the development.
+
+Boost.Spirit is just one example of a parser combinator library, and represents only the tip of the iceberg. Many kinds of libraries inherently require recursive variants: any library that constructs *statically typed recursive data structures* would benefit from them. Furthermore, once {cpp}26 reflection becomes available, such data structures will likely become even more common.
+
+A proper solution to these challenges requires a fully-featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a starting point for broader discussion about recursive variants in Boost and beyond.
+
+
+= Feature Cheat Sheet
+
 This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.
 
-== Basic features
+== Basic Features
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
@@ -196,7 +232,7 @@ temp_ns::<<rvariant.visit,visit>>(visitor, ab); // function visit
 ----
 
 
-== Advanced features
+== Advanced Features
 
 [,cpp,subs="+quotes,+macros,+attributes"]
 ----
@@ -490,7 +526,7 @@ public:
 * All types in `Ts` must satisfy all requirements on the corresponding parameter in `std::variant`, unless otherwise noted.
 * [.underline]#Let `T` denote an arbitrary type. If a user provides both `T` and `{recursive_wrapper}<T>` for the template parameter of `rvariant`, the program is ill-formed.#
 
-NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/develop/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
+NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/reference.html#variant.concepts[`boost::variant`]
 
 
 [[rvariant.ctor]]
@@ -1325,8 +1361,7 @@ struct pass:quotes[_is-specialization-of_];      // {exposition-only}pass:quotes
 NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward resolution. For older versions, it can be worked around by a compound `requires` expression.
 
 
-= Additional information
-
+= Additional Information
 
 [[benchmark]]
 == Benchmark
@@ -1337,6 +1372,6 @@ GCC / Clang / MSVC
 
 
 [[about]]
-== About authors
+== About the Authors
 
 TODO
