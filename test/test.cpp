@@ -406,6 +406,11 @@ TEST_CASE("emplace") {
         a.emplace<std::vector<int>>({3, 1, 4});
         a.emplace<0>({3, 1, 4});
     }
+    {
+        yk::rvariant<int, float> a = 42;
+        a.emplace<1>(3.14f);
+        REQUIRE(a.index() == 1);
+    }
 }
 
 TEST_CASE("raw get") {
