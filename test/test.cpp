@@ -406,6 +406,12 @@ TEST_CASE("flexible move assign") {
         yk::rvariant<int, float> b = 3.14f;
         REQUIRE_NOTHROW(b = std::move(a));
     }
+    {
+        yk::rvariant<int> a = 42;
+        yk::rvariant<int, float, int> b(std::in_place_index<2>, 33 - 4);
+        b = std::move(a);
+        REQUIRE(b.index() == 2);  // b's contained value is directly assigned from a's contained value, no alternative changed
+    }
 }
 
 TEST_CASE("emplace") {

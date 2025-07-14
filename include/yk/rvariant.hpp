@@ -528,12 +528,29 @@ public:
                 if constexpr (I == std::variant_npos) {
                     reset();
                 } else {
-                    constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
-                    if (index_ == J) {
-                        // directly assign
-                        detail::raw_get<J>(self()).value = alt.value;
-                    } else {
-                        using T = std::remove_cvref_t<Alt>::type;
+                    using T = std::remove_cvref_t<Alt>::type;
+
+                    bool const was_same_alternative = detail::raw_visit(
+                        index_,
+                        // directly assign if both alternative is same type and returns true; otherwise returns false
+                        [this, &alt]<class ThisAlt>(ThisAlt&& thisAlt) {
+                            constexpr std::size_t K = std::remove_cvref_t<ThisAlt>::index;
+                            if constexpr (K == std::variant_npos) {
+                                return false;
+                            } else {
+                                using U = std::remove_cvref_t<ThisAlt>::type;
+                                if constexpr (std::is_same_v<T, U>) {
+                                    thisAlt.value = alt.value;
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }
+                        },
+                        self());
+
+                    if (!was_same_alternative) {
+                        constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
                         if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
                             // copy is nothrow or move throws; use copy constructor
                             reset();
@@ -563,10 +580,29 @@ public:
                 if constexpr (I == std::variant_npos) {
                     reset();
                 } else {
-                    constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
-                    if (index_ == J) {
-                        detail::raw_get<J>(self()).value = std::move(alt).value;
-                    } else {
+                    using T = std::remove_cvref_t<Alt>::type;
+
+                    bool const was_same_alternative = detail::raw_visit(
+                        index_,
+                        // directly assign if both alternative is same type and returns true; otherwise returns false
+                        [this, &alt]<class ThisAlt>(ThisAlt&& thisAlt) {
+                            constexpr std::size_t K = std::remove_cvref_t<ThisAlt>::index;
+                            if constexpr (K == std::variant_npos) {
+                                return false;
+                            } else {
+                                using U = std::remove_cvref_t<ThisAlt>::type;
+                                if constexpr (std::is_same_v<T, U>) {
+                                    thisAlt.value = std::move(alt).value;
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }
+                        },
+                        self());
+
+                    if (!was_same_alternative) {
+                        constexpr std::size_t J = detail::convert_index<rvariant<Us...>, rvariant>(I);
                         reset();
                         std::construct_at(&storage_, std::in_place_index<J>, std::move(alt).value);
                         index_ = J;
