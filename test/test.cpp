@@ -8,6 +8,7 @@
 #include <yk/detail/find_index.hpp>
 #include <yk/detail/is_in.hpp>
 #include <yk/detail/pack_indexing.hpp>
+#include <yk/detail/type_list.hpp>
 
 #include <yk/recursive_wrapper.hpp>
 #include <yk/rvariant.hpp>
@@ -21,8 +22,8 @@ TEST_CASE("pack indexing") {
 }
 
 TEST_CASE("exactly once") {
-    STATIC_REQUIRE(yk::detail::exactly_once_v<int, int, float>);
-    STATIC_REQUIRE_FALSE(yk::detail::exactly_once_v<int, int, int>);
+    STATIC_REQUIRE(yk::detail::exactly_once_v<int, yk::detail::type_list<int, float>>);
+    STATIC_REQUIRE_FALSE(yk::detail::exactly_once_v<int, yk::detail::type_list<int, int>>);
 }
 
 TEST_CASE("is in") {
@@ -42,9 +43,10 @@ TEST_CASE("subset like") {
 }
 
 TEST_CASE("find index") {
-    STATIC_REQUIRE(yk::detail::find_index_v<int, int, float, double> == 0);
-    STATIC_REQUIRE(yk::detail::find_index_v<float, int, float, double> == 1);
-    STATIC_REQUIRE(yk::detail::find_index_v<double, int, float, double> == 2);
+    STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<int, float, double>> == 0);
+    STATIC_REQUIRE(yk::detail::find_index_v<float, yk::detail::type_list<int, float, double>> == 1);
+    STATIC_REQUIRE(yk::detail::find_index_v<double, yk::detail::type_list<int, float, double>> == 2);
+    STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<float, double>> == yk::detail::find_index_npos);
 }
 
 TEST_CASE("convert index") {
@@ -477,9 +479,41 @@ TEST_CASE("swap") {
     // TODO: valueless case
 }
 
+TEST_CASE("holds alternative") {
+    {
+        yk::rvariant<int, float> var = 42;
+        REQUIRE(yk::holds_alternative<int>(var));
+    }
+}
+
 TEST_CASE("recursive wrapper") {
     yk::recursive_wrapper<int> a(42);
     REQUIRE_FALSE(a.valueless_after_move());
+
+    {
+        auto f = [](yk::rvariant<yk::recursive_wrapper<int>>) {};
+        f(42);
+    }
+    {
+        auto f = [](yk::rvariant<yk::recursive_wrapper<int>, double> var) { return yk::holds_alternative<double>(var); };
+        REQUIRE(f(3.14f));
+    }
+    {
+        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
+        REQUIRE(f(3.14f));
+    }
+    {
+        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
+        REQUIRE(f(3.14));
+    }
+    {
+        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<int>(var); };
+        REQUIRE(f(3));
+    }
+    {
+        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
+        REQUIRE(f(yk::recursive_wrapper<double>(3.14)));
+    }
 }
 
 TEST_CASE("unwrap recursive") {

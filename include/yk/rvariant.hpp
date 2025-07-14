@@ -313,6 +313,8 @@ private:
     friend struct variant_npos_setter;
 
 public:
+    using unwrapped_types = detail::type_list<unwrap_recursive_t<Ts>...>;
+
     constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
         requires std::is_default_constructible_v<detail::pack_indexing_t<0, Ts...>>
         : storage_{}, index_(0) {}
@@ -407,12 +409,12 @@ public:
         : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(x)) {}
 
     template<class T, class... Args>
-        requires detail::exactly_once_v<T, Ts...> && std::is_constructible_v<T, Args...>
+        requires detail::exactly_once_v<T, unwrapped_types> && std::is_constructible_v<T, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
         : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<Args>(args)...) {}
 
     template<class T, class U, class... Args>
-        requires detail::exactly_once_v<T, Ts...> && std::is_constructible_v<T, std::initializer_list<U>&, Args...>
+        requires detail::exactly_once_v<T, unwrapped_types> && std::is_constructible_v<T, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
         : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, il, std::forward<Args>(args)...) {}
 
@@ -644,16 +646,16 @@ public:
     }
 
     template<class T, class... Args>
-        requires std::conjunction_v<std::is_constructible<T, Args...>, detail::exactly_once<T, Ts...>>
+        requires std::conjunction_v<std::is_constructible<T, Args...>, detail::exactly_once<T, unwrapped_types>>
     constexpr T& emplace(Args&&... args) {
-        constexpr std::size_t I = detail::find_index_v<T, Ts...>;
+        constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(std::forward<Args>(args)...);
     }
 
     template<class T, class U, class... Args>
-        requires std::conjunction_v<std::is_constructible<T, std::initializer_list<U>&, Args...>, detail::exactly_once<T, Ts...>>
+        requires std::conjunction_v<std::is_constructible<T, std::initializer_list<U>&, Args...>, detail::exactly_once<T, unwrapped_types>>
     constexpr T& emplace(std::initializer_list<U> il, Args&&... args) {
-        constexpr std::size_t I = detail::find_index_v<T, Ts...>;
+        constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(il, std::forward<Args>(args)...);
     }
 
@@ -783,9 +785,13 @@ private:
 };
 
 template<class T, class... Ts>
+    requires detail::is_ttp_specialization_of_v<T, recursive_wrapper>
+[[nodiscard]] constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept = delete;
+
+template<class T, class... Ts>
 [[nodiscard]] constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept {
-    static_assert(detail::exactly_once_v<T, Ts...>);
-    return v.index() == detail::find_index_v<T, Ts...>;
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    return v.index() == detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
 }
 
 template<std::size_t I, class... Ts>
