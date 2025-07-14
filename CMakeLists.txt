@@ -4,7 +4,7 @@ project(rvariant LANGUAGES CXX)
 
 add_library(rvariant INTERFACE)
 
-target_compile_features(rvariant INTERFACE cxx_std_20)
+target_compile_features(rvariant INTERFACE cxx_std_23)
 
 file(GLOB YK_RVARIANT_HEADERS include/**/*.hpp)
 target_sources(
