@@ -1374,4 +1374,6 @@ GCC / Clang / MSVC
 [[about]]
 == About the Authors
 
-TODO
+Yaito Kakeyama is a {cpp} enthusiast with a strong interest in language design and modern library development. He has contributed to several public efforts in the {cpp} community, including co-authoring LWG 4166 with Nana Sakisaka and submitting occasional compiler bug reports. He is the co-author of `rvariant` and has been deeply involved in its implementation.
+
+Nana Sakisaka has taken on an active maintainer role in Boost.Spirit since May 2025. The development of `rvariant` began as part of a broader effort to modernize the Boost.Spirit.X3 codebase. He is the co-author of `rvariant` and has focused on its rationale and specification wording.
