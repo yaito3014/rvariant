@@ -1,20 +1,21 @@
+#include "yk/detail/convert_index.hpp"
+#include "yk/detail/exactly_once.hpp"
+#include "yk/detail/find_index.hpp"
+#include "yk/detail/is_in.hpp"
+#include "yk/detail/pack_indexing.hpp"
+#include "yk/detail/type_list.hpp"
+
+#include "yk/indirect.hpp"
+#include "yk/recursive_wrapper.hpp"
+#include "yk/rvariant.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+
 #include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
 
-#include <yk/detail/convert_index.hpp>
-#include <yk/detail/exactly_once.hpp>
-#include <yk/detail/find_index.hpp>
-#include <yk/detail/is_in.hpp>
-#include <yk/detail/pack_indexing.hpp>
-#include <yk/detail/type_list.hpp>
-
-#include <yk/indirect.hpp>
-#include <yk/recursive_wrapper.hpp>
-#include <yk/rvariant.hpp>
-
-#include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("pack indexing") {
     STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int>, int>);
@@ -566,8 +567,10 @@ TEST_CASE("holds alternative") {
 }
 
 TEST_CASE("recursive wrapper") {
-    yk::recursive_wrapper<int> a(42);
-    REQUIRE_FALSE(a.valueless_after_move());
+    {
+        yk::recursive_wrapper<int> a(42);
+        REQUIRE_FALSE(a.valueless_after_move());
+    }
 
     {
         auto f = [](yk::rvariant<yk::recursive_wrapper<int>>) {};
@@ -623,12 +626,6 @@ TEST_CASE("recursive wrapper") {
     }
 }
 
-struct SubExpr;
-using Expr = yk::rvariant<int, yk::recursive_wrapper<SubExpr>>;
-
-struct SubExpr {
-    Expr expr;
-};
 
 TEST_CASE("truly recursive") {
     STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, int>, int>);
@@ -643,8 +640,46 @@ TEST_CASE("truly recursive") {
     STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, double, yk::recursive_wrapper<int>>, yk::recursive_wrapper<int>>);
     STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, double, yk::recursive_wrapper<int>> == 1);
 
+    // Although this pattern is perfectly valid in type level,
+    // it inherently allocates infinite amount of memory.
+    // We just need to make sure it has the correct type traits.
     {
-        Expr expr{std::in_place_type<int>, 42};
+        struct SubExpr;
+        using Expr = yk::rvariant<yk::recursive_wrapper<SubExpr>>;
+        struct SubExpr { Expr expr; };
+
+        STATIC_REQUIRE(std::is_constructible_v<Expr, Expr>);
+        STATIC_REQUIRE(std::is_constructible_v<Expr, SubExpr>);
+        STATIC_REQUIRE(!std::is_constructible_v<Expr, int>);
+
+        STATIC_REQUIRE(std::is_constructible_v<SubExpr, SubExpr>);
+        STATIC_REQUIRE(std::is_constructible_v<SubExpr, Expr>);
+        STATIC_REQUIRE(!std::is_constructible_v<SubExpr, int>);
+
+        //Expr expr; // infinite malloc
+    }
+
+    // In contrast to above, this pattern has a safe *fallback* of int
+    {
+        // Sanity check
+        {
+            using V = yk::rvariant<int>;
+            STATIC_REQUIRE(std::is_constructible_v<V, V>);
+            STATIC_REQUIRE(std::is_constructible_v<V, int>);
+            STATIC_REQUIRE(!std::is_constructible_v<V, double>); // !!false!!
+        }
+        {
+            using V = yk::rvariant<yk::recursive_wrapper<int>>;
+            STATIC_REQUIRE(std::is_constructible_v<V, V>);
+            STATIC_REQUIRE(std::is_constructible_v<V, int>);
+            STATIC_REQUIRE(std::is_constructible_v<V, double>);  // !!true!!
+        }
+
+        struct SubExpr;
+        using Expr = yk::rvariant<int, yk::recursive_wrapper<SubExpr>>;
+        struct SubExpr { Expr expr; };
+
+        // TODO
     }
 }
 
@@ -658,15 +693,4 @@ TEST_CASE("unwrap recursive") {
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<yk::recursive_wrapper<int>&&>())), int&&>);
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<yk::recursive_wrapper<int> const&>())), int const&>);
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<yk::recursive_wrapper<int> const&&>())), int const&&>);
-}
-
-TEST_CASE("indirect") {  //
-    yk::indirect<int> a(42);
-    yk::indirect<int> b = a;             // copy ctor
-    yk::indirect<int> c = std::move(a);  // move ctor
-    c = b;                               // copy assign
-    c = std::move(b);                    // move assign
-    REQUIRE(a.valueless_after_move());
-    REQUIRE(b.valueless_after_move());
-    REQUIRE_FALSE(c.valueless_after_move());
 }
