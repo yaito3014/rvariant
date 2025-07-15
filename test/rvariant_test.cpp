@@ -720,7 +720,17 @@ TEST_CASE("truly recursive")
         using Expr = yk::rvariant<int, yk::recursive_wrapper<SubExpr>>;
         struct SubExpr { Expr expr; };
 
-        // TODO
+        STATIC_REQUIRE(std::is_constructible_v<Expr, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<Expr, double>); // false because equally viable
+
+        //STATIC_REQUIRE(std::is_constructible_v<SubExpr, int>); // why fail in MSVC?????
+        STATIC_REQUIRE(std::is_constructible_v<SubExpr, int&&>); // ok
+        STATIC_REQUIRE(!std::is_constructible_v<SubExpr, double>); // false because equally viable
+
+        REQUIRE_NOTHROW(Expr{});
+        REQUIRE_NOTHROW(SubExpr{});
+        REQUIRE_NOTHROW(Expr{42});
+        REQUIRE_NOTHROW(SubExpr{42}); // OK in MSVC.... (in contrast to failure above)
     }
 }
 
