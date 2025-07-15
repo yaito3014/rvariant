@@ -473,6 +473,27 @@ TEST_CASE("get") {
         REQUIRE(yk::get<0>(std::move(var)) == 42);
         REQUIRE(yk::get<0>(std::move(std::as_const(var))) == 42);
     }
+    {
+        yk::rvariant<int, float> var = 42;
+        REQUIRE(yk::get<int>(var) == 42);
+        REQUIRE(yk::get<int>(std::as_const(var)) == 42);
+        REQUIRE(yk::get<int>(std::move(var)) == 42);
+        REQUIRE(yk::get<int>(std::move(std::as_const(var))) == 42);
+    }
+    {
+        yk::rvariant<yk::recursive_wrapper<int>, float> var = 42;
+        REQUIRE(yk::get<0>(var) == 42);
+        REQUIRE(yk::get<0>(std::as_const(var)) == 42);
+        REQUIRE(yk::get<0>(std::move(var)) == 42);
+        REQUIRE(yk::get<0>(std::move(std::as_const(var))) == 42);
+    }
+    {
+        yk::rvariant<yk::recursive_wrapper<int>, float> var = 42;
+        REQUIRE(yk::get<int>(var) == 42);
+        REQUIRE(yk::get<int>(std::as_const(var)) == 42);
+        REQUIRE(yk::get<int>(std::move(var)) == 42);
+        REQUIRE(yk::get<int>(std::move(std::as_const(var))) == 42);
+    }
 }
 
 TEST_CASE("swap") {

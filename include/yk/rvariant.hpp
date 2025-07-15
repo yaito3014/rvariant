@@ -809,25 +809,65 @@ template<class T, class... Ts>
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>& get(rvariant<Ts...>& var) {
     if (I != var.index()) throw std::bad_variant_access{};
-    return detail::raw_get<I>(var).value;
+    return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>&& get(rvariant<Ts...>&& var) {
     if (I != var.index()) throw std::bad_variant_access{};
-    return detail::raw_get<I>(std::move(var)).value;
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const& get(rvariant<Ts...> const& var) {
     if (I != var.index()) throw std::bad_variant_access{};
-    return detail::raw_get<I>(var).value;
+    return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const&& get(rvariant<Ts...> const&& var) {
     if (I != var.index()) throw std::bad_variant_access{};
-    return detail::raw_get<I>(std::move(var)).value;
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
+}
+
+template<class T, class... Ts>
+    requires detail::is_ttp_specialization_of_v<T, recursive_wrapper>
+constexpr T& get(rvariant<Ts...>& var) = delete;
+
+template<class T, class... Ts>
+    requires detail::is_ttp_specialization_of_v<T, recursive_wrapper>
+constexpr T&& get(rvariant<Ts...>&& var) = delete;
+
+template<class T, class... Ts>
+    requires detail::is_ttp_specialization_of_v<T, recursive_wrapper>
+constexpr T const& get(rvariant<Ts...> const& var) = delete;
+
+template<class T, class... Ts>
+    requires detail::is_ttp_specialization_of_v<T, recursive_wrapper>
+constexpr T const&& get(rvariant<Ts...> const&& var) = delete;
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr T& get(rvariant<Ts...>& var) {
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(var).value);
+}
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr T&& get(rvariant<Ts...>&& var) {
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(std::move(var)).value);
+}
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr T const& get(rvariant<Ts...> const& var) {
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(var).value);
+}
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr T const&& get(rvariant<Ts...> const&& var) {
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(std::move(var)).value);
 }
 
 }  // namespace yk
