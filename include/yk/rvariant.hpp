@@ -423,12 +423,16 @@ public:
     template<class T, class... Args>
         requires detail::exactly_once_v<T, unwrapped_types> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
-        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<Args>(args)...) {}
+        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<Args>(args)...) {
+        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
+    }
 
     template<class T, class U, class... Args>
         requires detail::exactly_once_v<T, unwrapped_types> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
-        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, il, std::forward<Args>(args)...) {}
+        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, il, std::forward<Args>(args)...) {
+        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
+    }
 
     template<std::size_t I, class... Args>
         requires (I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
@@ -660,6 +664,7 @@ public:
     template<class T, class... Args>
         requires std::conjunction_v<std::is_constructible<T, Args...>, detail::exactly_once<T, unwrapped_types>>
     constexpr T& emplace(Args&&... args) {
+        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(std::forward<Args>(args)...);
     }
@@ -667,6 +672,7 @@ public:
     template<class T, class U, class... Args>
         requires std::conjunction_v<std::is_constructible<T, std::initializer_list<U>&, Args...>, detail::exactly_once<T, unwrapped_types>>
     constexpr T& emplace(std::initializer_list<U> il, Args&&... args) {
+        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(il, std::forward<Args>(args)...);
     }
