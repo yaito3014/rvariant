@@ -455,7 +455,7 @@ private:
     template<std::size_t I>
     constexpr void destroy() noexcept {
         if constexpr (I != std::variant_npos) {
-            using T = variant_alternative_t<I, rvariant>;
+            using T = detail::pack_indexing_t<I, Ts...>;
             detail::raw_get<I>(*this).value.~T();
         }
     }
@@ -672,7 +672,7 @@ public:
     }
 
     template<std::size_t I, class... Args>
-        requires std::is_constructible_v<variant_alternative_t<I, rvariant>, Args...>
+        requires std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
     constexpr variant_alternative_t<I, rvariant>& emplace(Args&&... args) {
         static_assert(I < sizeof...(Ts));
         if (!valueless_by_exception()) {
@@ -684,7 +684,7 @@ public:
     }
 
     template<std::size_t I, class U, class... Args>
-        requires std::is_constructible_v<variant_alternative_t<I, rvariant>, std::initializer_list<U>&, Args...>
+        requires std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
     constexpr variant_alternative_t<I, rvariant>& emplace(std::initializer_list<U> il, Args&&... args) {
         static_assert(I < sizeof...(Ts));
         if (!valueless_by_exception()) {
