@@ -10,6 +10,7 @@
 #include <yk/detail/pack_indexing.hpp>
 #include <yk/detail/type_list.hpp>
 
+#include <yk/indirect.hpp>
 #include <yk/recursive_wrapper.hpp>
 #include <yk/rvariant.hpp>
 
@@ -632,4 +633,15 @@ TEST_CASE("unwrap recursive") {
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<yk::recursive_wrapper<int>&&>())), int&&>);
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<yk::recursive_wrapper<int> const&>())), int const&>);
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<yk::recursive_wrapper<int> const&&>())), int const&&>);
+}
+
+TEST_CASE("indirect") {  //
+    yk::indirect<int> a(42);
+    yk::indirect<int> b = a;             // copy ctor
+    yk::indirect<int> c = std::move(a);  // move ctor
+    c = b;                               // copy assign
+    c = std::move(b);                    // move assign
+    REQUIRE(a.valueless_after_move());
+    REQUIRE(b.valueless_after_move());
+    REQUIRE_FALSE(c.valueless_after_move());
 }
