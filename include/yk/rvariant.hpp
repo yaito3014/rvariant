@@ -849,25 +849,33 @@ constexpr T const&& get(rvariant<Ts...> const&& var) = delete;
 template<class T, class... Ts>
 [[nodiscard]] constexpr T& get(rvariant<Ts...>& var) {
     static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(var).value);
+    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    if (var.index() != I) throw std::bad_variant_access{};
+    return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
 
 template<class T, class... Ts>
 [[nodiscard]] constexpr T&& get(rvariant<Ts...>&& var) {
     static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(std::move(var)).value);
+    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    if (var.index() != I) throw std::bad_variant_access{};
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
 
 template<class T, class... Ts>
 [[nodiscard]] constexpr T const& get(rvariant<Ts...> const& var) {
     static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(var).value);
+    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    if (var.index() != I) throw std::bad_variant_access{};
+    return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
 
 template<class T, class... Ts>
 [[nodiscard]] constexpr T const&& get(rvariant<Ts...> const&& var) {
     static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(std::move(var)).value);
+    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    if (var.index() != I) throw std::bad_variant_access{};
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
 
 template<std::size_t I, class... Ts>
