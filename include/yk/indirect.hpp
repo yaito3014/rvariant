@@ -45,8 +45,11 @@ private:
     pointer ptr_;
 };
 
-}  // namespace detail
+}  // detail
 
+
+// Polyfill for the C++26 `std::indirect`
+// https://eel.is/c++draft/indirect
 template<class T, class Allocator = std::allocator<T>>
 class indirect
 {
@@ -331,6 +334,7 @@ indirect(std::allocator_arg_t, Allocator, Value)
     -> indirect<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
 
 }  // yk
+
 
 namespace std {
 
