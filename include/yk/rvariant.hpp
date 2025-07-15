@@ -900,6 +900,30 @@ template<std::size_t I, class... Ts>
     return get_if<I>(v);
 }
 
+template<class T, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<T> get_if(rvariant<Ts...>* var) noexcept {
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    return get_if<I>(var);
+}
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<T const> get_if(rvariant<Ts...> const* var) noexcept {
+    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
+    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    return get_if<I>(var);
+}
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<T> get(rvariant<Ts...>* var) noexcept {
+    return get_if<T>(var);
+}
+
+template<class T, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<T const> get(rvariant<Ts...> const* var) noexcept {
+    return get_if<T>(var);
+}
+
 }  // namespace yk
 
 #endif  // YK_RVARIANT_HPP
