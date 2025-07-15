@@ -666,8 +666,7 @@ TEST_CASE("recursive wrapper")
     }
 }
 
-
-TEST_CASE("truly recursive")
+TEST_CASE("maybe_wrapped")
 {
     STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, int>, int>);
     STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, int> == 0);
@@ -681,6 +680,30 @@ TEST_CASE("truly recursive")
     STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, double, yk::recursive_wrapper<int>>, yk::recursive_wrapper<int>>);
     STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, double, yk::recursive_wrapper<int>> == 1);
 
+    {
+        yk::rvariant<double, int> v{std::in_place_type<int>, 42};
+        CHECK(v.index() == 1);
+
+        v.emplace<double>(3.14);
+        CHECK(v.index() == 0);
+
+        v.emplace<int>(43);
+        CHECK(v.index() == 1);
+    }
+    {
+        yk::rvariant<double, yk::recursive_wrapper<int>> v{std::in_place_type<int>, 42};
+        CHECK(v.index() == 1);
+
+        v.emplace<double>(3.14);
+        CHECK(v.index() == 0);
+
+        v.emplace<int>(43);
+        CHECK(v.index() == 1);
+    }
+}
+
+TEST_CASE("truly recursive")
+{
     // Although this pattern is perfectly valid in type level,
     // it inherently allocates infinite amount of memory.
     // We just need to make sure it has the correct type traits.

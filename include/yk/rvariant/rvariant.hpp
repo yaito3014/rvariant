@@ -100,15 +100,25 @@ struct has_recursive_wrapper_duplicate<recursive_wrapper<T, Allocator>, Ts...>
     : is_in<T, Ts...> {};
 
 
-template<class Variant, class T>
+template<class T, class List>
+struct non_wrapped_exactly_once : exactly_once<T, List>
+{
+    static_assert(!is_ttp_specialization_of_v<T, recursive_wrapper>, "T must be a plain type");
+};
+
+template<class T, class List>
+constexpr bool non_wrapped_exactly_once_v = non_wrapped_exactly_once<T, List>::value;
+
+
+template<class T, class Variant>
 struct exactly_once_index
 {
-    static_assert(exactly_once_v<T, typename Variant::unwrapped_types>);
+    static_assert(exactly_once_v<T, typename Variant::unwrapped_types>, "T or recursive_wrapper<T> must occur exactly once in Ts...");
     static constexpr std::size_t value = find_index_v<T, typename Variant::unwrapped_types>;
 };
 
-template<class Variant, class T>
-inline constexpr std::size_t exactly_once_index_v = exactly_once_index<Variant, T>::value;
+template<class T, class Variant>
+inline constexpr std::size_t exactly_once_index_v = exactly_once_index<T, Variant>::value;
 
 }  // detail
 
@@ -259,23 +269,21 @@ public:
     // in_place_type<T>, args...
     template<class T, class... Args>
         requires
-            detail::exactly_once_v<T, unwrapped_types> &&
+            detail::non_wrapped_exactly_once_v<T, unwrapped_types> &&
             std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
         : rvariant(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, std::forward<Args>(args)...)
     {
-        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
     }
 
     // in_place_type<T>, il, args...
     template<class T, class U, class... Args>
         requires
-            detail::exactly_once_v<T, unwrapped_types> &&
+            detail::non_wrapped_exactly_once_v<T, unwrapped_types> &&
             std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
         : rvariant(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, il, std::forward<Args>(args)...)
     {
-        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
     }
 
     // in_place_index<I>, args...
@@ -527,19 +535,21 @@ public:
     // -------------------------------------------
 
     template<class T, class... Args>
-        requires std::conjunction_v<std::is_constructible<T, Args...>, detail::exactly_once<T, unwrapped_types>>
+        requires
+            std::is_constructible_v<T, Args...> &&
+            detail::non_wrapped_exactly_once_v<T, unwrapped_types>
     constexpr T& emplace(Args&&... args) YK_LIFETIMEBOUND
     {
-        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(std::forward<Args>(args)...);
     }
 
     template<class T, class U, class... Args>
-        requires std::conjunction_v<std::is_constructible<T, std::initializer_list<U>&, Args...>, detail::exactly_once<T, unwrapped_types>>
+        requires
+            std::is_constructible_v<T, std::initializer_list<U>&, Args...> &&
+            detail::non_wrapped_exactly_once_v<T, unwrapped_types>
     constexpr T& emplace(std::initializer_list<U> il, Args&&... args) YK_LIFETIMEBOUND
     {
-        static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(il, std::forward<Args>(args)...);
     }
@@ -756,7 +766,7 @@ template<class T, class... Ts>
 template<class T, class... Ts>
 [[nodiscard]] constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     return v.index() == I;
 }
 
@@ -796,7 +806,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T&
 get(rvariant<Ts...>& var YK_LIFETIMEBOUND)
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
@@ -805,7 +815,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T&&
 get(rvariant<Ts...>&& var YK_LIFETIMEBOUND)
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
@@ -814,7 +824,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T const&
 get(rvariant<Ts...> const& var YK_LIFETIMEBOUND)
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
@@ -823,7 +833,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T const&&
 get(rvariant<Ts...> const&& var YK_LIFETIMEBOUND)
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
@@ -880,7 +890,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<T>
 get_if(rvariant<Ts...>* var) noexcept
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     return get_if<I>(var);
 }
 
@@ -888,7 +898,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<T const>
 get_if(rvariant<Ts...> const* var) noexcept
 {
-    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     return get_if<I>(var);
 }
 
