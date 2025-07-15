@@ -623,6 +623,31 @@ TEST_CASE("recursive wrapper") {
     }
 }
 
+struct SubExpr;
+using Expr = yk::rvariant<int, yk::recursive_wrapper<SubExpr>>;
+
+struct SubExpr {
+    Expr expr;
+};
+
+TEST_CASE("truly recursive") {
+    STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, int>, int>);
+    STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, int> == 0);
+
+    STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, double, int>, int>);
+    STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, double, int> == 1);
+
+    STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, yk::recursive_wrapper<int>>, yk::recursive_wrapper<int>>);
+    STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, yk::recursive_wrapper<int>> == 0);
+
+    STATIC_REQUIRE(std::same_as<yk::detail::select_maybe_wrapped_t<int, double, yk::recursive_wrapper<int>>, yk::recursive_wrapper<int>>);
+    STATIC_REQUIRE(yk::detail::select_maybe_wrapped_index<int, double, yk::recursive_wrapper<int>> == 1);
+
+    {
+        Expr expr{std::in_place_type<int>, 42};
+    }
+}
+
 TEST_CASE("unwrap recursive") {
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<int&>())), int&>);
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<int&&>())), int&&>);

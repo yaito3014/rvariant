@@ -4,6 +4,7 @@
 #include "yk/detail/exactly_once.hpp"
 #include "yk/detail/is_specialization_of.hpp"
 #include "yk/detail/pack_indexing.hpp"
+#include "yk/detail/recursive_traits.hpp"
 
 #include <functional>
 #include <initializer_list>
@@ -286,7 +287,7 @@ struct has_recursive_wrapper_duplicate : std::false_type {};
 template<class T, class Allocator, class... Ts>
 struct has_recursive_wrapper_duplicate<recursive_wrapper<T, Allocator>, Ts...> : is_in<T, Ts...> {};
 
-}  // namespace detail
+}  // detail
 
 template<class T, class U>
 struct is_subset_of : std::false_type {};
@@ -334,23 +335,22 @@ private:
     friend variant_npos_setter;
 
 public:
+    // TODO: move this to private
     using unwrapped_types = detail::type_list<unwrap_recursive_t<Ts>...>;
 
     constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
         requires std::is_default_constructible_v<detail::pack_indexing_t<0, Ts...>>
-        : storage_{}, index_(0) {}
+        : storage_{}
+        , index_(0)
+    {}
 
-    constexpr rvariant(rvariant const&)
-        requires detail::all_trivially_copy_constructible<Ts...>
-    = default;
+    constexpr rvariant(rvariant const&) requires detail::all_trivially_copy_constructible<Ts...> = default;
+    constexpr rvariant(rvariant const&) requires (!detail::all_copy_constructible<Ts...>) = delete;
 
-    constexpr rvariant(rvariant const&)
-        requires (!detail::all_copy_constructible<Ts...>)
-    = delete;
-
-    constexpr rvariant(rvariant const& other)
-        requires detail::all_copy_constructible<Ts...>
-        : storage_(detail::valueless), index_(other.index_) {
+    constexpr rvariant(rvariant const& other) requires detail::all_copy_constructible<Ts...>
+        : storage_(detail::valueless)
+        , index_(other.index_)
+    {
         detail::raw_visit(
             index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
@@ -358,16 +358,17 @@ public:
                     std::construct_at(&storage_, std::in_place_index<I>, alt.value);
                 }
             },
-            other);
+            other
+        );
     }
 
-    constexpr rvariant(rvariant&&)
-        requires detail::all_trivially_move_constructible<Ts...>
-    = default;
+    constexpr rvariant(rvariant&&) requires detail::all_trivially_move_constructible<Ts...> = default;
 
     constexpr rvariant(rvariant&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
         requires detail::all_move_constructible<Ts...>
-        : storage_(detail::valueless), index_(other.index_) {
+        : storage_(detail::valueless)
+        , index_(other.index_)
+    {
         variant_npos_setter guard(this);
         detail::raw_visit(
             index_,
@@ -376,17 +377,22 @@ public:
                     std::construct_at(&storage_, std::in_place_index<I>, std::move(alt).value);
                 }
             },
-            std::move(other));
+            std::move(other)
+        );
         guard.mark_succeeded();
     }
 
-    template<class... Us>
-        requires (!(detail::all_copy_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
-    constexpr rvariant(rvariant<Us...> const&) = delete;
 
+    // Flexible copy constructor
     template<class... Us>
-        requires detail::all_copy_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>
-    constexpr rvariant(rvariant<Us...> const& other) : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
+        requires
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
+            detail::all_copy_constructible<Us...>
+    constexpr rvariant(rvariant<Us...> const& other)
+        : storage_(detail::valueless)
+        , index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_))
+    {
         detail::raw_visit(
             other.index_,
             [this]<std::size_t I, class T>(detail::alternative<I, T> const& alt) {
@@ -394,17 +400,29 @@ public:
                     std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, alt.value);
                 }
             },
-            other);
+            other
+        );
     }
 
     template<class... Us>
-        requires (!(detail::all_move_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>))
-    constexpr rvariant(rvariant<Us...>&&) = delete;
+        requires (!(
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
+            detail::all_copy_constructible<Us...>
+        ))
+    constexpr rvariant(rvariant<Us...> const&) = delete;
 
+
+    // Flexible move constructor
     template<class... Us>
-        requires detail::all_move_constructible<Us...> && subset_of<rvariant<Us...>, rvariant>
+        requires
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
+            detail::all_move_constructible<Us...>
     constexpr rvariant(rvariant<Us...>&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
-        : storage_(detail::valueless), index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_)) {
+        : storage_(detail::valueless)
+        , index_(detail::convert_index<rvariant<Us...>, rvariant>(other.index_))
+    {
         variant_npos_setter guard(this);
         detail::raw_visit(
             other.index_,
@@ -413,47 +431,79 @@ public:
                     std::construct_at(&storage_, std::in_place_index<detail::convert_index<rvariant<Us...>, rvariant>(I)>, std::move(alt).value);
                 }
             },
-            std::move(other));
+            std::move(other)
+        );
         guard.mark_succeeded();
     }
 
+    template<class... Us>
+        requires (!(
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
+            detail::all_move_constructible<Us...>
+        ))
+    constexpr rvariant(rvariant<Us...>&&) = delete;
+
+
+    // Generic constructor
     template<class T>
         requires requires {
             requires sizeof...(Ts) > 0;
-            requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, rvariant>;
+            requires !std::is_same_v<std::remove_cvref_t<T>, rvariant>;
             requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
             requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
             requires requires(T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
             requires std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
         }
     constexpr rvariant(T&& x) noexcept(std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>)
-        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(x)) {}
+        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(x))
+    {}
 
+    // in_place_type<T>, args...
     template<class T, class... Args>
-        requires detail::exactly_once_v<T, unwrapped_types> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, Args...>
+        requires
+            detail::exactly_once_v<T, unwrapped_types> &&
+            std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
-        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<Args>(args)...) {
+        : rvariant(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, std::forward<Args>(args)...)
+    {
         static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
     }
 
+    // in_place_type<T>, il, args...
     template<class T, class U, class... Args>
-        requires detail::exactly_once_v<T, unwrapped_types> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, std::initializer_list<U>&, Args...>
+        requires
+            detail::exactly_once_v<T, unwrapped_types> &&
+            std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
-        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, il, std::forward<Args>(args)...) {
+        : rvariant(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, il, std::forward<Args>(args)...)
+    {
         static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
     }
 
+    // in_place_index<I>, args...
     template<std::size_t I, class... Args>
-        requires (I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
-    constexpr explicit rvariant(std::in_place_index_t<I>, Args&&... args) : storage_(std::in_place_index<I>, std::forward<Args>(args)...), index_(I) {}
+        requires
+            (I < sizeof...(Ts)) &&
+            std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
+    constexpr explicit rvariant(std::in_place_index_t<I>, Args&&... args)
+        : storage_(std::in_place_index<I>, std::forward<Args>(args)...)
+        , index_(I)
+    {}
 
+    // in_place_index<I>, il, args...
     template<std::size_t I, class U, class... Args>
-        requires (I < sizeof...(Ts)) && std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
+        requires
+            (I < sizeof...(Ts)) &&
+            std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
-        : storage_(std::in_place_index<I>, il, std::forward<Args>(args)...), index_(I) {}
+        : storage_(std::in_place_index<I>, il, std::forward<Args>(args)...)
+        , index_(I)
+    {}
 
 private:
-    constexpr void destroy() noexcept {
+    constexpr void destroy() noexcept
+    {
         detail::raw_visit(
             index_,
             []<class Alt>(Alt&& alt) {
@@ -462,24 +512,28 @@ private:
                     alt.value.~T();
                 }
             },
-            *this);
+            *this
+        );
     }
 
     template<std::size_t I>
-    constexpr void destroy() noexcept {
+    constexpr void destroy() noexcept
+    {
         if constexpr (I != std::variant_npos) {
             using T = detail::pack_indexing_t<I, Ts...>;
             detail::raw_get<I>(*this).value.~T();
         }
     }
 
-    constexpr void reset() noexcept {
+    constexpr void reset() noexcept
+    {
         destroy();
         index_ = std::variant_npos;
     }
 
     template<std::size_t I>
-    constexpr void reset() noexcept {
+    constexpr void reset() noexcept
+    {
         if constexpr (I != std::variant_npos) {
             destroy<I>();
             index_ = std::variant_npos;
@@ -489,37 +543,6 @@ private:
     constexpr rvariant& self() { return *this; }
 
 public:
-    template<class T>
-        requires requires {
-            requires (!std::is_same_v<std::remove_cvref_t<T>, rvariant>);
-            requires requires(T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
-            requires std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
-        }
-    constexpr rvariant& operator=(T&& arg) noexcept(std::is_nothrow_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
-                                                    std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>) {
-        detail::raw_visit(
-            index_,
-            [this, &arg]<class Alt>(Alt&& alt) {
-                constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
-                constexpr std::size_t J = detail::accepted_index_v<T, rvariant>;
-                using Assignee = typename std::remove_cvref_t<Alt>::type;
-                using Assigner = detail::accepted_type_t<T, rvariant>;
-                if constexpr (I != std::variant_npos) {
-                    if constexpr (std::is_same_v<Assignee, Assigner>) {
-                        alt.value = std::forward<T>(arg);
-                    } else {
-                        if constexpr (std::is_nothrow_constructible_v<Assigner, T> || !std::is_nothrow_move_constructible_v<Assigner>) {
-                            emplace<J>(std::forward<T>(arg));
-                        } else {
-                            emplace<J>(Assigner(std::forward<T>(arg)));
-                        }
-                    }
-                }
-            },
-            *this);
-        return *this;
-    }
-
     constexpr rvariant& operator=(rvariant const&)
         requires detail::variant_trivially_copy_assignable<Ts...>
     = default;
@@ -552,7 +575,8 @@ public:
                     }
                 }
             },
-            other);
+            other
+        );
         return *this;
     }
 
@@ -560,8 +584,10 @@ public:
         requires detail::variant_trivially_move_assignable<Ts...>
     = default;
 
-    constexpr rvariant& operator=(rvariant&& other) noexcept(
-        std::conjunction_v<std::conjunction<std::is_nothrow_move_constructible<Ts>, std::is_nothrow_move_assignable<Ts>>...>)
+    constexpr rvariant& operator=(rvariant&& other)
+        noexcept(std::conjunction_v<
+            std::conjunction<std::is_nothrow_move_constructible<Ts>, std::is_nothrow_move_assignable<Ts>>...
+        >)
         requires detail::variant_move_assignable<Ts...>
     {
         detail::raw_visit(
@@ -578,13 +604,56 @@ public:
                     }
                 }
             },
-            other);
+            other
+        );
         return *this;
     }
 
+    // Generic assignment operator
+    template<class T>
+        requires requires {
+            requires (!std::is_same_v<std::remove_cvref_t<T>, rvariant>);
+            requires requires(T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
+            requires std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
+        }
+    constexpr rvariant& operator=(T&& arg)
+        noexcept(
+            std::is_nothrow_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
+            std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>
+        )
+    {
+        detail::raw_visit(
+            index_,
+            [this, &arg]<class Alt>(Alt&& alt) {
+                constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
+                constexpr std::size_t J = detail::accepted_index_v<T, rvariant>;
+                using Assignee = typename std::remove_cvref_t<Alt>::type;
+                using Assigner = detail::accepted_type_t<T, rvariant>;
+                if constexpr (I != std::variant_npos) {
+                    if constexpr (std::is_same_v<Assignee, Assigner>) {
+                        alt.value = std::forward<T>(arg);
+                    } else {
+                        if constexpr (std::is_nothrow_constructible_v<Assigner, T> || !std::is_nothrow_move_constructible_v<Assigner>) {
+                            emplace<J>(std::forward<T>(arg));
+                        } else {
+                            emplace<J>(Assigner(std::forward<T>(arg)));
+                        }
+                    }
+                }
+            },
+            *this
+        );
+        return *this;
+    }
+
+    // Flexible copy assignment operator
     template<class... Us>
-        requires detail::variant_copy_assignable<Us...> && subset_of<rvariant<Us...>, rvariant>
-    constexpr rvariant& operator=(rvariant<Us...> const& other) {
+        requires
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
+            detail::variant_copy_assignable<Us...>
+    constexpr rvariant& operator=(rvariant<Us...> const& other)
+    {
         detail::raw_visit(
             other.index_,
             [this]<class Alt>(Alt&& alt) {
@@ -623,14 +692,20 @@ public:
                     }
                 }
             },
-            other);
+            other
+        );
         return *this;
     }
 
+    // Flexible move assignment operator
     template<class... Us>
-        requires detail::variant_move_assignable<Us...> && subset_of<rvariant<Us...>, rvariant>
+        requires
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
+            detail::variant_move_assignable<Us...>
     constexpr rvariant& operator=(rvariant<Us...>&& other) noexcept(
-        std::conjunction_v<std::conjunction<std::is_nothrow_move_constructible<Us>, std::is_nothrow_move_assignable<Us>>...>) {
+        std::conjunction_v<std::conjunction<std::is_nothrow_move_constructible<Us>, std::is_nothrow_move_assignable<Us>>...>
+    ) {
         detail::raw_visit(
             other.index_,
             [this]<class Alt>(Alt&& alt) {
@@ -665,14 +740,15 @@ public:
                     }
                 }
             },
-            other);
-
+            other
+        );
         return *this;
     }
 
     template<class T, class... Args>
         requires std::conjunction_v<std::is_constructible<T, Args...>, detail::exactly_once<T, unwrapped_types>>
-    constexpr T& emplace(Args&&... args) {
+    constexpr T& emplace(Args&&... args)
+    {
         static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(std::forward<Args>(args)...);
@@ -680,7 +756,8 @@ public:
 
     template<class T, class U, class... Args>
         requires std::conjunction_v<std::is_constructible<T, std::initializer_list<U>&, Args...>, detail::exactly_once<T, unwrapped_types>>
-    constexpr T& emplace(std::initializer_list<U> il, Args&&... args) {
+    constexpr T& emplace(std::initializer_list<U> il, Args&&... args)
+    {
         static_assert(!detail::is_ttp_specialization_of_v<T, recursive_wrapper>);
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(il, std::forward<Args>(args)...);
@@ -688,7 +765,9 @@ public:
 
     template<std::size_t I, class... Args>
         requires std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
-    constexpr variant_alternative_t<I, rvariant>& emplace(Args&&... args) {
+    constexpr variant_alternative_t<I, rvariant>&
+        emplace(Args&&... args)
+    {
         static_assert(I < sizeof...(Ts));
         if (!valueless_by_exception()) {
             reset();
@@ -700,7 +779,9 @@ public:
 
     template<std::size_t I, class U, class... Args>
         requires std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
-    constexpr variant_alternative_t<I, rvariant>& emplace(std::initializer_list<U> il, Args&&... args) {
+    constexpr variant_alternative_t<I, rvariant>&
+        emplace(std::initializer_list<U> il, Args&&... args)
+    {
         static_assert(I < sizeof...(Ts));
         if (!valueless_by_exception()) {
             reset();
@@ -712,7 +793,8 @@ public:
 
     // TODO: namespace scope swap
 
-    constexpr void swap(rvariant& other) /* TODO: noexcept specification */ {
+    constexpr void swap(rvariant& other) /* TODO: noexcept specification */
+    {
         static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
         detail::raw_visit(
             index_,
@@ -778,26 +860,26 @@ private:
 
 public:
     template<class... Us>
-        requires std::same_as<rvariant<Us...>, rvariant>
+        requires std::is_same_v<rvariant<Us...>, rvariant>
     [[nodiscard]] constexpr rvariant subset() const& noexcept(std::is_nothrow_copy_constructible_v<rvariant>) {
         return *this;
     }
 
     template<class... Us>
-        requires std::same_as<rvariant<Us...>, rvariant>
+        requires std::is_same_v<rvariant<Us...>, rvariant>
     [[nodiscard]] constexpr rvariant subset() && noexcept(std::is_nothrow_move_constructible_v<rvariant>) {
         return std::move(*this);
     }
 
     template<class... Us>
-        requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
+        requires (!std::is_same_v<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
     [[nodiscard]] constexpr rvariant<Us...> subset() const& noexcept(equivalent_to<rvariant<Us...>, rvariant> &&
                                                                      std::is_nothrow_copy_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, *this);
     }
-
+    std::variant<int>a;
     template<class... Us>
-        requires (!std::same_as<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
+        requires (!std::is_same_v<rvariant<Us...>, rvariant>) && subset_of<rvariant<Us...>, rvariant>
     [[nodiscard]] constexpr rvariant<Us...> subset() && noexcept(equivalent_to<rvariant<Us...>, rvariant> && std::is_nothrow_move_constructible_v<rvariant>) {
         return detail::raw_visit(index_, subset_visitor<Us...>, std::move(*this));
     }
@@ -810,7 +892,9 @@ public:
 
 private:
     detail::variant_storage_t<std::index_sequence_for<Ts...>, Ts...> storage_;
-    std::size_t index_ = std::variant_npos;
+
+    using variant_index_t = std::size_t; // TODO: make this select the cheap type
+    variant_index_t index_ = static_cast<variant_index_t>(-1); // equals to std::variant_npos by definition
 };
 
 template<class T, class... Ts>

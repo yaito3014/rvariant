@@ -986,6 +986,9 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">9)</span> <em>Flexible copy constructor</em>.</p>
 <div class="paragraph">
+<p><strong><em>Constraints:</em></strong> <span class="underline"><code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>.</span></p>
+</div>
+<div class="paragraph">
 <p><strong><em>Effects:</em></strong> If <code>w</code> holds a value, initializes the <code>rvariant</code> to hold the <span class="underline">alternative corresponding to that of</span> <code>w</code> and direct-initializes the contained value with <code><em>GET</em>&lt;j&gt;(w)</code>, where <code>j</code> is <code>w.index()</code>. Otherwise, initializes the <code>rvariant</code> to not hold a value.</p>
 </div>
 <div class="paragraph">
@@ -1088,7 +1091,21 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>Let <em>j</em> be <code>rhs.index()</code>. <span class="underline">Let <code>U<sub><em>k</em></sub></code> be the <em>k</em><sup>th</sup> type in <code>Us...</code>.</span></p>
 </div>
 <div class="paragraph">
-<p><strong><em>Constraints:</em></strong> <span class="underline"><code><a href="#rvariant.flex">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>.</span></p>
+<p><strong><em>Constraints:</em></strong></p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>.</span></p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong></p>
@@ -1132,7 +1149,24 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>Let <em>j</em> be <code>rhs.index()</code>. <span class="underline">Let <code>U<sub><em>k</em></sub></code> be the <em>k</em><sup>th</sup> type in <code>Us...</code>.</span></p>
 </div>
 <div class="paragraph">
-<p><strong><em>Constraints:</em></strong> <span class="underline"><code><a href="#rvariant.flex">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_move_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_move_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>k</em></span>.</p>
+<p><strong><em>Constraints:</em></strong></p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>,</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_move_constructible_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span> && std::is_move_assignable_v<span class="underline">&lt;U<sub><em>k</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>k</em></span>.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 <div class="paragraph">
 <p><strong><em>Effects:</em></strong></p>
@@ -1256,19 +1290,19 @@ constexpr std::size_t index() const noexcept;</code></pre>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class... Us&gt;
-  requires std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&gt;
+  requires std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;
 constexpr rvariant subset() const&amp; noexcept(std::is_nothrow_copy_constructible_v&lt;rvariant&gt;);<span class="candidate">// 1</span>
 
 template&lt;class... Us&gt;
-  requires std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&gt;
+  requires std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;
 constexpr rvariant subset() &amp;&amp; noexcept(std::is_nothrow_move_constructible_v&lt;rvariant&gt;);<span class="candidate">// 2</span>
 
 template&lt;class... Us&gt;
-  requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&gt;)
+  requires (!std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;)
 constexpr rvariant&lt;Us...&gt; subset() const&amp; noexcept(<span class="see-below">see below</span>);<span class="candidate">// 3</span>
 
 template&lt;class... Us&gt;
-  requires (!std::same_as&lt;rvariant&lt;Us...&gt;, rvariant&gt;)
+  requires (!std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;)
 constexpr rvariant&lt;Us...&gt; subset() &amp;&amp; noexcept(<span class="see-below">see below</span>);<span class="candidate">// 4</span></code></pre>
 </div>
 </div>

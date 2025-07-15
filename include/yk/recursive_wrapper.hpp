@@ -40,6 +40,10 @@ public:
         requires std::is_default_constructible_v<Allocator>
     = default;
 
+    // Required for combination with defaulted assignment operators
+    constexpr recursive_wrapper(recursive_wrapper const&) = default;
+    constexpr recursive_wrapper(recursive_wrapper&&) noexcept = default;
+
     template<class U = T>
         requires requires {
             requires (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>);
@@ -81,7 +85,32 @@ public:
     constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, std::in_place_t, std::initializer_list<I> il, Us&&... us)
         : base_type(std::allocator_arg, a, std::in_place, il, std::forward<Us>(us)...) {}
 
-    using base_type::operator=;
+    // Don't do this; it will lead to surprising result that
+    // MSVC attempts to instantiate move assignment operator of *rvariant*
+    // when a user just *defines* a struct that contains a rvariant.
+    // I don't know why it happens, but MSVC is certainly doing something weird
+    // so that it eagerly instantiates unrelated member functions.
+    //using base_type::operator=;
+
+    constexpr recursive_wrapper& operator=(recursive_wrapper const&) = default;
+
+    constexpr recursive_wrapper& operator=(recursive_wrapper&&) noexcept(
+        std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
+        std::allocator_traits<Allocator>::is_always_equal::value
+    ) = default;
+
+    // This is required for proper delegation; otherwise constructor will be called
+    template<class U = T>
+        requires requires {
+        requires (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>);
+        requires std::is_constructible_v<T, U>;
+        requires std::is_assignable_v<T&, U>;
+    }
+    constexpr recursive_wrapper& operator=(U&& u)
+    {
+        base_type::operator=(std::forward<U>(u));
+        return *this;
+    }
 
     template<class Self>
     constexpr auto&& operator*(this Self&& self) noexcept {

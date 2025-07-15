@@ -14,6 +14,10 @@ struct is_ttp_specialization_of<TT<Ts...>, TT> : std::true_type {};
 template<class T, template<class...> class TT>
 inline constexpr bool is_ttp_specialization_of_v = is_ttp_specialization_of<T, TT>::value;
 
+template<class T, template<class...> class TT>
+concept ttp_specialization_of = is_ttp_specialization_of_v<T, TT>;
+
+
 template<class T, template<auto...> class TT>
 struct is_nttp_specialization_of : std::false_type {};
 
@@ -22,6 +26,9 @@ struct is_nttp_specialization_of<TT<Ts...>, TT> : std::true_type {};
 
 template<class T, template<auto...> class TT>
 inline constexpr bool is_nttp_specialization_of_v = is_nttp_specialization_of<T, TT>::value;
+
+template<class T, template<auto...> class TT>
+concept nttp_specialization_of = is_nttp_specialization_of_v<T, TT>;
 
 }  // namespace yk::detail
 
