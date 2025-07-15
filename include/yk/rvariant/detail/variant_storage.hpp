@@ -15,26 +15,36 @@ template<bool TriviallyDestructible, class... Ts>
 union variadic_union;
 
 template<bool TriviallyDestructible>
-union variadic_union<TriviallyDestructible> {
+union variadic_union<TriviallyDestructible>
+{
     constexpr variadic_union(valueless_t) {}
 };
 
 template<bool TriviallyDestructible, class T, class... Ts>
-union variadic_union<TriviallyDestructible, T, Ts...> {
-    constexpr variadic_union() : first(std::in_place) {}
+union variadic_union<TriviallyDestructible, T, Ts...>
+{
+    constexpr variadic_union()
+        : first(std::in_place)
+    {}
 
-    constexpr variadic_union(valueless_t) : rest(valueless) {}
+    constexpr variadic_union(valueless_t)
+        : rest(valueless)
+    {}
 
     template<class... Args>
-    constexpr variadic_union(std::in_place_index_t<0>, Args&&... args) : first(std::in_place, std::forward<Args>(args)...) {}
+    constexpr variadic_union(std::in_place_index_t<0>, Args&&... args)
+        : first(std::in_place, std::forward<Args>(args)...)
+    {}
 
     template<std::size_t I, class... Args>
-    constexpr variadic_union(std::in_place_index_t<I>, Args&&... args) : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...) {}
+    constexpr variadic_union(std::in_place_index_t<I>, Args&&... args)
+        : rest(std::in_place_index<I - 1>
+        , std::forward<Args>(args)...)
+    {}
 
     ~variadic_union() = default;
 
-    constexpr ~variadic_union()
-        requires (!TriviallyDestructible)
+    constexpr ~variadic_union() requires (!TriviallyDestructible)
     {}
 
     T first;
@@ -42,12 +52,15 @@ union variadic_union<TriviallyDestructible, T, Ts...> {
 };
 
 template<std::size_t I, class T>
-struct alternative {
+struct alternative
+{
     static constexpr std::size_t index = I;
     using type = T;
 
     template<class... Args>
-    constexpr explicit alternative(std::in_place_t, Args&&... args) : value(std::forward<Args>(args)...) {}
+    constexpr explicit alternative(std::in_place_t, Args&&... args)
+        : value(std::forward<Args>(args)...)
+    {}
 
     T value;
 };
@@ -56,29 +69,35 @@ template<std::size_t I>
 struct get_alternative
 {
     template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept {
+    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept
+    {
         return get_alternative<I - 1>{}(std::forward<Union>(u).rest);
     }
 };
 
 template<>
-struct get_alternative<0> {
+struct get_alternative<0>
+{
     template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept {
+    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept
+    {
         return std::forward<Union>(u).first;
     }
 };
 
 template<>
-struct get_alternative<variant_npos> {
+struct get_alternative<variant_npos>
+{
     template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept {
-        return std::forward<Union>(u); // valueless
+    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept
+    {
+        return std::forward<Union>(u); // valueless_t
     }
 };
 
 template<std::size_t I, class Variant>
-constexpr auto&& raw_get(Variant&& var YK_LIFETIMEBOUND) noexcept {
+constexpr auto&& raw_get(Variant&& var YK_LIFETIMEBOUND) noexcept
+{
     return get_alternative<I>{}(std::forward<Variant>(var).storage_);
 }
 
