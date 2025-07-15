@@ -1,23 +1,8 @@
-﻿#ifndef YK_DETAIL_RECURSIVE_TRAITS_HPP
-#define YK_DETAIL_RECURSIVE_TRAITS_HPP
+﻿#ifndef YK_RVARIANT_DETAIL_RECURSIVE_TRAITS_HPP
+#define YK_RVARIANT_DETAIL_RECURSIVE_TRAITS_HPP
 
-#include "yk/detail/pack_indexing.hpp"
-#include "yk/detail/is_specialization_of.hpp"
-#include "yk/detail/is_in.hpp"
-
-#include <type_traits>
-#include <concepts>
-
-
-namespace yk {
-
-template<class... Ts>
-class rvariant;
-
-template<class T, class Allocator>
-class recursive_wrapper;
-
-} // yk
+#include <yk/rvariant/detail/rvariant_fwd.hpp>
+#include <yk/detail/lang_core.hpp>
 
 namespace yk::detail {
 

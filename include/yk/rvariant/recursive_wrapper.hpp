@@ -1,8 +1,9 @@
-#ifndef YK_RECURSIVE_WRAPPER_HPP
-#define YK_RECURSIVE_WRAPPER_HPP
+#ifndef YK_RVARIANT_RECURSIVE_WRAPPER_HPP
+#define YK_RVARIANT_RECURSIVE_WRAPPER_HPP
 
-#include "yk/detail/is_specialization_of.hpp"
-#include "yk/indirect.hpp"
+#include <yk/detail/lang_core.hpp>
+#include <yk/rvariant/detail/rvariant_fwd.hpp>
+#include <yk/indirect.hpp>
 
 #include <compare>
 #include <initializer_list>
@@ -13,7 +14,9 @@
 namespace yk {
 
 template<class T, class Allocator = std::allocator<T>>
-class recursive_wrapper : private yk::indirect<T, Allocator> {
+class recursive_wrapper
+    : private yk::indirect<T, Allocator>
+{
     static_assert(std::is_object_v<T>);
     static_assert(!std::is_array_v<T>);
     static_assert(!std::is_same_v<T, std::in_place_t>);
@@ -23,9 +26,9 @@ class recursive_wrapper : private yk::indirect<T, Allocator> {
 
     using base_type = yk::indirect<T, Allocator>;
 
-    constexpr base_type& base() & noexcept { return static_cast<base_type&>(*this); }
-    constexpr base_type const& base() const& noexcept { return static_cast<base_type const&>(*this); }
-    constexpr base_type&& base() && noexcept { return static_cast<base_type&&>(*this); }
+    constexpr base_type&        base() &       noexcept { return static_cast<base_type&       >(*this); }
+    constexpr base_type const&  base() const&  noexcept { return static_cast<base_type const& >(*this); }
+    constexpr base_type&&       base() &&      noexcept { return static_cast<base_type&&      >(*this); }
     constexpr base_type const&& base() const&& noexcept { return static_cast<base_type const&&>(*this); }
 
 public:
@@ -45,45 +48,52 @@ public:
     constexpr recursive_wrapper(recursive_wrapper&&) noexcept = default;
 
     template<class U = T>
-        requires requires {
-            requires (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>);
-            requires (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>);
-            requires std::is_constructible_v<T, U>;
-            requires std::is_default_constructible_v<Allocator>;
-        }
-    constexpr explicit(!std::is_convertible_v<U, T>) recursive_wrapper(U&& x) : base_type(std::forward<U>(x)) {}
+        requires
+            (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>) &&
+            (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>) &&
+            std::is_constructible_v<T, U> &&
+            std::is_default_constructible_v<Allocator>
+    constexpr explicit(!std::is_convertible_v<U, T>)
+    recursive_wrapper(U&& x)
+        : base_type(std::forward<U>(x))
+    {}
 
     template<class U = T>
-        requires requires {
-            requires (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>);
-            requires (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>);
-            requires std::is_constructible_v<T, U>;
-        }
-    constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, U&& x) : base_type(std::allocator_arg, a, std::forward<U>(x)) {}
+        requires
+            (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>) &&
+            (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>) &&
+            std::is_constructible_v<T, U>
+    constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, U&& x)
+        : base_type(std::allocator_arg, a, std::forward<U>(x))
+    {}
 
     template<class... Us>
-        requires requires {
-            requires std::is_constructible_v<T, Us...>;
-            requires std::is_default_constructible_v<Allocator>;
-        }
-    constexpr explicit recursive_wrapper(std::in_place_t, Us&&... us) : base_type(std::in_place, std::forward<Us>(us)...) {}
+        requires
+            std::is_constructible_v<T, Us...> &&
+            std::is_default_constructible_v<Allocator>
+    constexpr explicit recursive_wrapper(std::in_place_t, Us&&... us)
+        : base_type(std::in_place, std::forward<Us>(us)...)
+    {}
 
     template<class... Us>
         requires std::is_constructible_v<T, Us...>
     constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, std::in_place_t, Us&&... us)
-        : base_type(std::allocator_arg, a, std::in_place, std::forward<Us>(us)...) {}
+        : base_type(std::allocator_arg, a, std::in_place, std::forward<Us>(us)...)
+    {}
 
     template<class I, class... Us>
-        requires requires {
-            requires std::is_constructible_v<T, std::initializer_list<I>&, Us...>;
-            requires std::is_default_constructible_v<Allocator>;
-        }
-    constexpr explicit recursive_wrapper(std::in_place_t, std::initializer_list<I> il, Us&&... us) : base_type(std::in_place, il, std::forward<Us>(us)...) {}
+        requires
+            std::is_constructible_v<T, std::initializer_list<I>&, Us...> &&
+            std::is_default_constructible_v<Allocator>
+    constexpr explicit recursive_wrapper(std::in_place_t, std::initializer_list<I> il, Us&&... us)
+        : base_type(std::in_place, il, std::forward<Us>(us)...)
+    {}
 
     template<class I, class... Us>
         requires std::is_constructible_v<T, std::initializer_list<I>&, Us...>
     constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, std::in_place_t, std::initializer_list<I> il, Us&&... us)
-        : base_type(std::allocator_arg, a, std::in_place, il, std::forward<Us>(us)...) {}
+        : base_type(std::allocator_arg, a, std::in_place, il, std::forward<Us>(us)...)
+    {}
 
     // Don't do this; it will lead to surprising result that
     // MSVC attempts to instantiate move assignment operator of *rvariant*
@@ -101,11 +111,10 @@ public:
 
     // This is required for proper delegation; otherwise constructor will be called
     template<class U = T>
-        requires requires {
-        requires (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>);
-        requires std::is_constructible_v<T, U>;
-        requires std::is_assignable_v<T&, U>;
-    }
+        requires
+            (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>) &&
+            std::is_constructible_v<T, U> &&
+            std::is_assignable_v<T&, U>
     constexpr recursive_wrapper& operator=(U&& u)
     {
         base_type::operator=(std::forward<U>(u));
@@ -113,7 +122,8 @@ public:
     }
 
     template<class Self>
-    constexpr auto&& operator*(this Self&& self) noexcept {
+    [[nodiscard]] constexpr auto&& operator*(this Self&& self) noexcept
+    {
         return *std::forward<Self>(self).base();
     }
 
@@ -123,63 +133,85 @@ public:
 
     using base_type::swap;
 
-    friend constexpr void swap(recursive_wrapper& lhs, recursive_wrapper& rhs) noexcept(noexcept(lhs.swap(rhs))) { lhs.swap(rhs); }
+    friend constexpr void swap(recursive_wrapper& lhs, recursive_wrapper& rhs)
+        noexcept(noexcept(lhs.swap(rhs)))
+    {
+        lhs.swap(rhs);
+    }
 
-    friend constexpr bool operator==(recursive_wrapper const& lhs, recursive_wrapper const& rhs) noexcept(noexcept(*lhs == *rhs)) {
-        if (lhs.valuless_after_move() || rhs.valueless_after_move()) return lhs.valuless_after_move() == rhs.valuless_after_move();
+    friend constexpr bool operator==(recursive_wrapper const& lhs, recursive_wrapper const& rhs)
+        noexcept(noexcept(*lhs == *rhs))
+    {
+        if (lhs.valuless_after_move() || rhs.valueless_after_move()) {
+            return lhs.valuless_after_move() == rhs.valuless_after_move();
+        }
         return *lhs == *rhs;
     }
 
-    friend constexpr auto operator<=>(recursive_wrapper const& lhs, recursive_wrapper const& rhs) {
-        if (lhs.valuless_after_move() || rhs.valueless_after_move()) return !lhs.valuless_after_move() <=> !rhs.valuless_after_move();
+    friend constexpr auto operator<=>(recursive_wrapper const& lhs, recursive_wrapper const& rhs)
+    {
+        if (lhs.valuless_after_move() || rhs.valueless_after_move()) {
+            return !lhs.valuless_after_move() <=> !rhs.valuless_after_move();
+        }
         return *lhs <=> *rhs;
     }
 
     template<class U>
-    friend constexpr bool operator==(recursive_wrapper const& lhs, U const& rhs) noexcept(noexcept(*lhs == rhs)) {
+    friend constexpr bool operator==(recursive_wrapper const& lhs, U const& rhs)
+        noexcept(noexcept(*lhs == rhs))
+    {
         if (lhs.valueless_after_move()) return false;
         return *lhs == rhs;
     }
 
     template<class U>
-    friend constexpr auto operator<=>(recursive_wrapper const& lhs, U const& rhs) {
+    friend constexpr auto operator<=>(recursive_wrapper const& lhs, U const& rhs)
+    {
         if (lhs.valueless_after_move()) return std::strong_ordering::less;
         return *lhs <=> rhs;
     }
 };
 
 template<class Value>
-recursive_wrapper(Value) -> recursive_wrapper<Value>;
+recursive_wrapper(Value)
+    -> recursive_wrapper<Value>;
 
 template<class Allocator, class Value>
-recursive_wrapper(std::allocator_arg_t, Allocator, Value) -> recursive_wrapper<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
+recursive_wrapper(std::allocator_arg_t, Allocator, Value)
+    -> recursive_wrapper<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
 
 template<class T>
-struct unwrap_recursive {
+struct unwrap_recursive
+{
     using type = T;
 };
 
 template<class T, class Allocator>
-struct unwrap_recursive<recursive_wrapper<T, Allocator>> {
+struct unwrap_recursive<recursive_wrapper<T, Allocator>>
+{
     using type = T;
 };
 
 template<class T>
 using unwrap_recursive_t = typename unwrap_recursive<T>::type;
 
+
 namespace detail {
 
 template<class T>
-[[nodiscard]] constexpr decltype(auto) unwrap_recursive(T&& o) noexcept {
+[[nodiscard]] constexpr decltype(auto)
+unwrap_recursive(T&& o YK_LIFETIMEBOUND) noexcept
+{
     if constexpr (is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) {
         return *std::forward<T>(o);
+
     } else {
         return std::forward<T>(o);
     }
 }
 
-}  // namespace detail
+}  // detail
 
-}  // namespace yk
+}  // yk
 
-#endif  // YK_RECURSIVE_WRAPPER_HPP
+#endif
