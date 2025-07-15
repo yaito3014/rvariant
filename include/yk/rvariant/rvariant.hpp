@@ -99,6 +99,17 @@ template<class T, class Allocator, class... Ts>
 struct has_recursive_wrapper_duplicate<recursive_wrapper<T, Allocator>, Ts...>
     : is_in<T, Ts...> {};
 
+
+template<class Variant, class T>
+struct exactly_once_index
+{
+    static_assert(exactly_once_v<T, typename Variant::unwrapped_types>);
+    static constexpr std::size_t value = find_index_v<T, typename Variant::unwrapped_types>;
+};
+
+template<class Variant, class T>
+inline constexpr std::size_t exactly_once_index_v = exactly_once_index<Variant, T>::value;
+
 }  // detail
 
 
@@ -112,28 +123,9 @@ class rvariant
     static_assert(std::conjunction_v<std::is_destructible<Ts>...>);
     static_assert(sizeof...(Ts) > 0);
 
-private:
-    class variant_npos_setter
-    {
-    public:
-        constexpr variant_npos_setter(rvariant* par) noexcept : parent_(par) {}
-        constexpr void mark_succeeded() noexcept { succeeded_ = true; }
-
-        constexpr ~variant_npos_setter() noexcept {
-            if (!succeeded_) parent_->index_ = std::variant_npos;
-        }
-
-    private:
-        rvariant* parent_;
-        bool succeeded_ = false;
-    };
-
-    friend variant_npos_setter;
-
-public:
-    // TODO: move this to private
     using unwrapped_types = detail::type_list<unwrap_recursive_t<Ts>...>;
 
+public:
     constexpr rvariant() noexcept(std::is_nothrow_default_constructible_v<detail::pack_indexing_t<0, Ts...>>)
         requires std::is_default_constructible_v<detail::pack_indexing_t<0, Ts...>>
         : storage_{}
@@ -687,7 +679,27 @@ public:
     template<std::size_t I, class Variant>
     friend constexpr auto&& detail::raw_get(Variant&&) noexcept;
 
+    template<class Variant, class T>
+    friend struct detail::exactly_once_index;
+
 private:
+    class variant_npos_setter
+    {
+    public:
+        constexpr variant_npos_setter(rvariant* par) noexcept : parent_(par) {}
+        constexpr void mark_succeeded() noexcept { succeeded_ = true; }
+
+        constexpr ~variant_npos_setter() noexcept
+        {
+            if (!succeeded_) parent_->index_ = std::variant_npos;
+        }
+
+    private:
+        rvariant* parent_;
+        bool succeeded_ = false;
+    };
+    friend class variant_npos_setter;
+
     constexpr rvariant(detail::valueless_t) noexcept
         : storage_(detail::valueless)
         , index_(std::variant_npos)
@@ -744,8 +756,8 @@ template<class T, class... Ts>
 template<class T, class... Ts>
 [[nodiscard]] constexpr bool holds_alternative(rvariant<Ts...> const& v) noexcept
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    return v.index() == detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
+    return v.index() == I;
 }
 
 template<std::size_t I, class... Ts>
@@ -784,8 +796,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T&
 get(rvariant<Ts...>& var YK_LIFETIMEBOUND)
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
@@ -794,8 +805,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T&&
 get(rvariant<Ts...>&& var YK_LIFETIMEBOUND)
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
@@ -804,8 +814,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T const&
 get(rvariant<Ts...> const& var YK_LIFETIMEBOUND)
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(var).value);
 }
@@ -814,8 +823,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr T const&&
 get(rvariant<Ts...> const&& var YK_LIFETIMEBOUND)
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
     if (var.index() != I) throw std::bad_variant_access{};
     return detail::unwrap_recursive(detail::raw_get<I>(std::move(var)).value);
 }
@@ -872,8 +880,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<T>
 get_if(rvariant<Ts...>* var) noexcept
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
     return get_if<I>(var);
 }
 
@@ -881,8 +888,7 @@ template<class T, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<T const>
 get_if(rvariant<Ts...> const* var) noexcept
 {
-    static_assert(detail::exactly_once_v<T, typename rvariant<Ts...>::unwrapped_types>);
-    constexpr std::size_t I = detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>;
+    constexpr std::size_t I = detail::exactly_once_index_v<rvariant<Ts...>, T>;
     return get_if<I>(var);
 }
 
