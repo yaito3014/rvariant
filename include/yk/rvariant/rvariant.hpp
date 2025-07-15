@@ -91,51 +91,6 @@ template<class Source, class Variant>
 using accepted_type_t = typename accepted_type<Source, Variant>::type;
 
 
-template<class...>
-struct pack_union_helper {};
-
-template<template<class...> class TT, class T, class... Us>
-struct pack_union_impl;
-
-template<template<class...> class TT, class... Ts>
-struct pack_union_impl<TT, pack_union_helper<Ts...>>
-{
-    using type = TT<Ts...>;
-};
-
-template<template<class...> class TT, class... Ts, class U, class... Us>
-struct pack_union_impl<TT, pack_union_helper<Ts...>, U, Us...>
-    : std::conditional_t<
-        is_in_v<U, Ts...>,
-        pack_union_impl<TT, pack_union_helper<Ts...>, Us...>,
-        pack_union_impl<TT, pack_union_helper<Ts..., U>, Us...>
-    >
-{};
-
-template<template<class...> class TT, class A, class B>
-struct pack_union;
-
-template<template<class...> class TT, class A, class B>
-struct pack_union : detail::pack_union_impl<TT, detail::pack_union_helper<>, A, B> {};
-
-template<template<class...> class TT, class... As, class B>
-struct pack_union<TT, TT<As...>, B> : detail::pack_union_impl<TT, detail::pack_union_helper<>, As..., B> {};
-
-template<template<class...> class TT, class A, class... Bs>
-struct pack_union<TT, A, TT<Bs...>> : detail::pack_union_impl<TT, detail::pack_union_helper<>, A, Bs...> {};
-
-template<template<class...> class TT, class... As, class... Bs>
-struct pack_union<TT, TT<As...>, TT<Bs...>> : detail::pack_union_impl<TT, detail::pack_union_helper<>, As..., Bs...> {};
-
-template<template<class...> class TT, class A, class B>
-using pack_union_t = typename pack_union<TT, A, B>::type;
-
-template<class T>
-struct unwrap_one_pack { using type = T; };
-
-template<template<class...> class TT, class T>
-struct unwrap_one_pack<TT<T>> { using type = T; };
-
 template<class T, class... Ts>
 struct has_recursive_wrapper_duplicate
     : std::false_type {};
@@ -146,26 +101,6 @@ struct has_recursive_wrapper_duplicate<recursive_wrapper<T, Allocator>, Ts...>
 
 }  // detail
 
-template<class T, class U>
-struct is_subset_of : std::false_type {};
-
-template<template<class...> class L1, class... Ts, template<class...> class L2, class... Us>
-struct is_subset_of<L1<Ts...>, L2<Us...>> : std::conjunction<detail::is_in<Ts, Us...>...> {};
-
-template<class T, class U>
-inline constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
-
-template<class T, class U>
-concept subset_of = is_subset_of_v<T, U>;
-
-template<class T, class U>
-concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
-
-template<template<class...> class TT, class A, class B>
-struct compact_alternative : detail::unwrap_one_pack<detail::pack_union_t<TT, A, B>> {};
-
-template<template<class...> class TT, class A, class B>
-using compact_alternative_t = typename compact_alternative<TT, A, B>::type;
 
 template<class... Ts>
 class rvariant

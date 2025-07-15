@@ -55,6 +55,22 @@ struct subset_visitor
 
 } // detail
 
+
+template<class T, class U>
+struct is_subset_of : std::false_type {};
+
+template<template<class...> class L1, class... Ts, template<class...> class L2, class... Us>
+struct is_subset_of<L1<Ts...>, L2<Us...>> : std::conjunction<detail::is_in<Ts, Us...>...> {};
+
+template<class T, class U>
+inline constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
+
+template<class T, class U>
+concept subset_of = is_subset_of_v<T, U>;
+
+template<class T, class U>
+concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
+
 } // yk
 
 #endif

@@ -1,7 +1,7 @@
 ﻿#ifndef YK_RVARIANT_VARIANT_HELPER_HPP
 #define YK_RVARIANT_VARIANT_HELPER_HPP
 
-// Utilities mostly related to [rvariant.helper], [rvariant.recursive.helper]
+// Utilities related to [rvariant.helper], [rvariant.recursive.helper]
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/detail/lang_core.hpp>

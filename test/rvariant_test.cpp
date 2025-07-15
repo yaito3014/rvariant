@@ -1,5 +1,6 @@
 #include "yk/rvariant/recursive_wrapper.hpp"
 #include "yk/rvariant/rvariant.hpp"
+#include "yk/rvariant/pack.hpp"
 
 #include "yk/indirect.hpp"
 
