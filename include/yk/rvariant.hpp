@@ -870,6 +870,28 @@ template<class T, class... Ts>
     return detail::unwrap_recursive(detail::raw_get<detail::find_index_v<T, typename rvariant<Ts...>::unwrapped_types>>(std::move(var)).value);
 }
 
+template<std::size_t I, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>> get_if(rvariant<Ts...>* v) noexcept {
+    if (v == nullptr || v->index() != I) return nullptr;
+    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(*v).value));
+}
+
+template<std::size_t I, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const> get_if(rvariant<Ts...> const* v) noexcept {
+    if (v == nullptr || v->index() != I) return nullptr;
+    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(*v).value));
+}
+
+template<std::size_t I, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>> get(rvariant<Ts...>* v) noexcept {
+    return get_if<I>(v);
+}
+
+template<std::size_t I, class... Ts>
+[[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const> get(rvariant<Ts...> const* v) noexcept {
+    return get_if<I>(v);
+}
+
 }  // namespace yk
 
 #endif  // YK_RVARIANT_HPP
