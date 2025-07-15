@@ -163,7 +163,8 @@ struct alternative {
 };
 
 template<std::size_t I>
-struct get_alternative {
+struct get_alternative
+{
     template<class Union>
     constexpr auto&& operator()(Union&& u) noexcept {
         return get_alternative<I - 1>{}(std::forward<Union>(u).rest);
@@ -175,6 +176,14 @@ struct get_alternative<0> {
     template<class Union>
     constexpr auto&& operator()(Union&& u) noexcept {
         return std::forward<Union>(u).first;
+    }
+};
+
+template<>
+struct get_alternative<std::variant_npos> {
+    template<class Union>
+    constexpr auto&& operator()(Union&& u) noexcept {
+        return std::forward<Union>(u); // valueless
     }
 };
 
@@ -322,7 +331,7 @@ private:
         bool succeeded_ = false;
     };
 
-    friend struct variant_npos_setter;
+    friend variant_npos_setter;
 
 public:
     using unwrapped_types = detail::type_list<unwrap_recursive_t<Ts>...>;
@@ -701,7 +710,9 @@ public:
         return detail::unwrap_recursive(detail::raw_get<I>(*this).value);
     }
 
-    constexpr void swap(rvariant& other) {
+    // TODO: namespace scope swap
+
+    constexpr void swap(rvariant& other) /* TODO: noexcept specification */ {
         static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
         detail::raw_visit(
             index_,
@@ -718,17 +729,17 @@ public:
                                 swap(detail::raw_get<I>(self()).value, detail::raw_get<I>(other).value);
                             }
                         } else if constexpr (I == std::variant_npos) {
-                            emplace<J>(std::move(otherAlt).value);
+                            emplace<J>(std::forward<OtherAlt>(otherAlt).value);
                             other.reset<J>();
                         } else if constexpr (J == std::variant_npos) {
-                            other.emplace<I>(std::move(thisAlt).value);
+                            other.template emplace<I>(std::forward<ThisAlt>(thisAlt).value);
                             reset<I>();
                         } else {
-                            auto temporary = std::move(thisAlt).value;
+                            auto temporary = std::forward<ThisAlt>(thisAlt).value;
                             reset<I>();
-                            emplace<J>(std::move(otherAlt).value);
+                            emplace<J>(std::forward<OtherAlt>(otherAlt).value);
                             other.reset<J>();
-                            other.emplace<I>(std::move(temporary));
+                            other.template emplace<I>(std::move(temporary));
                         }
                     },
                     other);

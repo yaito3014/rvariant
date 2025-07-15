@@ -9,7 +9,17 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(yk_rvariant_test test.cpp)
 
-target_compile_features(yk_rvariant_test PRIVATE cxx_std_26)
+target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
+
+if(MSVC)
+    target_compile_options(Catch2 PUBLIC /MP)
+
+    target_compile_options(
+        yk_rvariant_test
+            PUBLIC /MP
+            PRIVATE /W3
+    )
+endif()
 
 target_link_libraries(
     yk_rvariant_test

@@ -2,6 +2,7 @@
 #define YK_RECURSIVE_WRAPPER_HPP
 
 #include "yk/detail/is_specialization_of.hpp"
+#include "yk/indirect.hpp"
 
 #include <compare>
 #include <initializer_list>
@@ -11,9 +12,8 @@
 
 namespace yk {
 
-// TODO: replace std::indirect with yk::indirect
 template<class T, class Allocator = std::allocator<T>>
-class recursive_wrapper : private std::indirect<T, Allocator> {
+class recursive_wrapper : private yk::indirect<T, Allocator> {
     static_assert(std::is_object_v<T>);
     static_assert(!std::is_array_v<T>);
     static_assert(!std::is_same_v<T, std::in_place_t>);
@@ -21,7 +21,7 @@ class recursive_wrapper : private std::indirect<T, Allocator> {
     static_assert(!std::is_const_v<T> && !std::is_volatile_v<T>);
     static_assert(std::is_same_v<T, typename std::allocator_traits<Allocator>::value_type>);
 
-    using base_type = std::indirect<T, Allocator>;
+    using base_type = yk::indirect<T, Allocator>;
 
     constexpr base_type& base() & noexcept { return static_cast<base_type&>(*this); }
     constexpr base_type const& base() const& noexcept { return static_cast<base_type const&>(*this); }
