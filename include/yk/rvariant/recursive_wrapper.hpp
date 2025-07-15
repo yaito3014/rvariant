@@ -180,38 +180,6 @@ template<class Allocator, class Value>
 recursive_wrapper(std::allocator_arg_t, Allocator, Value)
     -> recursive_wrapper<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
 
-template<class T>
-struct unwrap_recursive
-{
-    using type = T;
-};
-
-template<class T, class Allocator>
-struct unwrap_recursive<recursive_wrapper<T, Allocator>>
-{
-    using type = T;
-};
-
-template<class T>
-using unwrap_recursive_t = typename unwrap_recursive<T>::type;
-
-
-namespace detail {
-
-template<class T>
-[[nodiscard]] constexpr decltype(auto)
-unwrap_recursive(T&& o YK_LIFETIMEBOUND) noexcept
-{
-    if constexpr (is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) {
-        return *std::forward<T>(o);
-
-    } else {
-        return std::forward<T>(o);
-    }
-}
-
-}  // detail
-
 }  // yk
 
 #endif

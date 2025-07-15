@@ -1,7 +1,7 @@
 ﻿#ifndef YK_RVARIANT_DETAIL_RVARIANT_FWD_HPP
 #define YK_RVARIANT_DETAIL_RVARIANT_FWD_HPP
 
-
+#include <cstddef>
 
 
 namespace yk {

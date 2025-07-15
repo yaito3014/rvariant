@@ -2,7 +2,9 @@
 #define YK_RVARIANT_RVARIANT_HPP
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
+#include <yk/rvariant/detail/variant_storage.hpp>
 #include <yk/rvariant/detail/recursive_traits.hpp>
+#include <yk/rvariant/variant_helper.hpp>
 #include <yk/rvariant/subset.hpp>
 
 #include <yk/detail/lang_core.hpp>
@@ -17,32 +19,6 @@
 #include <cstddef>
 
 namespace yk {
-
-template<class Variant>
-struct variant_size;
-
-template<class Variant>
-inline constexpr std::size_t variant_size_v = variant_size<Variant>::value;
-
-template<class Variant>
-struct variant_size<Variant const> : variant_size<Variant> {};
-
-template<class... Ts>
-struct variant_size<rvariant<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)> {};
-
-template<std::size_t I, class Variant>
-struct variant_alternative;
-
-template<std::size_t I, class Variant>
-using variant_alternative_t = typename variant_alternative<I, Variant>::type;
-
-template<std::size_t I, class Variant>
-struct variant_alternative<I, Variant const> : std::add_const<variant_alternative_t<I, Variant>> {};
-
-template<std::size_t I, class... Ts>
-struct variant_alternative<I, rvariant<Ts...>> : detail::pack_indexing<I, unwrap_recursive_t<Ts>...> {
-    static_assert(I < sizeof...(Ts));
-};
 
 namespace detail {
 
@@ -114,133 +90,6 @@ struct accepted_type<Source, rvariant<Ts...>> {
 template<class Source, class Variant>
 using accepted_type_t = typename accepted_type<Source, Variant>::type;
 
-
-template<bool TriviallyDestructible, class... Ts>
-union variadic_union;
-
-template<bool TriviallyDestructible>
-union variadic_union<TriviallyDestructible> {
-    constexpr variadic_union(valueless_t) {}
-};
-
-template<bool TriviallyDestructible, class T, class... Ts>
-union variadic_union<TriviallyDestructible, T, Ts...> {
-    constexpr variadic_union() : first(std::in_place) {}
-
-    constexpr variadic_union(valueless_t) : rest(valueless) {}
-
-    template<class... Args>
-    constexpr variadic_union(std::in_place_index_t<0>, Args&&... args) : first(std::in_place, std::forward<Args>(args)...) {}
-
-    template<std::size_t I, class... Args>
-    constexpr variadic_union(std::in_place_index_t<I>, Args&&... args) : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...) {}
-
-    ~variadic_union() = default;
-
-    constexpr ~variadic_union()
-        requires (!TriviallyDestructible)
-    {}
-
-    T first;
-    variadic_union<TriviallyDestructible, Ts...> rest;
-};
-
-template<std::size_t I, class T>
-struct alternative {
-    static constexpr std::size_t index = I;
-    using type = T;
-
-    template<class... Args>
-    constexpr explicit alternative(std::in_place_t, Args&&... args) : value(std::forward<Args>(args)...) {}
-
-    T value;
-};
-
-template<std::size_t I>
-struct get_alternative
-{
-    template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept {
-        return get_alternative<I - 1>{}(std::forward<Union>(u).rest);
-    }
-};
-
-template<>
-struct get_alternative<0> {
-    template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept {
-        return std::forward<Union>(u).first;
-    }
-};
-
-template<>
-struct get_alternative<std::variant_npos> {
-    template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept {
-        return std::forward<Union>(u); // valueless
-    }
-};
-
-template<std::size_t I, class Variant>
-constexpr auto&& raw_get(Variant&& var YK_LIFETIMEBOUND) noexcept {
-    return get_alternative<I>{}(std::forward<Variant>(var).storage_);
-}
-
-template<std::size_t I, class Variant>
-using alternative_t = decltype(raw_get<I>(std::declval<Variant>()));
-
-template<class Visitor, class Variant>
-using raw_visit_return_type = std::invoke_result_t<Visitor, alternative_t<0, Variant>>;
-
-template<std::size_t I, class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant>
-raw_visit_dispatch(Visitor&& vis, Variant&& var)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<0, Variant>>)
-{
-    return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Variant>(var)));
-}
-
-template<class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant>
-raw_visit_valueless(Visitor&& vis, Variant&&)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative<std::variant_npos, std::monostate>>)
-{
-    return std::invoke(std::forward<Visitor>(vis), alternative<std::variant_npos, std::monostate>{std::in_place});
-}
-
-template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
-struct raw_visit_dispatch_table;
-
-template<class Visitor, class Variant, std::size_t... Is>
-struct raw_visit_dispatch_table<Visitor, Variant, std::index_sequence<Is...>>
-{
-    using function_type = raw_visit_return_type<Visitor, Variant> (*)(Visitor&&, Variant&&);
-    static constexpr function_type value[] = {
-        &raw_visit_valueless<Visitor, Variant>,
-        &raw_visit_dispatch<Is, Visitor, Variant>...
-    };
-};
-
-template<class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant>
-raw_visit(std::size_t index, Visitor&& vis, Variant&& var)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<0, Variant>>)
-{
-    constexpr auto const& table = raw_visit_dispatch_table<Visitor, Variant>::value;
-    return std::invoke(table[index + 1], std::forward<Visitor>(vis), std::forward<Variant>(var));
-}
-
-template<class Seq, class... Ts>
-struct variant_storage;
-
-template<std::size_t... Is, class... Ts>
-struct variant_storage<std::index_sequence<Is...>, Ts...>
-{
-    using type = variadic_union<(std::is_trivially_destructible_v<Ts> && ...), alternative<Is, Ts>...>;
-};
-
-template<class Seq, class... Ts>
-using variant_storage_t = typename variant_storage<Seq, Ts...>::type;
 
 template<class...>
 struct pack_union_helper {};
@@ -934,8 +783,7 @@ private:
     detail::variant_storage_t<std::index_sequence_for<Ts...>, Ts...>
         storage_;
 
-    using variant_index_t = std::size_t; // TODO: make this select the cheap type
-    variant_index_t index_ = static_cast<variant_index_t>(-1); // equals to std::variant_npos by definition
+    detail::variant_index_t index_ = detail::variant_npos;
 };
 
 template<class T, class... Ts>
