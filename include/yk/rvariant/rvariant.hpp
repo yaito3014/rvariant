@@ -323,7 +323,7 @@ public:
     {
         detail::raw_visit(
             other.index_,
-            [this]<class Alt>(Alt&& alt) {
+            [this]<class Alt>(Alt const& alt) {
                 constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
                 using T = typename std::remove_cvref_t<Alt>::type;
                 if constexpr (I == std::variant_npos) {
@@ -331,7 +331,7 @@ public:
                 } else {
                     if (index_ == I) {
                         // directly assign
-                        detail::raw_get<I>(self()).value = alt.value;
+                        detail::raw_get<I>(*this).value = alt.value;
                     } else {
                         if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
                             emplace<I>(alt.value);
@@ -371,7 +371,7 @@ public:
                     reset();
                 } else {
                     if (index_ == I) {
-                        detail::raw_get<I>(self()).value = std::move(alt).value;
+                        detail::raw_get<I>(*this).value = std::move(alt).value;
                     } else {
                         emplace<I>(std::move(alt).value);
                     }
@@ -431,18 +431,19 @@ public:
     {
         detail::raw_visit(
             other.index_,
-            [this]<class Alt>(Alt&& alt) {
+            [&self = *this]<class Alt>(Alt const& alt) {
                 constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
                 if constexpr (I == std::variant_npos) {
-                    reset();
+                    self.reset();
 
                 } else {
                     using T = typename std::remove_cvref_t<Alt>::type;
 
                     bool const was_same_alternative = detail::raw_visit(
-                        index_,
+                        self.index_,
+
                         // directly assign if both alternative is same type and returns true; otherwise returns false
-                        [this, &alt]<class ThisAlt>(ThisAlt&& thisAlt) {
+                        [&alt]<class ThisAlt>(ThisAlt&& thisAlt) {
                             constexpr std::size_t K = std::remove_cvref_t<ThisAlt>::index;
                             if constexpr (K == std::variant_npos) {
                                 return false;
@@ -452,20 +453,22 @@ public:
                                 if constexpr (std::is_same_v<T, U>) {
                                     thisAlt.value = alt.value;
                                     return true;
+
                                 } else {
                                     return false;
                                 }
                             }
                         },
-                        self()
+                        self
                     );
                     if (was_same_alternative) return;
 
                     constexpr std::size_t J = detail::subset_reindex<rvariant<Us...>, rvariant>(I);
                     if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
-                        emplace<J>(alt.value);
+                        self.template emplace<J>(alt.value);
+
                     } else {
-                        emplace<J>(T(alt.value));
+                        self.template emplace<J>(T(alt.value));
                     }
                 }
             },
@@ -516,7 +519,7 @@ public:
                                 }
                             }
                         },
-                        self()
+                        *this
                     );
                     if (was_same_alternative) return;
 
@@ -524,7 +527,7 @@ public:
                     emplace<I>(std::forward<Alt>(alt).value);
                 }
             },
-            other
+            std::move(other)
         );
         return *this;
     }
@@ -577,94 +580,64 @@ public:
         return detail::unwrap_recursive(detail::raw_get<I>(*this).value);
     }
 
-    // TODO: namespace scope swap
-
-    constexpr void swap(rvariant& other) /* TODO: noexcept specification */
+    constexpr void swap(rvariant& other)
+        noexcept(std::conjunction_v<std::conjunction<
+            std::is_nothrow_move_constructible<Ts>,
+            std::is_nothrow_swappable<Ts>
+        >...>)
     {
         static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
         detail::raw_visit(
             index_,
-            [this, &other]<class ThisAlt>(ThisAlt&& thisAlt) {
+            [&self = *this, &other]<class ThisAlt>(ThisAlt&& thisAlt) {
                 detail::raw_visit(
                     other.index_,
-                    [this, &thisAlt, &other]<class OtherAlt>(OtherAlt&& otherAlt) {
+                    [&self, &thisAlt, &other]<class OtherAlt>(OtherAlt&& otherAlt) {
                         constexpr std::size_t I = std::remove_cvref_t<ThisAlt>::index;
                         constexpr std::size_t J = std::remove_cvref_t<OtherAlt>::index;
 
                         if constexpr (I == J) {
                             if constexpr (I != std::variant_npos) {
                                 using std::swap;
-                                swap(detail::raw_get<I>(self()).value, detail::raw_get<I>(other).value);
+                                swap(detail::raw_get<I>(self).value, detail::raw_get<I>(other).value);
                             }
+
                         } else if constexpr (I == std::variant_npos) {
-                            emplace<J>(std::forward<OtherAlt>(otherAlt).value);
-                            other.reset<J>();
+                            self.template emplace<J>(std::forward<OtherAlt>(otherAlt).value);
+                            other.template reset<J>();
+
                         } else if constexpr (J == std::variant_npos) {
                             other.template emplace<I>(std::forward<ThisAlt>(thisAlt).value);
-                            reset<I>();
+                            self.template reset<I>();
+
                         } else {
                             auto temporary = std::forward<ThisAlt>(thisAlt).value;
-                            reset<I>();
-                            emplace<J>(std::forward<OtherAlt>(otherAlt).value);
-                            other.reset<J>();
+                            self.template reset<I>();
+                            self.template emplace<J>(std::forward<OtherAlt>(otherAlt).value);
+                            other.template reset<J>();
                             other.template emplace<I>(std::move(temporary));
                         }
                     },
-                    other);
-            },
-            *this);
-    }
-
-    [[nodiscard]] constexpr bool valueless_by_exception() const noexcept { return index_ == std::variant_npos; }
-    [[nodiscard]] constexpr std::size_t index() const noexcept { return static_cast<std::size_t>(index_); }
-
-private:
-    constexpr rvariant(detail::valueless_t) noexcept
-        : storage_(detail::valueless)
-        , index_(std::variant_npos)
-    {}
-
-    constexpr void destroy() noexcept
-    {
-        detail::raw_visit(
-            index_,
-            []<class Alt>(Alt&& alt) {
-                if constexpr (std::remove_cvref_t<Alt>::index != std::variant_npos) {
-                    using T = typename std::remove_cvref_t<Alt>::type;
-                    alt.value.~T();
-                }
+                    other
+                );
             },
             *this
         );
     }
 
-    template<std::size_t I>
-    constexpr void destroy() noexcept
+    friend constexpr void swap(rvariant& v, rvariant& w)
+        noexcept(noexcept(v.swap(w)))
+        requires (std::conjunction_v<std::conjunction<
+            std::is_move_constructible<Ts>,
+            std::is_swappable<Ts>
+        >...>)
     {
-        if constexpr (I != std::variant_npos) {
-            using T = detail::pack_indexing_t<I, Ts...>;
-            detail::raw_get<I>(*this).value.~T();
-        }
+        v.swap(w);
     }
 
-    constexpr void reset() noexcept
-    {
-        destroy();
-        index_ = std::variant_npos;
-    }
+    [[nodiscard]] constexpr bool valueless_by_exception() const noexcept { return index_ == std::variant_npos; }
+    [[nodiscard]] constexpr std::size_t index() const noexcept { return static_cast<std::size_t>(index_); }
 
-    template<std::size_t I>
-    constexpr void reset() noexcept
-    {
-        if constexpr (I != std::variant_npos) {
-            destroy<I>();
-            index_ = std::variant_npos;
-        }
-    }
-
-    constexpr rvariant& self() { return *this; }
-
-public:
     template<class... Us>
         requires std::is_same_v<rvariant<Us...>, rvariant>
     [[nodiscard]] constexpr rvariant subset() const& noexcept(std::is_nothrow_copy_constructible_v<rvariant>)
@@ -715,6 +688,49 @@ public:
     friend constexpr auto&& detail::raw_get(Variant&&) noexcept;
 
 private:
+    constexpr rvariant(detail::valueless_t) noexcept
+        : storage_(detail::valueless)
+        , index_(std::variant_npos)
+    {}
+
+    constexpr void destroy() noexcept
+    {
+        detail::raw_visit(
+            index_,
+            []<class Alt>(Alt&& alt) {
+                if constexpr (std::remove_cvref_t<Alt>::index != std::variant_npos) {
+                    using T = typename std::remove_cvref_t<Alt>::type;
+                    alt.value.~T();
+                }
+            },
+            *this
+        );
+    }
+
+    template<std::size_t I>
+    constexpr void destroy() noexcept
+    {
+        if constexpr (I != std::variant_npos) {
+            using T = detail::pack_indexing_t<I, Ts...>;
+            detail::raw_get<I>(*this).value.~T();
+        }
+    }
+
+    constexpr void reset() noexcept
+    {
+        destroy();
+        index_ = std::variant_npos;
+    }
+
+    template<std::size_t I>
+    constexpr void reset() noexcept
+    {
+        if constexpr (I != std::variant_npos) {
+            destroy<I>();
+            index_ = std::variant_npos;
+        }
+    }
+
     detail::variant_storage_t<std::index_sequence_for<Ts...>, Ts...>
         storage_;
 
