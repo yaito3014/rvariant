@@ -17,35 +17,32 @@ union variadic_union;
 template<bool TriviallyDestructible>
 union variadic_union<TriviallyDestructible>
 {
-    constexpr variadic_union(valueless_t) {}
+    constexpr explicit variadic_union(valueless_t) {}
 };
 
 template<bool TriviallyDestructible, class T, class... Ts>
 union variadic_union<TriviallyDestructible, T, Ts...>
 {
-    constexpr variadic_union()
-        : first(std::in_place)
+    constexpr explicit variadic_union() noexcept(std::is_nothrow_default_constructible_v<T>)
+        : first()
     {}
 
-    constexpr variadic_union(valueless_t)
+    constexpr explicit variadic_union(valueless_t) noexcept
         : rest(valueless)
     {}
 
     template<class... Args>
-    constexpr variadic_union(std::in_place_index_t<0>, Args&&... args)
-        : first(std::in_place, std::forward<Args>(args)...)
+    constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
+        : first(std::forward<Args>(args)...)
     {}
 
     template<std::size_t I, class... Args>
-    constexpr variadic_union(std::in_place_index_t<I>, Args&&... args)
-        : rest(std::in_place_index<I - 1>
-        , std::forward<Args>(args)...)
+    constexpr explicit variadic_union(std::in_place_index_t<I>, Args&&... args)
+        : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...)
     {}
 
-    ~variadic_union() = default;
-
-    constexpr ~variadic_union() requires (!TriviallyDestructible)
-    {}
+    constexpr ~variadic_union() = default;
+    constexpr ~variadic_union() requires (!TriviallyDestructible) {}
 
     T first;
     variadic_union<TriviallyDestructible, Ts...> rest;
@@ -57,8 +54,12 @@ struct alternative
     static constexpr std::size_t index = I;
     using type = T;
 
+    constexpr explicit alternative() = default;
+
     template<class... Args>
-    constexpr explicit alternative(std::in_place_t, Args&&... args)
+        requires (sizeof...(Args) > 0) && std::is_constructible_v<T, Args...>
+    constexpr explicit alternative(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<T, Args...>)
         : value(std::forward<Args>(args)...)
     {}
 
@@ -120,7 +121,7 @@ constexpr raw_visit_return_type<Visitor, Variant>
 raw_visit_valueless(Visitor&& vis, Variant&&)
     noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, std::monostate>>)
 {
-    return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, std::monostate>{std::in_place});
+    return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, std::monostate>{});
 }
 
 template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>

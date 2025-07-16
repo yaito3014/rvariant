@@ -101,34 +101,82 @@ TEST_CASE("helper class")
 
 TEST_CASE("variadic union")
 {
+    // NOLINTBEGIN(modernize-use-equals-default)
     {
         using VD = yk::detail::variadic_union<true, int, float>;
-        STATIC_REQUIRE(std::is_default_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
+
         STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<VD>);
+
         STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copy_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, yk::detail::valueless_t>);
+
         STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
-        STATIC_REQUIRE(std::is_constructible_v<VD, yk::detail::valueless_t>);
-    }
-    {
-        using VD = yk::detail::variadic_union<false, std::vector<int>>;
-        STATIC_REQUIRE(std::is_default_constructible_v<VD>);
-        STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<VD>);  // cannot copy without index
-        STATIC_REQUIRE_FALSE(std::is_move_constructible_v<VD>);  // cannot move without index
-        STATIC_REQUIRE(std::is_destructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
     }
     {
         struct S
         {
+            S() noexcept {}
+            S(S const&) noexcept {}
+            S(S&&) noexcept {}
+            S& operator=(S const&) noexcept { return *this; }
+            S& operator=(S&&) noexcept { return *this; }
+            ~S() noexcept {}
+        };
+        using VD = yk::detail::variadic_union<false, S>;
+
+        STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
+
+        STATIC_REQUIRE(!std::is_copy_constructible_v<VD>); // requires index access
+        STATIC_REQUIRE(!std::is_move_constructible_v<VD>); // requires index access
+        STATIC_REQUIRE(!std::is_copy_assignable_v<VD>);    // requires index access
+        STATIC_REQUIRE(!std::is_move_assignable_v<VD>);    // requires index access
+
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, yk::detail::valueless_t>);
+
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
+    }
+    {
+        struct S
+        {
+            S() = default;
             S(int, float) {}
         };
         using VD = yk::detail::variadic_union<true, S>;
-        STATIC_REQUIRE(std::is_default_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
+
         STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<VD>);
+
         STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
-        STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copy_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, yk::detail::valueless_t>);
+
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
+
         STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
         STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, int, float>);
     }
+    // NOLINTEND(modernize-use-equals-default)
 }
 
 TEST_CASE("default construction")
