@@ -17,7 +17,7 @@ union variadic_union;
 template<bool TriviallyDestructible>
 union variadic_union<TriviallyDestructible>
 {
-    constexpr explicit variadic_union(valueless_t) {}
+    constexpr explicit variadic_union(valueless_t) noexcept {}
 };
 
 template<bool TriviallyDestructible, class T, class... Ts>

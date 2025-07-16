@@ -173,10 +173,12 @@ public:
         , index_(0)
     {}
 
-    constexpr rvariant(rvariant const&) requires detail::all_trivially_copy_constructible<Ts...> = default;
-    constexpr rvariant(rvariant const&) requires (!detail::all_copy_constructible<Ts...>) = delete;
+    constexpr rvariant(rvariant const&) = default;
 
-    constexpr rvariant(rvariant const& other) requires detail::all_copy_constructible<Ts...>
+    constexpr rvariant(rvariant const& other)
+        requires
+            (!detail::all_trivially_copy_constructible<Ts...>) && // condition flipped for shorter compile error
+            detail::all_copy_constructible<Ts...>
         : storage_(detail::valueless)
         , index_(other.index_)
     {
@@ -191,10 +193,12 @@ public:
         );
     }
 
-    constexpr rvariant(rvariant&&) requires detail::all_trivially_move_constructible<Ts...> = default;
+    constexpr rvariant(rvariant&&) = default;
 
     constexpr rvariant(rvariant&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
-        requires detail::all_move_constructible<Ts...>
+        requires
+            (!detail::all_trivially_move_constructible<Ts...>) && // condition flipped for shorter compile error
+            detail::all_move_constructible<Ts...>
         : storage_(detail::valueless)
         , index_(other.index_)
     {
@@ -218,7 +222,7 @@ public:
             (!std::is_same_v<rvariant<Us...>, rvariant>) &&
             subset_of<rvariant<Us...>, rvariant> &&
             detail::all_copy_constructible<Us...>
-    constexpr rvariant(rvariant<Us...> const& other)
+    constexpr /* explicit */ rvariant(rvariant<Us...> const& other)
         : storage_(detail::valueless)
         , index_(detail::subset_reindex<rvariant<Us...>, rvariant>(other.index_))
     {
@@ -237,22 +241,14 @@ public:
         );
     }
 
-    template<class... Us>
-        requires (!(
-            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
-            subset_of<rvariant<Us...>, rvariant> &&
-            detail::all_copy_constructible<Us...>
-        ))
-    constexpr rvariant(rvariant<Us...> const&) = delete;
-
-
     // Flexible move constructor
     template<class... Us>
         requires
             (!std::is_same_v<rvariant<Us...>, rvariant>) &&
             subset_of<rvariant<Us...>, rvariant> &&
             detail::all_move_constructible<Us...>
-    constexpr rvariant(rvariant<Us...>&& other) noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
+    constexpr /*explicit*/ rvariant(rvariant<Us...>&& other)
+        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
         : storage_(detail::valueless)
         , index_(detail::subset_reindex<rvariant<Us...>, rvariant>(other.index_))
     {
@@ -277,9 +273,17 @@ public:
         requires (!(
             (!std::is_same_v<rvariant<Us...>, rvariant>) &&
             subset_of<rvariant<Us...>, rvariant> &&
+            detail::all_copy_constructible<Us...>
+        ))
+    constexpr explicit rvariant(rvariant<Us...> const&) = delete; // Us... is not a subset of Ts...
+
+    template<class... Us>
+        requires (!(
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            subset_of<rvariant<Us...>, rvariant> &&
             detail::all_move_constructible<Us...>
         ))
-    constexpr rvariant(rvariant<Us...>&&) = delete;
+    constexpr explicit rvariant(rvariant<Us...>&&) = delete; // Us... is not a subset of Ts...
 
 
     // Generic constructor
@@ -292,8 +296,7 @@ public:
             std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
         : rvariant(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, std::forward<Args>(args)...)
-    {
-    }
+    {}
 
     // in_place_type<T>, il, args...
     template<class T, class U, class... Args>
@@ -302,8 +305,7 @@ public:
             std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>
     constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
         : rvariant(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, il, std::forward<Args>(args)...)
-    {
-    }
+    {}
 
     // in_place_index<I>, args...
     template<std::size_t I, class... Args>
@@ -750,9 +752,11 @@ private:
     };
     friend class variant_npos_setter;
 
-    constexpr rvariant(detail::valueless_t) noexcept
+
+    template<class T> requires std::is_same_v<T, detail::valueless_t> // hack: reduce compile error by half on unrelated overloads
+    constexpr explicit rvariant(T const&) noexcept
         : storage_(detail::valueless)
-        , index_(std::variant_npos)
+        , index_(detail::variant_npos)
     {}
 
     constexpr void destroy() noexcept

@@ -444,6 +444,7 @@ TEST_CASE("subset")
         yk::rvariant<int, float> a{42};
         REQUIRE_THROWS(a.subset<float>());
     }
+
     // TODO: valueless case
 }
 
@@ -597,7 +598,7 @@ TEST_CASE("generic assign")
 
         a = 33;
         CHECK(a.index() == 0);
-        
+
         a = 3.14f;
         CHECK(a.index() == 1);
     }
