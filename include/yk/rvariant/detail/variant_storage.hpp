@@ -27,6 +27,9 @@ union variadic_union<TriviallyDestructible, T, Ts...>
         : first()
     {}
 
+    variadic_union(variadic_union const&) = default;
+    variadic_union(variadic_union&&) = default;
+
     constexpr explicit variadic_union(valueless_t) noexcept
         : rest(valueless)
     {}
@@ -43,6 +46,9 @@ union variadic_union<TriviallyDestructible, T, Ts...>
 
     constexpr ~variadic_union() = default;
     constexpr ~variadic_union() requires (!TriviallyDestructible) {}
+
+    variadic_union& operator=(variadic_union const&) = default;
+    variadic_union& operator=(variadic_union&&) = default;
 
     T first;
     variadic_union<TriviallyDestructible, Ts...> rest;

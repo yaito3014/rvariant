@@ -58,26 +58,35 @@ concept variant_trivially_move_assignable =
     std::conjunction_v<
         std::conjunction<std::is_trivially_move_constructible<Ts>, std::is_trivially_move_assignable<Ts>, std::is_trivially_destructible<Ts>>...>;
 
+// Not used because it ruins some type traits.
+// Exists for historical reference.
+#if 0
 template<class Alt, class T>
 struct FUN_body
 {
     // https://eel.is/c++draft/variant#ctor-14
 
-    // constexpr T&& invent_ref(); // { return static_cast<T&&>(*static_cast<T*>(nullptr)); }
-    //Alt x[1] = {std::forward<T>(invent_ref())};
-    Alt x[1] = {std::forward<T>(std::declval<T>())};
+    /* constexpr */ T&& invent_ref(); // { return static_cast<T&&>(*static_cast<T*>(nullptr)); }
+    Alt x[1] = {std::forward<T>(invent_ref())};
+
+    // Does not work on non-MSVC
+    //Alt x[1] = {std::forward<T>(std::declval<T>())};
 };
+#endif
 
 template<std::size_t I, class Alt, class T>
 struct FUN_overload
 {
-    //using dest_array = Alt[]; // this was the existing vendors' approach
+    using dest_array = Alt[]; // this was the existing vendors' approach
 
     constexpr std::integral_constant<std::size_t, I>
     operator()(Alt)
         requires requires(T&& t) {
-            //{ dest_array{std::forward<T>(t)} }; // this was the existing vendors' approach
-            { FUN_body<Alt, T>{} };
+            { dest_array{std::forward<T>(t)} }; // this was the existing vendors' approach
+
+            // This appears to work, but certainly breaks something on MSVC
+            // e.g. std::is_constructible_v<rvariant<int>, double> shows wrong value on Intellisense only
+            //{ FUN_body<Alt, T>{} };
         }
     {
         return {}; // silence MSVC warning
@@ -417,7 +426,7 @@ public:
             requires (!std::is_same_v<std::remove_cvref_t<T>, rvariant>);
             requires requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); };
             requires
-                std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> && 
+                std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
                 std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
         }
     constexpr rvariant& operator=(T&& arg)
