@@ -41,6 +41,60 @@ using select_maybe_wrapped_t = typename select_maybe_wrapped<T, Ts...>::type;
 template<class T, class... Ts>
 constexpr std::size_t select_maybe_wrapped_index = select_maybe_wrapped<T, Ts...>::index;
 
+
+template<class Sentinel, class T>
+struct recursively_constructible;
+
+template<class Sentinel, class T>
+constexpr bool recursively_constructible_v = recursively_constructible<Sentinel, T>::value;
+
+
+template<class ArgsList, class... TestedVariants>
+struct recursive_sentinel_t;
+
+template<class... Args, class... TestedVariants>
+struct recursive_sentinel_t<type_list<Args...>, TestedVariants...>
+{
+    constexpr explicit recursive_sentinel_t() = default;
+
+    //template<class T>
+    //    requires
+    //        (!ttp_specialization_of<T, rvariant>) &&
+    //        std::is_constructible_v<T, Args...>
+    //constexpr operator T&& ();
+
+    //template<class T>
+    //    requires
+    //        (ttp_specialization_of<T, rvariant>) &&
+    //        recursively_constructible<recursive_sentinel_t, T>::value
+    //constexpr operator T&& ();
+};
+
+template<class ArgsList, class... TestedVariants>
+constexpr recursive_sentinel_t<ArgsList, TestedVariants...> recursive_sentinel{};
+
+
+
+template<class... TestedVariants, class NonVariant, class... Args>
+struct recursively_constructible<
+    recursive_sentinel_t<type_list<Args...>, TestedVariants...>,
+    NonVariant
+> : std::is_constructible<NonVariant, recursive_sentinel_t<type_list<Args...>, TestedVariants...>>
+{};
+
+template<class... TestedVariants, class... Receiver, class... Args>
+struct recursively_constructible<
+    recursive_sentinel_t<type_list<Args...>, TestedVariants...>,
+    rvariant<Receiver...>
+> : std::disjunction<
+    std::conditional_t<
+        is_in_v<Receiver, TestedVariants...>,
+        std::false_type, // already tested
+        std::is_constructible<Receiver, recursive_sentinel_t<type_list<Args...>, TestedVariants..., rvariant<Receiver...>>>
+    >...
+>
+{};
+
 } // yk::detail
 
 #endif
