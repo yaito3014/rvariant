@@ -64,7 +64,7 @@ Until 2025, no one had managed to introduce a modern alternative into either Boo
 [frame=ends,cols=",,,,"]
 |===
 |
-h| `*temp_ns::rvariant*`
+h| `*rvariant*`
 h| https://en.cppreference.com/w/cpp/utility/variant.html[`*std::variant*`]
 h| https://www.boost.org/doc/libs/{boost-version}/doc/html/variant.html[`*Boost.Variant*`]
 h| https://www.boost.org/doc/libs/{boost-version}/libs/variant2/doc/html/variant2.html[`*Boost.Variant2*`]
@@ -77,10 +77,10 @@ icon:warning[] Mostly legacy code from 2003
 | {cpp}11
 
 s| Compilation speed
-| Fast
-| Fast
+| Average
+| Average
 | [.bad]*Very Slow*
-| Fast
+| Average
 
 s| Interface for recursive types
 | [.good]*Yes*
