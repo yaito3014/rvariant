@@ -58,37 +58,59 @@ concept variant_trivially_move_assignable =
     std::conjunction_v<
         std::conjunction<std::is_trivially_move_constructible<Ts>, std::is_trivially_move_assignable<Ts>, std::is_trivially_destructible<Ts>>...>;
 
-template<std::size_t I, class Dest, class Source>
-struct fun_impl {
-    using dest_array = Dest[];
-    std::integral_constant<std::size_t, I> operator()(Dest arg)
-        requires requires(Source source) { dest_array{std::forward<Source>(source)}; };
+template<class Alt, class T>
+struct FUN_body
+{
+    // https://eel.is/c++draft/variant#ctor-14
+
+    // constexpr T&& invent_ref(); // { return static_cast<T&&>(*static_cast<T*>(nullptr)); }
+    //Alt x[1] = {std::forward<T>(invent_ref())};
+    Alt x[1] = {std::forward<T>(std::declval<T>())};
 };
 
-template<class Source, class Variant, class Seq = std::make_index_sequence<variant_size_v<Variant>>>
-struct fun;
+template<std::size_t I, class Alt, class T>
+struct FUN_overload
+{
+    //using dest_array = Alt[]; // this was the existing vendors' approach
 
-template<class Source, class... Ts, std::size_t... Is>
-struct fun<Source, rvariant<Ts...>, std::index_sequence<Is...>> : fun_impl<Is, pack_indexing_t<Is, Ts...>, Source>... {
-    using fun_impl<Is, pack_indexing_t<Is, Ts...>, Source>::operator()...;
+    constexpr std::integral_constant<std::size_t, I>
+    operator()(Alt)
+        requires requires(T&& t) {
+            //{ dest_array{std::forward<T>(t)} }; // this was the existing vendors' approach
+            { FUN_body<Alt, T>{} };
+        }
+    {
+        return {}; // silence MSVC warning
+    }
 };
 
-template<class Source, class Variant>
-using accepted_index = decltype(fun<Source, Variant>{}(std::declval<Source>()));
+// imaginary function
+template<class T, class Variant, class Seq = std::make_index_sequence<variant_size_v<Variant>>>
+struct FUN;
 
-template<class Source, class Variant>
-inline constexpr std::size_t accepted_index_v = accepted_index<Source, Variant>::value;
+template<class T, class... Ts, std::size_t... Is>
+struct FUN<T, rvariant<Ts...>, std::index_sequence<Is...>>
+    : FUN_overload<Is, pack_indexing_t<Is, Ts...>, T>...
+{
+    using FUN_overload<Is, pack_indexing_t<Is, Ts...>, T>::operator()...;
+};
 
-template<class Source, class Variant>
+template<class T, class Variant>
+using accepted_index = decltype(FUN<T, Variant>{}(std::declval<T>()));
+
+template<class T, class Variant>
+inline constexpr std::size_t accepted_index_v = accepted_index<T, Variant>::value;
+
+template<class T, class Variant>
 struct accepted_type;
 
-template<class Source, class... Ts>
-struct accepted_type<Source, rvariant<Ts...>> {
-    using type = pack_indexing_t<accepted_index_v<Source, rvariant<Ts...>>, Ts...>;
+template<class T, class... Ts>
+struct accepted_type<T, rvariant<Ts...>> {
+    using type = pack_indexing_t<accepted_index_v<T, rvariant<Ts...>>, Ts...>;
 };
 
-template<class Source, class Variant>
-using accepted_type_t = typename accepted_type<Source, Variant>::type;
+template<class T, class Variant>
+using accepted_type_t = typename accepted_type<T, Variant>::type;
 
 
 template<class T, class... Ts>
@@ -252,19 +274,7 @@ public:
 
 
     // Generic constructor
-    template<class T>
-        requires requires {
-            requires sizeof...(Ts) > 0;
-            requires !std::is_same_v<std::remove_cvref_t<T>, rvariant>;
-            requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
-            requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
-            requires requires(T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
-            requires std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
-        }
-    constexpr rvariant(T&& x)
-        noexcept(std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>)
-        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(x))
-    {}
+    // see below: "Generic assignment operator"
 
     // in_place_type<T>, args...
     template<class T, class... Args>
@@ -384,12 +394,31 @@ public:
 
     // --------------------------------------
 
+    // Generic constructor
+    // <https://eel.is/c++draft/variant#lib:variant,constructor___>
+    template<class T>
+        requires requires {
+            requires sizeof...(Ts) > 0;
+            requires !std::is_same_v<std::remove_cvref_t<T>, rvariant>;
+            requires !detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>;
+            requires !detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>;
+            requires requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); };
+            requires std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
+        }
+    constexpr rvariant(T&& x)
+        noexcept(std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>)
+        : rvariant(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(x))
+    {}
+
     // Generic assignment operator
+    // <https://eel.is/c++draft/variant.assign#lib:operator=,variant__>
     template<class T>
         requires requires {
             requires (!std::is_same_v<std::remove_cvref_t<T>, rvariant>);
-            requires requires(T source) { detail::fun<T, rvariant>{}(std::forward<T>(source)); };
-            requires std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> && std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
+            requires requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); };
+            requires
+                std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> && 
+                std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>;
         }
     constexpr rvariant& operator=(T&& arg)
         noexcept(
@@ -420,6 +449,8 @@ public:
         );
         return *this;
     }
+
+    // --------------------------------------
 
     // Flexible copy assignment operator
     template<class... Us>

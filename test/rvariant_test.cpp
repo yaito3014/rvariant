@@ -280,6 +280,42 @@ TEST_CASE("construction with type")
     }
 }
 
+TEST_CASE("recursive_sentinel")
+{
+    using yk::detail::recursive_sentinel_t;
+    using yk::detail::recursive_sentinel;
+    using yk::detail::type_list;
+
+    {
+        std::variant<int, double> var(42);
+    }
+
+    // TODO
+    {
+        using Sentinel = recursive_sentinel_t<type_list<int>>;
+        using V = yk::rvariant<int, double>;
+
+        {
+            //int value(Sentinel{});
+        }
+        {
+            //double value(Sentinel{});
+        }
+
+        {
+            //V var(Sentinel{});
+        }
+
+        {
+            //yk::detail::FUN<Sentinel, V>{}();
+        }
+
+        {
+            //V var(42);
+        }
+    }
+}
+
 TEST_CASE("generic construction")
 {
     {
@@ -608,42 +644,60 @@ TEST_CASE("recursive wrapper")
 {
     {
         yk::recursive_wrapper<int> a(42);
-        REQUIRE_FALSE(a.valueless_after_move());
+        CHECK_FALSE(a.valueless_after_move());
     }
 
-    {
-        auto f = [](yk::rvariant<yk::recursive_wrapper<int>>) {};
-        f(42);
-    }
-    {
-        auto f = [](yk::rvariant<yk::recursive_wrapper<int>, double> var) { return yk::holds_alternative<double>(var); };
-        REQUIRE(f(3.14f));
-    }
-    {
-        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
-        REQUIRE(f(3.14f));
-    }
-    {
-        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
-        REQUIRE(f(3.14));
-    }
-    {
-        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<int>(var); };
-        REQUIRE(f(3));
-    }
-    {
-        auto f = [](yk::rvariant<yk::recursive_wrapper<double>, int> var) { return yk::holds_alternative<double>(var); };
-        REQUIRE(f(yk::recursive_wrapper<double>(3.14)));
-    }
+    CHECK([](std::variant<yk::recursive_wrapper<int>> var) {
+        return std::holds_alternative<yk::recursive_wrapper<int>>(var);
+    }(42));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<int>> var) {
+        return yk::holds_alternative<int>(var);
+    }(42));
+
+    CHECK([](std::variant<yk::recursive_wrapper<int>, double> var) {
+        return std::holds_alternative<double>(var);
+    }(3.14f));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<int>, double> var) {
+        return yk::holds_alternative<double>(var);
+    }(3.14f));
+
+    CHECK([](std::variant<yk::recursive_wrapper<double>, int> var) {
+        return std::holds_alternative<yk::recursive_wrapper<double>>(var);
+    }(3.14));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<double>, int> var) {
+        return yk::holds_alternative<double>(var);
+    }(3.14));
+
+    CHECK([](std::variant<yk::recursive_wrapper<double>, int> var) {
+        return std::holds_alternative<yk::recursive_wrapper<double>>(var);
+    }(3.14f));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<double>, int> var) {
+        return yk::holds_alternative<double>(var);
+    }(3.14f));
+
+    CHECK([](std::variant<yk::recursive_wrapper<double>, int> var) {
+        return std::holds_alternative<int>(var);
+    }(3));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<double>, int> var) {
+        return yk::holds_alternative<int>(var);
+    }(3));
+
+    CHECK([](std::variant<yk::recursive_wrapper<double>, int> var) {
+        return std::holds_alternative<yk::recursive_wrapper<double>>(var);
+    }(yk::recursive_wrapper<double>(3.14)));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<double>, int> var) {
+        return yk::holds_alternative<double>(var);
+    }(yk::recursive_wrapper<double>(3.14)));
+
     {
         yk::rvariant<yk::recursive_wrapper<int>> var = 42;
         var = 33 - 4;
-        REQUIRE(yk::holds_alternative<int>(var));
+        CHECK(yk::holds_alternative<int>(var));
     }
     {
         yk::rvariant<yk::recursive_wrapper<int>> var = 42;
         var = yk::recursive_wrapper<int>{};
-        REQUIRE(yk::holds_alternative<int>(var));
+        CHECK(yk::holds_alternative<int>(var));
     }
 
     {
@@ -657,7 +711,7 @@ TEST_CASE("recursive wrapper")
 
     {
         yk::recursive_wrapper<int> wrapper(std::in_place, 42);
-        REQUIRE(*wrapper == 42);
+        CHECK(*wrapper == 42);
         yk::rvariant<yk::recursive_wrapper<int>> a(std::in_place_index<0>);
         yk::rvariant<yk::recursive_wrapper<int>> b(std::in_place_index<0>, 42);
         yk::rvariant<yk::recursive_wrapper<int>> c(std::in_place_index<0>, std::in_place);
@@ -702,6 +756,35 @@ TEST_CASE("maybe_wrapped")
     }
 }
 
+template<class... Ts>
+constexpr auto FUN_not_UB = []<class T>(T&& t) constexpr {
+    yk::detail::FUN<T, yk::rvariant<Ts...>>{}(std::forward<T>(t));
+    return true;
+};
+
+TEST_CASE("non_recursive_same_as_std")
+{
+    {
+        STATIC_REQUIRE(FUN_not_UB<int>(42));
+        STATIC_REQUIRE(FUN_not_UB<int, double>(42));
+    }
+
+    {
+        using V = std::variant<int>;
+        STATIC_REQUIRE(std::is_constructible_v<V, V>);
+        STATIC_REQUIRE(std::is_constructible_v<V, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<V, double>); // !!false!!
+        //V{3.14}; // ill-formed
+    }
+    {
+        using V = yk::rvariant<int>;
+        STATIC_REQUIRE(std::is_constructible_v<V, V>);
+        STATIC_REQUIRE(std::is_constructible_v<V, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<V, double>); // !!false!!
+        //V{3.14}; // ill-formed
+    }
+}
+
 TEST_CASE("truly recursive")
 {
     // Although this pattern is perfectly valid in type level,
@@ -712,12 +795,12 @@ TEST_CASE("truly recursive")
         using Expr = yk::rvariant<yk::recursive_wrapper<SubExpr>>;
         struct SubExpr { Expr expr; };
 
-        STATIC_REQUIRE(std::is_constructible_v<Expr, Expr>);
-        STATIC_REQUIRE(std::is_constructible_v<Expr, SubExpr>);
+        STATIC_REQUIRE( std::is_constructible_v<Expr, Expr>);
+        STATIC_REQUIRE( std::is_constructible_v<Expr, SubExpr>);
         STATIC_REQUIRE(!std::is_constructible_v<Expr, int>);
 
-        STATIC_REQUIRE(std::is_constructible_v<SubExpr, SubExpr>);
-        STATIC_REQUIRE(std::is_constructible_v<SubExpr, Expr>);
+        STATIC_REQUIRE( std::is_constructible_v<SubExpr, SubExpr>);
+        STATIC_REQUIRE( std::is_constructible_v<SubExpr, Expr>);
         STATIC_REQUIRE(!std::is_constructible_v<SubExpr, int>);
 
         //Expr expr; // infinite malloc
@@ -727,27 +810,21 @@ TEST_CASE("truly recursive")
     {
         // Sanity check
         {
-            using V = yk::rvariant<int>;
-            STATIC_REQUIRE(std::is_constructible_v<V, V>);
-            STATIC_REQUIRE(std::is_constructible_v<V, int>);
-            STATIC_REQUIRE(!std::is_constructible_v<V, double>); // !!false!!
-        }
-        {
             using V = yk::rvariant<yk::recursive_wrapper<int>>;
-            STATIC_REQUIRE(std::is_constructible_v<V, V>);
-            STATIC_REQUIRE(std::is_constructible_v<V, int>);
-            STATIC_REQUIRE(std::is_constructible_v<V, double>);  // !!true!!
+            STATIC_REQUIRE( std::is_constructible_v<V, V>);
+            STATIC_REQUIRE( std::is_constructible_v<V, int>);
+            STATIC_REQUIRE( std::is_constructible_v<V, double>);  // !!true!!
         }
 
         struct SubExpr;
         using Expr = yk::rvariant<int, yk::recursive_wrapper<SubExpr>>;
         struct SubExpr { Expr expr; };
 
-        STATIC_REQUIRE(std::is_constructible_v<Expr, int>);
+        STATIC_REQUIRE( std::is_constructible_v<Expr, int>);
         STATIC_REQUIRE(!std::is_constructible_v<Expr, double>); // false because equally viable
 
         //STATIC_REQUIRE(std::is_constructible_v<SubExpr, int>); // why fail in MSVC?????
-        STATIC_REQUIRE(std::is_constructible_v<SubExpr, int&&>); // ok
+        STATIC_REQUIRE( std::is_constructible_v<SubExpr, int&&>); // ok
         STATIC_REQUIRE(!std::is_constructible_v<SubExpr, double>); // false because equally viable
 
         REQUIRE_NOTHROW(Expr{});
