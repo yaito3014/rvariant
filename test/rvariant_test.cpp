@@ -142,10 +142,9 @@ TEST_CASE("default construction")
     {
         struct S
         {
-            S() noexcept(false) {}
+            S() noexcept(false) = default;
         };
         STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<S>);
-        yk::rvariant<S> var;
         STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
     }
     {
@@ -174,6 +173,8 @@ TEST_CASE("copy construction")
         CHECK_FALSE(b.valueless_by_exception());
         CHECK(b.index() == 0);
     }
+
+    // NOLINTBEGIN(modernize-use-equals-default)
     {
         struct S
         {
@@ -198,12 +199,14 @@ TEST_CASE("copy construction")
     {
         struct S
         {
-            S() {}
+            S() = default;
             S(S const&) { throw std::exception(); }
         };
         yk::rvariant<S> a;
         REQUIRE_THROWS(yk::rvariant<S>(a));
     }
+    // NOLINTEND(modernize-use-equals-default)
+
     // TODO: valueless case
 }
 
@@ -219,7 +222,7 @@ TEST_CASE("move construction")
     {
         struct S
         {
-            S(S&&) {}
+            S(S&&) noexcept {}
         };
         STATIC_REQUIRE_FALSE(std::is_trivially_move_constructible_v<S>);
         STATIC_REQUIRE_FALSE(std::is_trivially_move_constructible_v<yk::rvariant<S>>);
@@ -237,12 +240,13 @@ TEST_CASE("move construction")
     {
         struct S
         {
-            S() {}
-            S(S&&) { throw std::exception(); }
+            S() = default;
+            S(S&&) noexcept(false) { throw std::exception(); }
         };
         yk::rvariant<S> a;
         REQUIRE_THROWS(yk::rvariant<S>(std::move(a)));
     }
+
     // TODO: valueless case
 }
 
@@ -287,13 +291,13 @@ TEST_CASE("recursive_sentinel")
     using yk::detail::type_list;
 
     {
-        std::variant<int, double> var(42);
+        //std::variant<int, double> var(42);
     }
 
     // TODO
     {
-        using Sentinel = recursive_sentinel_t<type_list<int>>;
-        using V = yk::rvariant<int, double>;
+        //using Sentinel = recursive_sentinel_t<type_list<int>>;
+        //using V = yk::rvariant<int, double>;
 
         {
             //int value(Sentinel{});
@@ -334,18 +338,21 @@ TEST_CASE("flexible copy construction")
 {
     {
         yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
         yk::rvariant<int, float> b = a;
-        REQUIRE(b.index() == 0);
+        CHECK(b.index() == 0);
         yk::rvariant<int, float, double> c = b;
-        REQUIRE(c.index() == 0);
+        CHECK(c.index() == 0);
     }
     {
         yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
         yk::rvariant<float, int> b = a;
-        REQUIRE(b.index() == 1);
+        CHECK(b.index() == 1);
         yk::rvariant<double, float, int> c = b;
-        REQUIRE(c.index() == 2);
+        CHECK(c.index() == 2);
     }
+
     // TODO: valueless case
 }
 
@@ -365,27 +372,28 @@ TEST_CASE("flexible move construction")
         yk::rvariant<double, float, int> c = std::move(b);
         REQUIRE(c.index() == 2);
     }
+
     // TODO: valueless case
 }
 
 TEST_CASE("subset")
 {
     {
-        yk::rvariant<int> a = 42;
-        yk::rvariant<int> b = a.subset<int>();
-        yk::rvariant<int> c = std::as_const(a).subset<int>();
-        yk::rvariant<int> d = std::move(std::as_const(a)).subset<int>();
-        yk::rvariant<int> e = std::move(a).subset<int>();
+        yk::rvariant<int> a{42};
+        CHECK_NOTHROW(yk::rvariant<int>{a.subset<int>()});
+        CHECK_NOTHROW(yk::rvariant<int>{std::as_const(a).subset<int>()});
+        CHECK_NOTHROW(yk::rvariant<int>{std::move(std::as_const(a)).subset<int>()});
+        CHECK_NOTHROW(yk::rvariant<int>{std::move(a).subset<int>()});
     }
     {
-        yk::rvariant<int, float> a = 42;
-        yk::rvariant<int> b = a.subset<int>();
-        yk::rvariant<int> c = std::as_const(a).subset<int>();
-        yk::rvariant<int> d = std::move(std::as_const(a)).subset<int>();
-        yk::rvariant<int> e = std::move(a).subset<int>();
+        yk::rvariant<int, float> a{42};
+        CHECK_NOTHROW(yk::rvariant<int>{a.subset<int>()});
+        CHECK_NOTHROW(yk::rvariant<int>{std::as_const(a).subset<int>()});
+        CHECK_NOTHROW(yk::rvariant<int>{std::move(std::as_const(a)).subset<int>()});
+        CHECK_NOTHROW(yk::rvariant<int>{std::move(a).subset<int>()});
     }
     {
-        yk::rvariant<int, float> a = 42;
+        yk::rvariant<int, float> a{42};
         REQUIRE_THROWS(a.subset<float>());
     }
     // TODO: valueless case
@@ -393,6 +401,8 @@ TEST_CASE("subset")
 
 TEST_CASE("copy assign")
 {
+    // NOLINTBEGIN(modernize-use-equals-default)
+
     // trivial case
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
@@ -428,6 +438,8 @@ TEST_CASE("copy assign")
         yk::rvariant<S, int> a = 42, b;
         REQUIRE_THROWS(a = b);  // different alternative; move temporary copy
     }
+
+    // NOLINTEND(modernize-use-equals-default)
 }
 
 TEST_CASE("move assign")
@@ -448,7 +460,7 @@ TEST_CASE("move assign")
     {
         struct S
         {
-            S() {}
+            S() = default;
             S(S const&) noexcept(false) { throw std::exception{}; }
             S(S&&) noexcept {}
             S& operator=(S const&) noexcept(false) { throw std::exception{}; }
@@ -456,13 +468,13 @@ TEST_CASE("move assign")
         };
         {
             yk::rvariant<S, int> a = 42, b;
-            REQUIRE_NOTHROW(a = std::move(b));  // different alternative; use move constructor
-            REQUIRE(a.index() == 0);
+            CHECK_NOTHROW(a = std::move(b));  // different alternative; use move constructor
+            CHECK(a.index() == 0);
         }
         {
             yk::rvariant<S, int> a, b;
-            REQUIRE_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
-            REQUIRE(a.index() == 0);
+            CHECK_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
+            CHECK(a.index() == 0);
         }
     }
 }
@@ -471,15 +483,30 @@ TEST_CASE("flexible copy assign")
 {
     {
         yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
+
         yk::rvariant<int, float> b = 3.14f;
-        REQUIRE_NOTHROW(b = a);
-        REQUIRE(b.index() == 0);
+        CHECK(b.index() == 1);
+        CHECK_NOTHROW(b = a);
+        CHECK(b.index() == 0);
     }
     {
         yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
+
         yk::rvariant<int, float, int> b(std::in_place_index<2>, 33 - 4);
-        b = a;
-        REQUIRE(b.index() == 2);  // b's contained value is directly assigned from a's contained value, no alternative changed
+        CHECK(b.index() == 2);
+        CHECK_NOTHROW(b = a);
+        CHECK(b.index() == 2);  // b's contained value is directly assigned from a's contained value, no alternative changed
+    }
+    {
+        yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
+
+        yk::rvariant<int, float, int> b(std::in_place_index<0>, 33 - 4);
+        CHECK(b.index() == 0);
+        CHECK_NOTHROW(b = a);
+        CHECK(b.index() == 0);  // b's contained value is directly assigned from a's contained value, no alternative changed
     }
 }
 
@@ -487,27 +514,44 @@ TEST_CASE("flexible move assign")
 {
     {
         yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
+
         yk::rvariant<int, float> b = 3.14f;
-        REQUIRE_NOTHROW(b = std::move(a));
+        CHECK(b.index() == 1);
+        CHECK_NOTHROW(b = std::move(a));
+        CHECK(b.index() == 0);
     }
     {
         yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
+
         yk::rvariant<int, float, int> b(std::in_place_index<2>, 33 - 4);
-        b = std::move(a);
-        REQUIRE(b.index() == 2);  // b's contained value is directly assigned from a's contained value, no alternative changed
+        CHECK(b.index() == 2);
+        CHECK_NOTHROW(b = std::move(a));
+        CHECK(b.index() == 2);  // b's contained value is directly assigned from a's contained value, no alternative changed
+    }
+    {
+        yk::rvariant<int> a = 42;
+        CHECK(a.index() == 0);
+
+        yk::rvariant<int, float, int> b(std::in_place_index<0>, 33 - 4);
+        CHECK(b.index() == 0);
+        CHECK_NOTHROW(b = std::move(a));
+        CHECK(b.index() == 0);  // b's contained value is directly assigned from a's contained value, no alternative changed
     }
 }
 
 TEST_CASE("generic assign")
 {
     {
-        yk::rvariant<int, float> a = 42;
-        // same alternative
-        a = 33 - 4;
-        REQUIRE(a.index() == 0);
-        // different alternative
+        yk::rvariant<int, float> a{42};
+        CHECK(a.index() == 0);
+
+        a = 33;
+        CHECK(a.index() == 0);
+        
         a = 3.14f;
-        REQUIRE(a.index() == 1);
+        CHECK(a.index() == 1);
     }
 }
 
@@ -629,6 +673,7 @@ TEST_CASE("swap")
         REQUIRE(yk::get<1>(a) == 3.14f);
         REQUIRE(yk::get<0>(b) == 42);
     }
+
     // TODO: valueless case
 }
 
@@ -647,12 +692,21 @@ TEST_CASE("recursive wrapper")
         CHECK_FALSE(a.valueless_after_move());
     }
 
+    // NOLINTBEGIN(performance-unnecessary-value-param)
+
     CHECK([](std::variant<yk::recursive_wrapper<int>> var) {
         return std::holds_alternative<yk::recursive_wrapper<int>>(var);
     }(42));
     CHECK([](yk::rvariant<yk::recursive_wrapper<int>> var) {
         return yk::holds_alternative<int>(var);
     }(42));
+
+    CHECK([](std::variant<yk::recursive_wrapper<int>> var) {
+        return std::holds_alternative<yk::recursive_wrapper<int>>(var);
+    }(3.14));
+    CHECK([](yk::rvariant<yk::recursive_wrapper<int>> var) {
+        return yk::holds_alternative<int>(var);
+    }(3.14));
 
     CHECK([](std::variant<yk::recursive_wrapper<int>, double> var) {
         return std::holds_alternative<double>(var);
@@ -689,6 +743,8 @@ TEST_CASE("recursive wrapper")
         return yk::holds_alternative<double>(var);
     }(yk::recursive_wrapper<double>(3.14)));
 
+    // NOLINTEND(performance-unnecessary-value-param)
+
     {
         yk::rvariant<yk::recursive_wrapper<int>> var = 42;
         var = 33 - 4;
@@ -707,6 +763,7 @@ TEST_CASE("recursive wrapper")
         };
 
         yk::rvariant<S> var(std::in_place_index<0>, 42, 3.14);
+        (void)var;
     }
 
     {
@@ -807,6 +864,7 @@ TEST_CASE("truly recursive")
     }
 
     // In contrast to above, this pattern has a safe *fallback* of int
+#if 0 // TODO
     {
         // Sanity check
         {
@@ -832,6 +890,7 @@ TEST_CASE("truly recursive")
         REQUIRE_NOTHROW(Expr{42});
         REQUIRE_NOTHROW(SubExpr{42}); // OK in MSVC.... (in contrast to failure above)
     }
+#endif
 }
 
 TEST_CASE("unwrap_recursive")

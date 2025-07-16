@@ -70,17 +70,17 @@ public:
         : ptr_(make_obj())
     {}
 
-    constexpr explicit indirect(std::allocator_arg_t, Allocator const& a)
-        : alloc_(a)
-        , ptr_(make_obj())
-    {}
-
     constexpr indirect(indirect const& other)
         : indirect(
             std::allocator_arg,
             std::allocator_traits<Allocator>::select_on_container_copy_construction(other.alloc_)
             , other
         )
+    {}
+
+    constexpr explicit indirect(std::allocator_arg_t, Allocator const& a)
+        : alloc_(a)
+        , ptr_(make_obj())
     {}
 
     constexpr indirect(std::allocator_arg_t, Allocator const& a, indirect const& other)
@@ -100,7 +100,7 @@ public:
         : alloc_(a)
         , ptr_(alloc_ == other.alloc_
             ? std::exchange(other.ptr_, nullptr)
-            : make_obj(std::as_const(*other.ptr_))
+            : make_obj(*std::move(other))
         )
     {}
 
@@ -321,7 +321,7 @@ private:
         return sa.release();
     }
 
-    [[no_unique_address]] Allocator alloc_ = Allocator();
+    YK_NO_UNIQUE_ADDRESS Allocator alloc_ = Allocator();
     T* ptr_;
 };
 
