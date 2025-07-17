@@ -190,7 +190,7 @@ TEST_CASE("default construction")
     {
         struct S
         {
-            S() noexcept(false) = default;
+            S() noexcept(false) {}
         };
         STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<S>);
         STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
