@@ -1,0 +1,5 @@
+---
+CheckOptions:
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: false
+
