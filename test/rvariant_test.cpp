@@ -632,6 +632,8 @@ TEST_CASE("raw get")
 
 TEST_CASE("get")
 {
+    // Required for suppressing std::move(const&)
+    // NOLINTBEGIN(performance-move-const-arg)
     {
         yk::rvariant<int, float> var = 42;
         REQUIRE(yk::get<0>(std::as_const(var)) == 42);
@@ -662,6 +664,7 @@ TEST_CASE("get")
         REQUIRE(yk::get<int>(std::move(std::as_const(var))) == 42);
         REQUIRE(yk::get<int>(std::move(var)) == 42);
     }
+    // NOLINTEND(performance-move-const-arg)
 }
 
 TEST_CASE("get_if")
