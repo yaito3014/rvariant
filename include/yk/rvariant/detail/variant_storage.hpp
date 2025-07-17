@@ -6,6 +6,7 @@
 #include <yk/detail/lang_core.hpp>
 
 #include <concepts>
+#include <functional>
 #include <type_traits>
 #include <utility>
 
