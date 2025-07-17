@@ -123,12 +123,14 @@ raw_visit_dispatch(Visitor&& vis, Variant&& var)
     return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Variant>(var)));
 }
 
+struct raw_visit_unit_type {};
+
 template<class Visitor, class Variant>
 constexpr raw_visit_return_type<Visitor, Variant>
 raw_visit_valueless(Visitor&& vis, Variant&&)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, std::monostate>>)
+    noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, raw_visit_unit_type>>)
 {
-    return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, std::monostate>{});
+    return std::invoke(std::forward<Visitor>(vis), alternative<variant_npos, raw_visit_unit_type>{});
 }
 
 template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
