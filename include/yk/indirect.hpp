@@ -322,7 +322,7 @@ private:
     }
 
     YK_NO_UNIQUE_ADDRESS Allocator alloc_ = Allocator();
-    T* ptr_;
+    pointer ptr_;
 };
 
 template<class Value>
