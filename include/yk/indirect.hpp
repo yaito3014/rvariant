@@ -37,7 +37,7 @@ public:
     }
 
     [[nodiscard]] constexpr Alloc get_allocator() const noexcept { return alloc_; }
-    [[nodiscard]] constexpr pointer get() const noexcept { return std::to_address(ptr_); }
+    [[nodiscard]] constexpr auto get() const noexcept { return std::to_address(ptr_); }
     [[nodiscard]] constexpr pointer release() noexcept { return std::exchange(ptr_, nullptr); }
 
 private:
