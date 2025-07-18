@@ -73,8 +73,8 @@ public:
     constexpr indirect(indirect const& other)
         : indirect(
             std::allocator_arg,
-            std::allocator_traits<Allocator>::select_on_container_copy_construction(other.alloc_)
-            , other
+            std::allocator_traits<Allocator>::select_on_container_copy_construction(other.alloc_),
+            other
         )
     {}
 

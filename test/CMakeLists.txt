@@ -14,7 +14,12 @@ target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
 if(MSVC)
     target_compile_options(
         Catch2
+            PUBLIC /fsanitize=address
             PRIVATE /MP /analyze-
+    )
+    target_link_options(
+        Catch2
+            PUBLIC /INCREMENTAL:NO # required for ASan
     )
 
     target_compile_definitions(
@@ -24,7 +29,8 @@ if(MSVC)
 
     target_compile_options(
         yk_rvariant_test
-            PUBLIC /MP /utf-8 /W3 /analyze /analyze:external- /external:anglebrackets
+            PUBLIC
+                /MP /utf-8 /W3 /analyze /analyze:external- /external:anglebrackets
     )
 endif()
 

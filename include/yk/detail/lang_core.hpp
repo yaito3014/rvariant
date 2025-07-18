@@ -40,6 +40,33 @@
 
 namespace yk::detail {
 
+// Provides equivalent definition as MSVC's STL for semantic compatibility
+namespace has_ADL_swap_detail {
+
+#if defined(__clang__) || defined(__EDG__)
+void swap() = delete; // poison pill
+#else
+void swap();
+#endif
+
+template<class, class = void> struct has_ADL_swap : std::false_type {};
+template<class T> struct has_ADL_swap<T, std::void_t<decltype(swap(std::declval<T&>(), std::declval<T&>()))>> : std::true_type {};
+
+} // has_ADL_swap_detail
+
+template<class T>
+constexpr bool is_trivially_swappable_v = std::conjunction_v<
+    std::is_trivially_destructible<T>,
+    std::is_trivially_move_constructible<T>,
+    std::is_trivially_move_assignable<T>,
+    // std::is_swappable cannot be used for this purpose because it assumes `using std::swap`
+    std::negation<has_ADL_swap_detail::has_ADL_swap<T>>
+>;
+
+template<> inline constexpr bool is_trivially_swappable_v<std::byte> = true;
+template<class T> struct is_trivially_swappable : std::bool_constant<is_trivially_swappable_v<T>> {};
+
+
 template<class T, template<class...> class TT>
 struct is_ttp_specialization_of : std::false_type {};
 

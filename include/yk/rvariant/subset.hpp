@@ -2,6 +2,8 @@
 #define YK_RVARIANT_SUBSET_HPP
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
+#include <yk/rvariant/variant_helper.hpp>
+#include <yk/detail/lang_core.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -15,30 +17,30 @@ template<class From, class To>
 struct subset_reindex_impl;
 
 template<
-    class... Ts,
-    class... Us
+    class... Ts, class... Us
 >
-struct subset_reindex_impl<rvariant<Ts...>, rvariant<Us...>>
+struct subset_reindex_impl<type_list<Ts...>, type_list<Us...>>
 {
-    static constexpr std::size_t table[]{find_index_v<Ts, type_list<Us...>>...};
-    static constexpr std::size_t apply(std::size_t index) noexcept { return table[index]; }
+    static constexpr std::size_t table[]{
+        find_index_v<Ts, type_list<Us...>>...
+    };
 };
 
 template<class From, class To>
 [[nodiscard]] constexpr std::size_t subset_reindex(std::size_t index) noexcept
 {
-    return subset_reindex_impl<From, To>::apply(index);
+    return subset_reindex_impl<typename From::unwrapped_types, typename To::unwrapped_types>::table[index];
 }
 
 template<class Self, class... Us>
 struct subset_visitor
 {
     template<class Alt>
-    static constexpr rvariant<Us...> operator()(Alt&& alt)
+    static constexpr rvariant<Us...> operator()([[maybe_unused]] Alt&& alt)
     {
         constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
 
-        if constexpr (I == std::variant_npos) {
+        if constexpr (I == variant_npos) {
             return rvariant<Us...>(valueless);
 
         } else {
@@ -55,21 +57,30 @@ struct subset_visitor
 
 } // detail
 
+namespace rvariant_set {
 
-template<class T, class U>
-struct is_subset_of : std::false_type {};
+template<class W, class V>
+struct is_subset_of : std::false_type
+{
+    static_assert(detail::is_ttp_specialization_of_v<W, rvariant>);
+    static_assert(detail::is_ttp_specialization_of_v<V, rvariant>);
+};
 
-template<template<class...> class L1, class... Ts, template<class...> class L2, class... Us>
-struct is_subset_of<L1<Ts...>, L2<Us...>> : std::conjunction<detail::is_in<Ts, Us...>...> {};
+template<class... Us, class... Ts>
+struct is_subset_of<rvariant<Us...>, rvariant<Ts...>>
+    : std::conjunction<detail::is_in<unwrap_recursive_t<Us>, unwrap_recursive_t<Ts>...>...>
+{};
 
-template<class T, class U>
-inline constexpr bool is_subset_of_v = is_subset_of<T, U>::value;
+template<class W, class V>
+inline constexpr bool is_subset_of_v = is_subset_of<W, V>::value;
 
-template<class T, class U>
-concept subset_of = is_subset_of_v<T, U>;
+template<class W, class V>
+concept subset_of = is_subset_of_v<W, V>;
 
-template<class T, class U>
-concept equivalent_to = subset_of<T, U> && subset_of<U, T>;
+template<class W, class V>
+concept equivalent_to = subset_of<W, V> && subset_of<V, W>;
+
+} // rvariant_set
 
 } // yk
 
