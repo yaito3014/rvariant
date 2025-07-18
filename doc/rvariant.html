@@ -1168,7 +1168,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;Otherwise, if <code>*this</code> holds a value but <code>rhs</code> does not, destroys the value contained in <code>*this</code> and sets <code>*this</code> to not hold a value.</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds the <span class="underline">same alternative type</span> as <code>*this</code>, assigns the value contained in <code>rhs</code> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> <code>index()</code> is unchanged.)</span></p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> <code>index()</code> is unchanged.)</span></p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;Otherwise, if either <code>std::is_nothrow_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> or <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>false</code>, equivalent to <code>emplace<span class="underline">&lt;<em>i</em>&gt;</span>(<em>GET</em><<em>j</em>>(rhs))</code> <span class="underline">where <em>i</em> is the corresponding index that is determined according to the rules defined in <a href="#rvariant.ctor">the flexible copy constructor</a></span>.</p>
@@ -1181,7 +1181,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </div>
 </div>
 <div class="paragraph">
-<p><strong><em>Postconditions:</em></strong> If <code>rhs.valueless_by_exception()</code> is <code>true</code>, <code>index() == rhs.index()</code>; <span class="underline">otherwise, <code>*this</code> holds the same alternative type as <code>rhs</code>.</span></p>
+<p><strong><em>Postconditions:</em></strong> If <code>rhs.valueless_by_exception()</code> is <code>true</code>, <code>index() == rhs.index()</code>; <span class="underline">otherwise, <code>*this</code> holds the alternative corresponding to that of <code>rhs</code>.</span></p>
 </div>
 <div class="paragraph">
 <p><strong><em>Returns:</em></strong> <code>*this</code>.</p>
@@ -1226,7 +1226,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;Otherwise, if <code>*this</code> holds a value but <code>rhs</code> does not, destroys the value contained in <code>*this</code> and sets <code>*this</code> to not hold a value.</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds the <span class="underline">same alternative type</span> as <code>*this</code>, assigns <code><em>GET</em><<em>j</em>>(std::move(rhs))</code> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> <code>index()</code> is unchanged.)</span></p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> <code>index()</code> is unchanged.)</span></p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;Otherwise, equivalent to <code>emplace<span class="underline">&lt;<em>i</em>&gt;</span>(<em>GET</em><<em>j</em>>(std::move(rhs)))</code> <span class="underline">where <em>i</em> is the corresponding index that is determined according to the rules defined in <a href="#rvariant.ctor">the flexible move constructor</a></span>.</p>

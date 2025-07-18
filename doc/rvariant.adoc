@@ -744,12 +744,12 @@ include::_std-variant-proxy.adoc[]
 [none]
 ** -- If neither `*this` nor `rhs` holds a value, there is no effect.
 ** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
-** -- Otherwise, if `rhs` holds the [.underline]#same alternative type# as `*this`, assigns the value contained in `rhs` to the value contained in `*this`. [.underline]#(_Note:_ `index()` is unchanged.)#
+** -- Otherwise, if `rhs` holds the [.underline]#alternative corresponding to that of# `*this`, assigns [.underline]#`_GET_<__j__>(rhs)`# to the value contained in `*this`. [.underline]#(_Note:_ `index()` is unchanged.)#
 ** -- Otherwise, if either `std::is_nothrow_copy_constructible_v<U~_j_~>` is `true` or `std::is_nothrow_move_constructible_v<U~_j_~>` is `false`, equivalent to pass:quotes[`emplace[.underline\]##&lt;__i__&gt;##(_GET_<_j_>(rhs))`] [.underline]#where _i_ is the corresponding index that is determined according to the rules defined in <<rvariant.ctor,the flexible copy constructor>>#.
 ** -- Otherwise, equivalent to `operator=([.underline]#rvariant&lt;Us\...&gt;#(rhs))`.
 --
 +
-*_Postconditions:_* If `rhs.valueless_by_exception()` is `true`, `index() == rhs.index()`; [.underline]#otherwise, `*this` holds the same alternative type as `rhs`.#
+*_Postconditions:_* If `rhs.valueless_by_exception()` is `true`, `index() == rhs.index()`; [.underline]#otherwise, `*this` holds the alternative corresponding to that of `rhs`.#
 +
 *_Returns:_* `*this`.
 +
@@ -772,7 +772,7 @@ include::_std-variant-proxy.adoc[]
 [none]
 ** -- If neither `*this` nor `rhs` holds a value, there is no effect.
 ** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
-** -- Otherwise, if `rhs` holds the [.underline]#same alternative type# as `*this`, assigns pass:quotes[`_GET_<_j_>(std::move(rhs))`] to the value contained in `*this`. [.underline]#(_Note:_ `index()` is unchanged.)#
+** -- Otherwise, if `rhs` holds the [.underline]#alternative corresponding to that of# `*this`, assigns [.underline]#`_GET_<__j__>(std::move(rhs))`# to the value contained in `*this`. [.underline]#(_Note:_ `index()` is unchanged.)#
 ** -- Otherwise, equivalent to pass:quotes[`emplace[.underline\]##&lt;__i__&gt;##(_GET_<_j_>(std::move(rhs)))`] [.underline]#where _i_ is the corresponding index that is determined according to the rules defined in <<rvariant.ctor,the flexible move constructor>>#.
 --
 +
