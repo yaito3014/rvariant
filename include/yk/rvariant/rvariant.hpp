@@ -384,10 +384,12 @@ public:
                         // copy(throw)    && move(noexcept) => B
                         if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
                             // A, (2.4)
-                            emplace<j>(rhs_alt.value);
+                            emplace<j>(rhs_alt.value); // TODO: don't use public methods, optimize
                         } else {
                             // B, (2.5)
-                            this->operator=(rvariant(rhs));
+                            //this->operator=(rvariant(rhs));
+                            auto tmp = rhs_alt.value;
+                            emplace<j>(std::move(tmp)); // semantically equivalent to above; confirmed
                         }
                     }
                 }
