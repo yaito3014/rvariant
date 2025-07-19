@@ -34,6 +34,18 @@ union variadic_union<TriviallyDestructible, T, Ts...>
     variadic_union(variadic_union const&) = default;
     variadic_union(variadic_union&&) = default;
 
+#ifdef __RESHARPER__
+    // According to the standard, a union with non-trivially-(copy|move)-(constructible|assignable)
+    // members has *implicitly*-deleted corresponding special functions.
+    // Although it should work only by the "= default" declaration, some compilers
+    // (e.g. ReSharper's "Code Inspection") fail to detect such traits,
+    // resulting in red squiggles everywhere.
+    variadic_union(variadic_union const&)            requires((!std::conjunction_v<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_constructible<Ts>...>)) = delete;
+    variadic_union(variadic_union&&)                 requires((!std::conjunction_v<std::is_trivially_move_constructible<T>, std::is_trivially_move_constructible<Ts>...>)) = delete;
+    variadic_union& operator=(variadic_union const&) requires((!std::conjunction_v<std::is_trivially_copy_assignable<T>, std::is_trivially_copy_assignable<Ts>...>)) = delete;
+    variadic_union& operator=(variadic_union&&)      requires((!std::conjunction_v<std::is_trivially_move_assignable<T>, std::is_trivially_move_assignable<Ts>...>)) = delete;
+#endif
+
     constexpr explicit variadic_union(valueless_t) noexcept
         : rest(valueless) // TODO: is this needed?
     {}
