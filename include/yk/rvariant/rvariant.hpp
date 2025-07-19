@@ -24,46 +24,6 @@ namespace yk {
 
 namespace detail {
 
-template<class... Ts>
-concept variant_all_trivially_copyable = std::conjunction_v<std::is_trivially_copyable<Ts>...>;
-
-// https://eel.is/c++draft/variant#assign-5
-template<class T>
-struct variant_copy_assignable : std::bool_constant<
-    std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>
-> {};
-
-template<class T>
-struct variant_nothrow_copy_assignable : std::bool_constant<
-    std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_assignable_v<T>
-> {};
-
-template<class T>
-struct variant_trivially_copy_assignable : std::bool_constant<
-    std::is_trivially_copy_constructible_v<T> && std::is_trivially_copy_assignable_v<T> && std::is_trivially_destructible_v<T>
-> {};
-
-template<class T>
-struct variant_move_assignable : std::bool_constant<
-    std::is_move_constructible_v<T> && std::is_move_assignable_v<T>
-> {};
-
-template<class T>
-struct variant_trivially_move_assignable : std::bool_constant<
-    std::is_trivially_move_constructible_v<T> && std::is_trivially_move_assignable_v<T> && std::is_trivially_destructible_v<T>
-> {};
-
-template<class T>
-struct variant_nothrow_move_assignable : std::bool_constant<
-    std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_assignable_v<T>
-> {};
-
-template<class T>
-struct variant_nothrow_swappable : std::bool_constant<
-    std::is_nothrow_move_constructible_v<T> && std::is_nothrow_swappable_v<T>
-> {};
-
-
 // Not used because it ruins some type traits.
 // Exists for historical reference.
 #if 0
@@ -263,7 +223,7 @@ public:
             rhs.index_, // j
             std::move(rhs.storage()),
             [this]<std::size_t j, class T>([[maybe_unused]] detail::alternative<j, T>&& rhs_alt)
-                noexcept(std::conjunction_v<detail::variant_nothrow_move_assignable<Ts>...>)
+                noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
             {
                 if constexpr (j == std::variant_npos) {
                     visit_reset();
@@ -620,9 +580,9 @@ public:
         requires
             (!std::is_same_v<rvariant<Us...>, rvariant>) &&
             rvariant_set::subset_of<rvariant<Us...>, rvariant> &&
-            std::conjunction_v<detail::variant_copy_assignable<Us>...>
+            std::conjunction_v<std::is_copy_constructible<Us>..., std::is_copy_assignable<Us>...>
     constexpr rvariant& operator=(rvariant<Us...> const& rhs)
-        noexcept(std::conjunction_v<detail::variant_nothrow_copy_assignable<Us>...>)
+        noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Us>..., std::is_nothrow_copy_assignable<Us>...>)
     {
         detail::raw_visit(
             rhs.index_, // j
@@ -670,9 +630,9 @@ public:
         requires
             (!std::is_same_v<rvariant<Us...>, rvariant>) &&
             rvariant_set::subset_of<rvariant<Us...>, rvariant> &&
-            std::conjunction_v<detail::variant_move_assignable<Us>...>
+            std::conjunction_v<std::is_move_constructible<Us>..., std::is_move_assignable<Us>...>
     constexpr rvariant& operator=(rvariant<Us...>&& rhs)
-        noexcept(std::conjunction_v<detail::variant_nothrow_move_assignable<Us>...>)
+        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>..., std::is_nothrow_move_assignable<Us>...>)
     {
         detail::raw_visit(
             rhs.index_, // j
@@ -755,11 +715,12 @@ public:
         return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
-    constexpr void swap(rvariant& rhs) noexcept(std::conjunction_v<detail::variant_nothrow_swappable<Ts>...>)
+    constexpr void swap(rvariant& rhs)
+        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_swappable<Ts>...>)
     {
         static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
         static_assert(std::conjunction_v<std::is_swappable<Ts>...>);
-        constexpr bool all_nothrow_swappable = std::conjunction_v<detail::variant_nothrow_swappable<Ts>...>;
+        constexpr bool all_nothrow_swappable = std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_swappable<Ts>...>;
         constexpr std::size_t instantiation_limit = 1024; // TODO: apply same logic to other visits with >= O(n^2) branch
 
         if constexpr (std::conjunction_v<detail::is_trivially_swappable<Ts>...>) {
