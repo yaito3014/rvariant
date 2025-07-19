@@ -557,14 +557,22 @@ public:
                 } else {
                     if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
                         // (13.2)
-                        emplace<j>(std::forward<T>(t));
+                        //emplace<j>(std::forward<T>(t));
+                        visit_reset();
+                        std::construct_at(&storage(), std::in_place_index<j>, std::forward<T>(t));
+                        index_ = j;
                         // (16.2): permitted to be valueless
+
                     } else {
                         // Related:
                         // (C++23) 3585. Variant converting assignment with immovable alternative https://cplusplus.github.io/LWG/issue3585
 
                         // (13.3)
-                        emplace<j>(Tj(std::forward<T>(t)));
+                        //emplace<j>(Tj(std::forward<T>(t)));
+                        Tj tmp(std::forward<T>(t));
+                        visit_reset();
+                        std::construct_at(&storage(), std::in_place_index<j>, std::move(tmp));
+                        index_ = j;
                         // (16.2): permitted to be valueless
                     }
                 }
@@ -605,16 +613,31 @@ public:
                                     this_alt.value = detail::rewrap_maybe_recursive<ThisAlt>(rhs_alt.value);
                                 } else {
                                     if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
-                                        emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value)); // TODO: optimize
+                                        //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
+                                        visit_reset();
+                                        std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
+                                        index_ = corresponding_i;
                                     } else {
-                                        this->operator=(rvariant<Us...>(rhs)); // TODO: optimize
+                                        //this->operator=(rvariant<Us...>(rhs));
+                                        auto tmp = rhs_alt.value;
+                                        visit_reset();
+                                        std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(tmp)));
+                                        index_ = corresponding_i;
                                     }
                                 }
                             } else { // rhs holds something, and *this is valueless
                                 if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
-                                    emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value)); // TODO: optimize
+                                    //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
+                                    visit_reset();
+                                    std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
+                                    index_ = corresponding_i;
+
                                 } else {
-                                    this->operator=(rvariant<Us...>(rhs)); // TODO: optimize
+                                    //this->operator=(rvariant<Us...>(rhs));
+                                    auto tmp = rhs_alt.value;
+                                    visit_reset();
+                                    std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(tmp)));
+                                    index_ = corresponding_i;
                                 }
                             }
                         }
@@ -654,10 +677,16 @@ public:
                                 if constexpr (std::is_same_v<unwrap_recursive_t<Uj>, unwrap_recursive_t<ThisAlt>>) {
                                     this_alt.value = detail::rewrap_maybe_recursive<ThisAlt>(std::move(rhs_alt).value);
                                 } else {
-                                    emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value)); // TODO: optimize
+                                    //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
+                                    visit_reset();
+                                    std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
+                                    index_ = corresponding_i;
                                 }
                             } else { // rhs holds something, and *this is valueless
-                                emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value)); // TODO: optimize
+                                //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
+                                visit_reset();
+                                std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
+                                index_ = corresponding_i;
                             }
                         }
                     );
