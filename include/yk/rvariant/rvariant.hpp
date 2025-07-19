@@ -196,7 +196,7 @@ public:
     {
         detail::raw_visit(
             w.index_, // j
-            std::move(w).storage(),
+            std::move(w.storage()),
             [this]<std::size_t j, class T>([[maybe_unused]] detail::alternative<j, T>&& alt) {
                 if constexpr (j != std::variant_npos) {
                     std::construct_at(&storage_, std::in_place_index<j>, std::move(alt).value);
@@ -213,7 +213,7 @@ public:
         detail::raw_visit(
             rhs.index_, // j
             rhs.storage(),
-            [this, &rhs]<std::size_t j, class T>([[maybe_unused]] detail::alternative<j, T> const& rhs_alt)
+            [this]<std::size_t j, class T>([[maybe_unused]] detail::alternative<j, T> const& rhs_alt)
                 // TODO: noexcept specifier
             {
                 if constexpr (j == std::variant_npos) {
@@ -261,7 +261,7 @@ public:
     {
         detail::raw_visit(
             rhs.index_, // j
-            std::move(rhs).storage(),
+            std::move(rhs.storage()),
             [this]<std::size_t j, class T>([[maybe_unused]] detail::alternative<j, T>&& rhs_alt)
                 noexcept(std::conjunction_v<detail::variant_nothrow_move_assignable<Ts>...>)
             {
@@ -325,14 +325,14 @@ public:
 
         detail::raw_visit(
             rhs.index_,
+            std::move(rhs.storage()),
             [this]<std::size_t i, class RhsAlt>([[maybe_unused]] detail::alternative<i, RhsAlt>&& rhs_alt)
                 noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
             {
                 if constexpr (i != detail::variant_npos) {
                     this->template emplace_on_valueless<i>(std::move(rhs_alt).value);
                 }
-            },
-            std::move(rhs)
+            }
         );
     }
 
@@ -494,7 +494,7 @@ public:
     {
         detail::raw_visit(
             w.index_, // j
-            std::move(w).storage(),
+            std::move(w.storage()),
             [this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT>&& alt) {
                 if constexpr (j != std::variant_npos) {
                     constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
@@ -676,7 +676,7 @@ public:
     {
         detail::raw_visit(
             rhs.index_, // j
-            std::move(rhs).storage(),
+            std::move(rhs.storage()),
             [this, &rhs]<std::size_t j, class Uj>([[maybe_unused]] detail::alternative<j, Uj>&& rhs_alt) {
                 if constexpr (j == std::variant_npos) {
                     visit_reset();
@@ -807,6 +807,7 @@ public:
             if (index_ == rhs.index_) {
                 detail::raw_visit(
                     rhs.index_,
+                    rhs.storage(),
                     [this]<std::size_t i, class RhsAlt>([[maybe_unused]] detail::alternative<i, RhsAlt>& rhs_alt)
                         noexcept(std::conjunction_v<std::is_nothrow_swappable<Ts>...>)
                     {
@@ -814,8 +815,7 @@ public:
                             using std::swap;
                             swap(detail::raw_get<i>(storage()).value, rhs_alt.value);
                         }
-                    },
-                    rhs
+                    }
                 );
             } else {
                 auto tmp = std::move(*this);
@@ -888,7 +888,7 @@ public:
     {
         return detail::raw_visit(
             index_,
-            std::move(storage()), // TODO: why is this move needed?
+            std::move(storage()),
             []<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt>&& alt) /* TODO: noexcept */ -> rvariant<Us...> {
                 if constexpr (i == detail::variant_npos) {
                     return rvariant<Us...>(detail::valueless);
