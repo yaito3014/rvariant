@@ -37,8 +37,24 @@ p, td.content {
   font-size: inherit;
 }
 
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 a, .underline {
   text-decoration-skip-ink: none;
+}
+
+a code {
+  color: inherit;
+}
+
+:is(a code, code a) .hljs-comment {
+  color: inherit;
 }
 
 dt {
@@ -1036,7 +1052,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline">Let <code>VT<sub><em>i</em></sub></code> denote <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T<sub><em>i</em></sub>, A&gt;</code> (for any type <code>A</code>) if such a specialization occurs anywhere in <code>Ts...</code>; otherwise, let <code>VT<sub><em>i</em></sub></code> denote <code>T<sub><em>i</em></sub></code>. Define <code>WT<sub><em>j</em></sub></code> analogously for the subject with types <code>Us...</code>, where <code>WT<sub><em>j</em></sub></code> refers to the <em>j</em><sup>th</sup> type in <code>Us</code>. The <em>corresponding alternative</em> for <code>rvariant</code> is the first type for which <code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;WT<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code>. The actual index is determined contextually.</span></p>
+<p>&#8201;&#8212;&#8201;Let <code>VT<sub><em>i</em></sub></code> denote <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T<sub><em>i</em></sub>, A&gt;</code> (for any type <code>A</code>) if such a specialization occurs anywhere in <code>Ts...</code>; otherwise, let <code>VT<sub><em>i</em></sub></code> denote <code>T<sub><em>i</em></sub></code>. Define <code>WT<sub><em>j</em></sub></code> analogously for the subject with types <code>Us...</code>, where <code>WT<sub><em>j</em></sub></code> refers to the <em>j</em><sup>th</sup> type in <code>Us</code>. The <em>corresponding alternative</em> for <code>rvariant</code> is the first type for which <code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;WT<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code>. The actual index is determined contextually.</p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;This constructor is defined as deleted unless <span class="underline"><code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code> and</span> <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>

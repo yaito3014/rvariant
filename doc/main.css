@@ -27,8 +27,24 @@ p, td.content {
   font-size: inherit;
 }
 
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 a, .underline {
   text-decoration-skip-ink: none;
+}
+
+a code {
+  color: inherit;
+}
+
+:is(a code, code a) .hljs-comment {
+  color: inherit;
 }
 
 dt {

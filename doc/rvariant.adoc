@@ -654,7 +654,7 @@ include::_std-variant-proxy.adoc[]
 *_Remarks:_*
 +
 [none]
-** -- [.underline]#Let `VT~_i_~` denote `{recursive_wrapper}<T~_i_~, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT~_i_~` denote `T~_i_~`. Define `WT~_j_~` analogously for the subject with types `Us\...`, where `WT~_j_~` refers to the _j_^th^ type in `Us`. The _corresponding alternative_ for `rvariant` is the first type for which `std::is_same_v<{unwrap_recursive_t}<VT~_i_~>, {unwrap_recursive_t}<WT~_j_~>>` is `true`. The actual index is determined contextually.#
+** -- Let `VT~_i_~` denote `{recursive_wrapper}<T~_i_~, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT~_i_~` denote `T~_i_~`. Define `WT~_j_~` analogously for the subject with types `Us\...`, where `WT~_j_~` refers to the _j_^th^ type in `Us`. The _corresponding alternative_ for `rvariant` is the first type for which `std::is_same_v<{unwrap_recursive_t}<VT~_i_~>, {unwrap_recursive_t}<WT~_j_~>>` is `true`. The actual index is determined contextually.
 
 ** -- This constructor is defined as deleted unless [.underline]#`{subset_of}<rvariant<Us\...>, rvariant>` is `true` and# `std::is_copy_constructible_v[.underline]##<U~_j_~>##` is `true` for all [.underline]#_j_, where `U~_j_~` be the _j_^th^ type in `Us`#.
 
