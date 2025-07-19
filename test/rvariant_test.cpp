@@ -10,6 +10,12 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <algorithm>
+#include <ranges>
+#include <bit>
+#include <array>
+
+#include <cstddef>
 
 
 TEST_CASE("pack_indexing", "[lang_core]")
@@ -74,9 +80,166 @@ TEST_CASE("helper class")
 
 TEST_CASE("storage")
 {
+    // Test cases for this type is VERY important; some compilers misunderstand relevant type traits
+    struct NonExistent {};
+
     // NOLINTBEGIN(modernize-use-equals-default)
     {
-        using VD = yk::detail::variadic_union<true, int, float>;
+        using T = int;
+        using A = yk::detail::alternative<0, T>;
+        {
+            STATIC_REQUIRE(std::is_nothrow_default_constructible_v<A>);   // valueless
+
+            STATIC_REQUIRE(std::is_trivially_copy_constructible_v<A>);
+            STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<A>);
+
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<A>);
+            STATIC_REQUIRE(std::is_nothrow_move_constructible_v<A>);
+
+            STATIC_REQUIRE(std::is_trivially_copy_assignable_v<A>);
+            STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<A>);
+
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<A>);
+            STATIC_REQUIRE(std::is_nothrow_move_assignable_v<A>);
+
+            STATIC_REQUIRE(std::is_trivially_destructible_v<A>);
+            STATIC_REQUIRE(std::is_nothrow_destructible_v<A>);
+
+            STATIC_REQUIRE(std::is_trivially_copyable_v<A>);
+
+            STATIC_REQUIRE(std::is_nothrow_default_constructible_v<A>); // default construct
+            STATIC_REQUIRE(std::is_constructible_v<A, T>);
+            STATIC_REQUIRE(!std::is_constructible_v<A, NonExistent>);
+        }
+
+        using VD = yk::detail::variadic_union<true, A>;
+        STATIC_REQUIRE(std::is_same_v<yk::detail::variant_storage_t<T>, VD>);
+        {
+            STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);   // valueless
+
+            STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+            STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<VD>);
+
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
+            STATIC_REQUIRE(std::is_nothrow_move_constructible_v<VD>);
+
+            STATIC_REQUIRE(std::is_trivially_copy_assignable_v<VD>);
+            STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<VD>);
+
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
+            STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
+
+            STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
+            STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
+
+            STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+
+            STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
+            STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, T>);
+            STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<0>, NonExistent>);
+        }
+
+        using V = yk::rvariant<T>;
+
+        using Base = yk::detail::rvariant_base<T>;
+        {
+            STATIC_REQUIRE(std::is_trivially_copy_constructible_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_copy_assignable_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_destructible_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_copyable_v<Base>);
+        }
+        {
+            STATIC_REQUIRE(std::is_trivially_copy_constructible_v<V>);
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<V>);
+            STATIC_REQUIRE(std::is_trivially_copy_assignable_v<V>);
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<V>);
+            STATIC_REQUIRE(std::is_trivially_destructible_v<V>);
+            STATIC_REQUIRE(std::is_trivially_copyable_v<V>);
+        }
+    }
+
+    {
+        struct S
+        {
+            S() = default;
+            S(S const&) noexcept {} // non-trivial
+            S(S&&) = default;
+            ~S() = default;
+            S& operator=(S const&) = default;
+            S& operator=(S&&) = default;
+        };
+        using T = S;
+        {
+            STATIC_REQUIRE(!std::is_trivially_copy_constructible_v<T>);
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<T>);
+            STATIC_REQUIRE(std::is_trivially_copy_assignable_v<T>);
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<T>);
+            STATIC_REQUIRE(std::is_trivially_destructible_v<T>);
+            STATIC_REQUIRE(!std::is_trivially_copyable_v<T>);
+        }
+
+        using V = yk::rvariant<T>;
+
+        using Base = yk::detail::rvariant_base_t<T>;
+        static_assert(std::is_base_of_v<Base, V>);
+        {
+            STATIC_REQUIRE(!std::is_trivially_copy_constructible_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<Base>);
+            STATIC_REQUIRE(!std::is_trivially_copy_assignable_v<Base>); // variant requires TCC && TCA && TD
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<Base>);
+            STATIC_REQUIRE(std::is_trivially_destructible_v<Base>);
+            STATIC_REQUIRE(!std::is_trivially_copyable_v<Base>);
+        }
+        {
+            STATIC_REQUIRE(!std::is_trivially_copy_constructible_v<V>);
+            STATIC_REQUIRE(std::is_trivially_move_constructible_v<V>);
+            STATIC_REQUIRE(!std::is_trivially_copy_assignable_v<V>); // variant requires TCC && TCA && TD
+            STATIC_REQUIRE(std::is_trivially_move_assignable_v<V>);
+            STATIC_REQUIRE(std::is_trivially_destructible_v<V>);
+            STATIC_REQUIRE(!std::is_trivially_copyable_v<V>);
+        }
+    }
+
+    // non-trivial
+    {
+        struct S
+        {
+            S() = default;
+            S(S const&) {} // non-trivial
+            S(S&&) = default;
+            ~S() = default;
+            S& operator=(S const&) = default;
+            S& operator=(S&&) = default;
+        };
+        STATIC_REQUIRE(!std::is_trivially_copy_constructible_v<S>);
+        STATIC_REQUIRE(std::is_trivially_move_constructible_v<S>);
+        STATIC_REQUIRE(std::is_trivially_copy_assignable_v<S>);
+        STATIC_REQUIRE(std::is_trivially_move_assignable_v<S>);
+        STATIC_REQUIRE(std::is_trivially_destructible_v<S>);
+        STATIC_REQUIRE(!std::is_trivially_copyable_v<S>);
+
+        using V = yk::rvariant<S>;
+        STATIC_REQUIRE( std::is_copy_constructible_v<V>);
+        STATIC_REQUIRE(!std::is_trivially_copy_constructible_v<V>);
+
+        STATIC_REQUIRE(std::is_move_constructible_v<V>);
+        STATIC_REQUIRE(std::is_trivially_move_constructible_v<V>);
+
+        //STATIC_REQUIRE(std::is_trivially_copy_assignable_v<V>);
+        STATIC_REQUIRE(std::is_trivially_move_assignable_v<V>);
+        STATIC_REQUIRE(std::is_trivially_destructible_v<V>);
+        STATIC_REQUIRE(!std::is_trivially_copyable_v<V>);
+    }
+
+    {
+        struct S
+        {
+            S() = default;
+            S(int) {}
+        };
+        using VD = yk::detail::variadic_union<true, S>;
 
         STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
 
@@ -92,10 +255,95 @@ TEST_CASE("storage")
         STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
         STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
 
-        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, yk::detail::valueless_t>);
+        STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<0>, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<0>, NonExistent>);
+    }
+    // `int` on the right side
+    {
+        struct S
+        {
+            S() = default;
+            S(int) {}
+        };
+        using VD = yk::detail::variadic_union<true, S, int>;
+
+        STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copy_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
 
         STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
         STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+
+        // for VD[0] aka `S`
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<0>, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<0>, NonExistent>);
+
+        // for VD[1] aka `int`
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<1>>); // default construct
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<1>, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<1>, S>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<1>, NonExistent>);
+    }
+    // `int` on the left side
+    {
+        struct S
+        {
+            S() = default;
+            S(int) {}
+        };
+        using VD = yk::detail::variadic_union<true, int, S>;
+
+        STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_constructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copy_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_destructible_v<VD>);
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
+
+        STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+
+        // for VD[0] aka `int`
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<0>, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<0>, NonExistent>);
+
+        // for VD[1] aka `S`
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<1>>); // default construct
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<1>, S>);
+        STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<1>, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<VD, std::in_place_index_t<1>, NonExistent>);
     }
     {
         struct S
@@ -116,44 +364,66 @@ TEST_CASE("storage")
         STATIC_REQUIRE(!std::is_copy_assignable_v<VD>);    // requires index access
         STATIC_REQUIRE(!std::is_move_assignable_v<VD>);    // requires index access
 
-        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, yk::detail::valueless_t>);
+        STATIC_REQUIRE(!std::is_trivially_destructible_v<VD>);
+        STATIC_REQUIRE(!std::is_trivially_copyable_v<VD>);
 
+        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
         STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
-    }
-    {
-        struct S
-        {
-            S() = default;
-            S(int, float) {}
-        };
-        using VD = yk::detail::variadic_union<true, S>;
-
-        STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);
-
-        STATIC_REQUIRE(std::is_trivially_copy_constructible_v<VD>);
-        STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<VD>);
-
-        STATIC_REQUIRE(std::is_trivially_move_constructible_v<VD>);
-        STATIC_REQUIRE(std::is_nothrow_move_constructible_v<VD>);
-
-        STATIC_REQUIRE(std::is_trivially_copy_assignable_v<VD>);
-        STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<VD>);
-
-        STATIC_REQUIRE(std::is_trivially_move_assignable_v<VD>);
-        STATIC_REQUIRE(std::is_nothrow_move_assignable_v<VD>);
-
-        STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, yk::detail::valueless_t>);
-
-        STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
-
-        STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
-        STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, int, float>);
     }
     // NOLINTEND(modernize-use-equals-default)
 }
 
+// Note: Requires either (A) constexpr reinterpret_cast (C++26) or (B) std::default_construct_at
+constexpr bool is_constexpr_default_construct_testable =
+#if __cpp_lib_constexpr_new >= 202406L
+    true;
+#else
+    false;
+#endif
+
 TEST_CASE("default construction")
 {
+    {
+        struct S
+        {
+            S() = delete;
+        };
+
+        STATIC_REQUIRE(!std::is_default_constructible_v<yk::rvariant<S>>);
+        STATIC_REQUIRE(!std::is_default_constructible_v<yk::rvariant<S, int>>);
+        STATIC_REQUIRE( std::is_default_constructible_v<yk::rvariant<int, S>>);
+    }
+
+    // value-initialize
+    {
+        STATIC_CHECK(std::is_trivially_copy_constructible_v<yk::rvariant<int>>);
+        STATIC_CHECK(std::is_trivially_move_constructible_v<yk::rvariant<int>>);
+        STATIC_CHECK(std::is_trivially_copy_assignable_v<yk::rvariant<int>>);
+        STATIC_CHECK(std::is_trivially_move_assignable_v<yk::rvariant<int>>);
+        STATIC_CHECK(std::is_trivially_destructible_v<yk::rvariant<int>>);
+        STATIC_CHECK(std::is_trivially_copyable_v<yk::rvariant<int>>);
+
+        // try to test in constexpr context to detect UB
+        constexpr auto default_constructed_value = []() constexpr -> int {
+            using V = yk::rvariant<int>;
+            alignas(V) std::array<std::byte, sizeof(V)> storage;
+            {
+                V arbitrary_value(42);
+                storage = std::bit_cast<decltype(storage)>(arbitrary_value);
+            }
+            V* v_ptr = new (&storage) V; // default-initialize
+            int value = yk::get<int>(*v_ptr); // MUST be value-initialized as per https://eel.is/c++draft/variant.ctor#3
+            v_ptr->~V();
+            return value;
+        };
+
+#if is_constexpr_default_construct_testable
+        STATIC_CHECK(default_constructed_value() == 0);
+#else
+        CHECK(default_constructed_value() == 0);
+#endif
+    }
+
     {
         yk::rvariant<int> var;
         STATIC_REQUIRE(std::is_nothrow_default_constructible_v<yk::rvariant<int>>);
@@ -282,7 +552,9 @@ TEST_CASE("move construction")
             S() = default;
             S(S&&) noexcept(false) { throw std::exception(); }
         };
+        static_assert(!std::is_move_assignable_v<S>);
         yk::rvariant<S> a;
+        static_assert(std::is_move_constructible_v<yk::rvariant<S>>);
         REQUIRE_THROWS(yk::rvariant<S>(std::move(a)));
     }
 
@@ -605,8 +877,9 @@ TEST_CASE("emplace")
 TEST_CASE("raw_get")
 {
     yk::rvariant<int, float> var = 42;
-    STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(var)), yk::detail::alternative<0, int>&>);
-    STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::move(var))), yk::detail::alternative<0, int>&&>);
+    using Storage = yk::detail::variant_storage_t<int, float>;
+    STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&>())), yk::detail::alternative<0, int>&>);
+    STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&&>())), yk::detail::alternative<0, int>&&>);
 }
 
 TEST_CASE("get")

@@ -5,36 +5,36 @@
 #include <yk/rvariant/variant_helper.hpp>
 #include <yk/detail/lang_core.hpp>
 
-#include <concepts>
 #include <functional>
 #include <type_traits>
 #include <utility>
 
 namespace yk::detail {
 
-template<std::size_t I, class T>
-struct alternative;
-
 template<bool TriviallyDestructible, class... Ts>
-union variadic_union;
+struct variadic_union {};
 
-template<bool TriviallyDestructible>
-union variadic_union<TriviallyDestructible>
+template<class... Ts>
+using make_variadic_union_t = variadic_union<std::conjunction_v<std::is_trivially_destructible<Ts>...>, Ts...>;
+
+
+template<class T, class... Ts>
+struct variadic_union<true, T, Ts...>
 {
-    constexpr explicit variadic_union(valueless_t) noexcept {}
-};
+    static_assert(true == std::conjunction_v<std::is_trivially_destructible<T>, std::is_trivially_destructible<Ts>...>);
 
-template<bool TriviallyDestructible, class T, class... Ts>
-union variadic_union<TriviallyDestructible, T, Ts...>
-{
-    constexpr explicit variadic_union() noexcept(std::is_nothrow_default_constructible_v<T>)
-        : first{} // value-initialize; https://eel.is/c++draft/variant#ctor-3
-    {}
+    static constexpr std::size_t size = sizeof...(Ts) + 1;
 
-    variadic_union(variadic_union const&) = default;
-    variadic_union(variadic_union&&) = default;
+    // no active member
+    constexpr explicit variadic_union() noexcept {}
 
 #ifdef __RESHARPER__
+    // These are required for propagating traits
+    variadic_union(variadic_union const&) = default;
+    variadic_union(variadic_union&&) = default;
+    variadic_union& operator=(variadic_union const&) = default;
+    variadic_union& operator=(variadic_union&&) = default;
+
     // According to the standard, a union with non-trivially-(copy|move)-(constructible|assignable)
     // members has *implicitly*-deleted corresponding special functions.
     // Although it should work only by the "= default" declaration, some compilers
@@ -46,34 +46,82 @@ union variadic_union<TriviallyDestructible, T, Ts...>
     variadic_union& operator=(variadic_union&&)      requires((!std::conjunction_v<std::is_trivially_move_assignable<T>, std::is_trivially_move_assignable<Ts>...>)) = delete;
 #endif
 
-    constexpr explicit variadic_union(valueless_t) noexcept
-        : rest(valueless) // TODO: is this needed?
-    {}
-
     template<class... Args>
+        requires std::is_constructible_v<T, Args...> // required for not confusing some compilers
     constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        : first(std::forward<Args>(args)...)
+        : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant#ctor-3
     {}
 
     template<std::size_t I, class... Args>
+        // required for not confusing some compilers
+        requires
+            (I != 0) &&
+            std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
     constexpr explicit variadic_union(std::in_place_index_t<I>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<
-            variadic_union<TriviallyDestructible, Ts...>,
+            make_variadic_union_t<Ts...>,
             std::in_place_index_t<I - 1>,
             Args...
         >)
         : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...)
     {}
 
-    constexpr ~variadic_union() = default;
-    constexpr ~variadic_union() requires (!TriviallyDestructible) {}
+    union {
+        T first;
+        make_variadic_union_t<Ts...> rest;
+    };
+};
 
+template<class T, class... Ts>
+struct variadic_union<false, T, Ts...>
+{
+    static_assert(false == std::conjunction_v<std::is_trivially_destructible<T>, std::is_trivially_destructible<Ts>...>);
+
+    static constexpr std::size_t size = sizeof...(Ts) + 1;
+
+    // no active member
+    constexpr explicit variadic_union() noexcept {}
+
+    constexpr ~variadic_union() noexcept {}
+
+    variadic_union(variadic_union const&) = default;
+    variadic_union(variadic_union&&) = default;
     variadic_union& operator=(variadic_union const&) = default;
     variadic_union& operator=(variadic_union&&) = default;
 
-    T first;
-    variadic_union<TriviallyDestructible, Ts...> rest;
+#ifdef __RESHARPER__
+    variadic_union(variadic_union const&)            requires((!std::conjunction_v<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_constructible<Ts>...>)) = delete;
+    variadic_union(variadic_union&&)                 requires((!std::conjunction_v<std::is_trivially_move_constructible<T>, std::is_trivially_move_constructible<Ts>...>)) = delete;
+    variadic_union& operator=(variadic_union const&) requires((!std::conjunction_v<std::is_trivially_copy_assignable<T>, std::is_trivially_copy_assignable<Ts>...>)) = delete;
+    variadic_union& operator=(variadic_union&&)      requires((!std::conjunction_v<std::is_trivially_move_assignable<T>, std::is_trivially_move_assignable<Ts>...>)) = delete;
+#endif
+
+    template<class... Args>
+        requires std::is_constructible_v<T, Args...> // required for not confusing some compilers
+    constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant#ctor-3
+    {}
+
+    template<std::size_t I, class... Args>
+        // required for not confusing some compilers
+        requires
+            (I != 0) &&
+            std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
+    constexpr explicit variadic_union(std::in_place_index_t<I>, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<
+            make_variadic_union_t<Ts...>,
+            std::in_place_index_t<I - 1>,
+            Args...
+        >)
+        : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...)
+    {}
+
+    union {
+        T first;
+        make_variadic_union_t<Ts...> rest;
+    };
 };
 
 template<std::size_t I, class T>
@@ -96,7 +144,9 @@ struct alternative
 };
 
 struct raw_visit_unit_type {};
-template<> struct alternative<variant_npos, raw_visit_unit_type>
+
+template<>
+struct alternative<variant_npos, raw_visit_unit_type>
 {
     static constexpr std::size_t index = variant_npos;
 };
@@ -132,80 +182,90 @@ struct get_alternative<variant_npos>
     }
 };
 
-template<std::size_t I, class Variant>
-[[nodiscard]] constexpr auto&& raw_get(Variant&& var YK_LIFETIMEBOUND) noexcept
+
+template<std::size_t I, class Storage>
+[[nodiscard]] constexpr auto&& raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
 {
-    return get_alternative<I>{}(std::forward<Variant>(var).storage_);
+    return get_alternative<I>{}(std::forward<Storage>(storage));
 }
 
-template<std::size_t I, class Variant>
-using alternative_t = decltype(raw_get<I>(std::declval<Variant>()));
+template<std::size_t I, class Storage>
+using alternative_t = decltype(raw_get<I>(std::declval<Storage>()));
 
-template<class Visitor, class Variant>
-using raw_visit_return_type = std::invoke_result_t<Visitor, alternative_t<0, Variant>>;
+template<class Visitor, class Storage>
+using raw_visit_return_type = std::invoke_result_t<Visitor, alternative_t<0, Storage>>;
 
 
-template<class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant>
-raw_visit_valueless(Visitor&& vis, Variant&&)
+template<class Visitor, class Storage>
+constexpr raw_visit_return_type<Visitor, Storage>
+raw_visit_valueless(Visitor&& vis, Storage&&)
     noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, raw_visit_unit_type>>)
 {
     alternative<variant_npos, raw_visit_unit_type> fake_alternative;
-    return std::invoke(std::forward<Visitor>(vis), std::forward_like<Variant>(fake_alternative));
+    return std::invoke(std::forward<Visitor>(vis), std::forward_like<Storage>(fake_alternative));
 }
 
-template<std::size_t I, class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant>
-raw_visit_dispatch(Visitor&& vis, Variant&& var)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<I, Variant>>)
+template<std::size_t I, class Visitor, class Storage>
+constexpr raw_visit_return_type<Visitor, Storage>
+raw_visit_dispatch(Visitor&& vis, Storage&& storage)
+    noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<I, Storage>>)
 {
-    return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Variant>(var)));
+    return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Storage>(storage)));
 }
 
-template<class Visitor, class Variant, class Is = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
+template<class Visitor, class Storage, class Is = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
 constexpr bool raw_visit_noexcept = false;
 
-template<class Visitor, class Variant, std::size_t... Is>
-constexpr bool raw_visit_noexcept<Visitor, Variant, std::index_sequence<Is...>> = std::conjunction_v<
+template<class Visitor, class Storage, std::size_t... Is>
+constexpr bool raw_visit_noexcept<Visitor, Storage, std::index_sequence<Is...>> = std::conjunction_v<
     std::is_nothrow_invocable<Visitor, alternative<variant_npos, raw_visit_unit_type>>,
-    std::is_nothrow_invocable<Visitor, alternative_t<Is, Variant>>...
+    std::is_nothrow_invocable<Visitor, alternative_t<Is, Storage>>...
 >;
 
 
-template<class Visitor, class Variant, class Seq = std::make_index_sequence<variant_size_v<std::remove_reference_t<Variant>>>>
+template<class Visitor, class Storage, class Seq = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
 struct raw_visit_dispatch_table;
 
-template<class Visitor, class Variant, std::size_t... Is>
-struct raw_visit_dispatch_table<Visitor, Variant, std::index_sequence<Is...>>
+template<class Visitor, class Storage, std::size_t... Is>
+struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
 {
-    using function_type = raw_visit_return_type<Visitor, Variant> (*)(Visitor&&, Variant&&)
-        noexcept(raw_visit_noexcept<Visitor, Variant>);
+    using function_type = raw_visit_return_type<Visitor, Storage> (*)(Visitor&&, Storage&&)
+        noexcept(raw_visit_noexcept<Visitor, Storage>);
 
     static constexpr function_type value[] = {
-        &raw_visit_valueless<Visitor, Variant>,
-        &raw_visit_dispatch<Is, Visitor, Variant>...
+        &raw_visit_valueless<Visitor, Storage>,
+        &raw_visit_dispatch<Is, Visitor, Storage>...
     };
 };
 
-template<class Visitor, class Variant>
-constexpr raw_visit_return_type<Visitor, Variant>
-raw_visit(std::size_t index, Visitor&& vis, Variant&& var) noexcept(raw_visit_noexcept<Visitor, Variant>)
+template<class Visitor, class Storage>
+constexpr raw_visit_return_type<Visitor, Storage>
+raw_visit(std::size_t index, Storage&& storage, Visitor&& vis) noexcept(raw_visit_noexcept<Visitor, Storage>)
 {
-    constexpr auto const& table = raw_visit_dispatch_table<Visitor, Variant>::value;
-    return std::invoke(table[index + 1], std::forward<Visitor>(vis), std::forward<Variant>(var));
+    constexpr auto const& table = raw_visit_dispatch_table<Visitor, Storage>::value;
+    return std::invoke(table[index + 1], std::forward<Visitor>(vis), std::forward<Storage>(storage));
 }
 
 template<class Seq, class... Ts>
-struct variant_storage;
+struct variant_storage_selector;
 
 template<std::size_t... Is, class... Ts>
-struct variant_storage<std::index_sequence<Is...>, Ts...>
+struct variant_storage_selector<std::index_sequence<Is...>, Ts...>
 {
-    using type = variadic_union<(std::is_trivially_destructible_v<Ts> && ...), alternative<Is, Ts>...>;
+    // sanity check
+    static_assert(
+        ((std::is_trivially_destructible_v<alternative<Is, Ts>> == std::is_trivially_destructible_v<Ts>) && ...)
+    );
+
+    using type = variadic_union<
+        //(std::is_trivially_destructible_v<Ts> && ...),
+        (std::is_trivially_destructible_v<alternative<Is, Ts>> && ...),
+        alternative<Is, Ts>...
+    >;
 };
 
-template<class Seq, class... Ts>
-using variant_storage_t = typename variant_storage<Seq, Ts...>::type;
+template<class... Ts>
+using variant_storage_t = typename variant_storage_selector<std::index_sequence_for<Ts...>, Ts...>::type;
 
 } // yk::detail
 

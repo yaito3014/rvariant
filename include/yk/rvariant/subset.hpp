@@ -32,29 +32,6 @@ template<class From, class To>
     return subset_reindex_impl<typename From::unwrapped_types, typename To::unwrapped_types>::table[index];
 }
 
-template<class Self, class... Us>
-struct subset_visitor
-{
-    template<class Alt>
-    static constexpr rvariant<Us...> operator()([[maybe_unused]] Alt&& alt)
-    {
-        constexpr std::size_t I = std::remove_cvref_t<Alt>::index;
-
-        if constexpr (I == variant_npos) {
-            return rvariant<Us...>(valueless);
-
-        } else {
-            constexpr std::size_t pos = subset_reindex<Self, rvariant<Us...>>(I);
-            if constexpr (pos == find_index_npos) {
-                throw std::bad_variant_access{};
-
-            } else {
-                return rvariant<Us...>(std::in_place_index<pos>, std::forward<Alt>(alt).value);
-            }
-        }
-    }
-};
-
 } // detail
 
 namespace rvariant_set {
