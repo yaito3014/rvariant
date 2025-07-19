@@ -20,17 +20,6 @@
 #include <cstddef>
 #include <cassert>
 
-
-// some standard metafunctions (e.g. std::is_trivially_destructible)
-// often gets translated to a compiler intrinsic, which the third party
-// linters (e.g. ReSharper) fails to understand, resulting in red squiggles.
-//#ifdef __RESHARPER__
-#if true
-# define YK_DETAIL_HELP_INTRINSIC(...) __VA_ARGS__
-#else
-# define YK_DETAIL_HELP_INTRINSIC(...)
-#endif
-
 namespace yk {
 
 namespace detail {
@@ -1125,7 +1114,5 @@ get(rvariant<Ts...> const* v) noexcept
 }
 
 }  // namespace yk
-
-#undef YK_DETAIL_HELP_INTRINSIC
 
 #endif  // YK_RVARIANT_HPP
