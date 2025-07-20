@@ -14,6 +14,7 @@ add_executable(
     indirect_test.cpp
     rvariant_test.cpp
     flexible_test.cpp
+    recursive_test.cpp
 )
 
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
