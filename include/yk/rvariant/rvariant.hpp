@@ -579,7 +579,7 @@ public:
             noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Us>..., std::is_nothrow_copy_assignable<Us>...>) // TODO: possibly wrong
         {
             if constexpr (j == std::variant_npos) {
-                visit_reset();
+                this->visit_reset();
 
             } else { // rhs holds something
                 static constexpr std::size_t corresponding_i = subset_reindex_for<rvariant<Us...>>(j);
@@ -631,7 +631,7 @@ public:
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>..., std::is_nothrow_move_assignable<Us>...>) // TODO: possibly wrong
         {
             if constexpr (j == std::variant_npos) {
-                visit_reset();
+                this->visit_reset();
 
             } else { // rhs holds something
                 static constexpr std::size_t corresponding_i = subset_reindex_for<rvariant<Us...>>(j);
