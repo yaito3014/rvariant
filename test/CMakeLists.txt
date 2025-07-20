@@ -9,7 +9,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(yk_rvariant_test rvariant_test.cpp indirect_test.cpp)
+add_executable(
+    yk_rvariant_test
+    indirect_test.cpp
+    rvariant_test.cpp
+    flexible_test.cpp
+)
 
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
 

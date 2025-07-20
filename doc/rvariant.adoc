@@ -987,7 +987,11 @@ concept equivalent_to = subset_of<W, V> && subset_of<V, W>;
 [.candidates]
 * [.candidate]#1)# *_Mandates:_* Both `W` and `V` are specialization of `<<rvariant.rvariant,rvariant>>`.
 
-* [.candidate]#2)# *_Constraints:_* For every type `U` in `Us`, there exists at least one type `T` in `Ts` such that `{unwrap_recursive_t}<T>` is the same type as `{unwrap_recursive_t}<U>`.
+* [.candidate]#2)# *_Constraints:_* For every type `U` in `Us`, there exists at least one type `T` in `Ts` such that:
++
+[none]
+** -- `T` is the same type as `U` or,
+** -- `{unwrap_recursive_t}<T>` is the same type as `U`.
 
 
 [[rvariant.get]]

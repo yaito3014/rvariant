@@ -45,8 +45,18 @@ struct is_subset_of : std::false_type
 
 template<class... Us, class... Ts>
 struct is_subset_of<rvariant<Us...>, rvariant<Ts...>>
-    : std::conjunction<detail::is_in<unwrap_recursive_t<Us>, unwrap_recursive_t<Ts>...>...>
+    : std::conjunction<
+        std::disjunction<
+            detail::is_in<Us, Ts...>,
+            detail::is_in<Us, unwrap_recursive_t<Ts>...>
+        >...
+    >
 {};
+
+// subset_of<int, int> => true
+// subset_of<int, recursive_wrapper<int>> => true
+// subset_of<recursive_wrapper<int>, recursive_wrapper<int>> => true
+// subset_of<recursive_wrapper<int>, int> => false
 
 template<class W, class V>
 inline constexpr bool is_subset_of_v = is_subset_of<W, V>::value;

@@ -1528,7 +1528,17 @@ concept equivalent_to = subset_of&lt;W, V&gt; &amp;&amp; subset_of&lt;V, W&gt;;
 <p><span class="candidate">1)</span> <strong><em>Mandates:</em></strong> Both <code>W</code> and <code>V</code> are specialization of <code><a href="#rvariant.rvariant">rvariant</a></code>.</p>
 </li>
 <li>
-<p><span class="candidate">2)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us</code>, there exists at least one type <code>T</code> in <code>Ts</code> such that <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T&gt;</code> is the same type as <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;U&gt;</code>.</p>
+<p><span class="candidate">2)</span> <strong><em>Constraints:</em></strong> For every type <code>U</code> in <code>Us</code>, there exists at least one type <code>T</code> in <code>Ts</code> such that:</p>
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<code>T</code> is the same type as <code>U</code> or,</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T&gt;</code> is the same type as <code>U</code>.</p>
+</li>
+</ul>
+</div>
 </li>
 </ul>
 </div>
