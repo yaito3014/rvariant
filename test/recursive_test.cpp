@@ -54,6 +54,16 @@ TEST_CASE("truly recursive", "[recursive]")
         REQUIRE_NOTHROW(SubExpr{});
         REQUIRE_NOTHROW(Expr{42});
         REQUIRE_NOTHROW(SubExpr{42}); // OK in MSVC.... (in contrast to failure above)
+
+        {
+            Expr expr{std::in_place_index<0>, 42};
+        }
+        {
+            Expr expr{std::in_place_index<1>, SubExpr{42}};
+        }
+        {
+            Expr expr{42};
+        }
     }
 }
 

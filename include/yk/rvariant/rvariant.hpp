@@ -503,23 +503,32 @@ public:
         requires
             (sizeof...(Ts) > 0) &&
             (!std::is_same_v<std::remove_cvref_t<T>, rvariant>) &&
-            //(!detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) && // TODO: implement
             (!detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>) &&
             (!detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>) &&
-            requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); } && // flipped order
+            requires(T&& t) {
+                detail::FUN<T, rvariant>{}(std::forward<T>(t));
+                //detail::FUN<T, rvariant>{}(detail::recursive_sentinel<T, rvariant<Ts...>>); // inject "already tested" type to sentinel
+            } &&
             std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>
     constexpr /* not explicit */ rvariant(T&& t)
         noexcept(std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>)
         : base_type(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(t))
     {}
 
+    //template<class T, class... TestedVariants>
+    //    requires
+    //        !std::disjunction_v<detail::is_in<rvariant, TestedVariants>...> &&     // if NOT already tested
+    //        requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); } && // then do actual check
+    //        std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>
+    //constexpr explicit rvariant(detail::recursive_sentinel_t<T, TestedVariants...>)
+    //{}
+
     // Generic assignment operator
     // <https://eel.is/c++draft/variant.assign#lib:operator=,variant__>
     template<class T>
         requires
             (!std::is_same_v<std::remove_cvref_t<T>, rvariant>) &&
-            //(!detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) && // TODO: implement
-            requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); } && // flipped order
+            requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); } &&
             std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
             std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>
     constexpr rvariant& operator=(T&& t)
