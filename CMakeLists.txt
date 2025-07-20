@@ -8,6 +8,8 @@ target_compile_features(rvariant INTERFACE cxx_std_23)
 
 if(MSVC)
     target_compile_options(rvariant INTERFACE /Zc:preprocessor /permissive-)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+    target_compile_options(rvariant INTERFACE -fno-builtin-std-forward_like)
 endif()
 
 file(GLOB_RECURSE YK_RVARIANT_HEADERS ${PROJECT_SOURCE_DIR}/include/*.hpp)
