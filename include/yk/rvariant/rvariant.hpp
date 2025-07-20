@@ -702,7 +702,8 @@ public:
         requires
             std::is_constructible_v<T, Args...> &&
             detail::non_wrapped_exactly_once_v<T, unwrapped_types>
-    constexpr T& emplace(Args&&... args) YK_LIFETIMEBOUND // TODO: strengthen
+    constexpr T& emplace(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<T, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(std::forward<Args>(args)...);
@@ -712,7 +713,8 @@ public:
         requires
             std::is_constructible_v<T, std::initializer_list<U>&, Args...> &&
             detail::non_wrapped_exactly_once_v<T, unwrapped_types>
-    constexpr T& emplace(std::initializer_list<U> il, Args&&... args) YK_LIFETIMEBOUND // TODO: strengthen
+    constexpr T& emplace(std::initializer_list<U> il, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
         return emplace<I>(il, std::forward<Args>(args)...);
@@ -721,8 +723,8 @@ public:
     template<std::size_t I, class... Args>
         requires std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>
     constexpr variant_alternative_t<I, rvariant>&
-        emplace(Args&&... args) noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>)
-        YK_LIFETIMEBOUND
+    emplace(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
         visit_reset();
@@ -734,8 +736,8 @@ public:
     template<std::size_t I, class U, class... Args>
         requires std::is_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
     constexpr variant_alternative_t<I, rvariant>&
-        emplace(std::initializer_list<U> il, Args&&... args) noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>)
-        YK_LIFETIMEBOUND
+    emplace(std::initializer_list<U> il, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
         visit_reset();
