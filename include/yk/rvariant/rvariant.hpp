@@ -687,7 +687,10 @@ public:
         noexcept(std::is_nothrow_constructible_v<T, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
-        return emplace<I>(std::forward<Args>(args)...);
+        visit_reset();
+        std::construct_at(&storage(), std::in_place_index<I>, std::forward<Args>(args)...);
+        index_ = I;
+        return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
     template<class T, class U, class... Args>
@@ -698,7 +701,10 @@ public:
         noexcept(std::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
-        return emplace<I>(il, std::forward<Args>(args)...);
+        visit_reset();
+        std::construct_at(&storage(), std::in_place_index<I>, il, std::forward<Args>(args)...);
+        index_ = I;
+        return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
     template<std::size_t I, class... Args>
