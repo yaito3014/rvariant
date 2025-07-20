@@ -144,8 +144,7 @@ public:
             noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>...>)
         {
             if constexpr (j != std::variant_npos) {
-                std::construct_at(&storage_, std::in_place_index<j>, alt.value);
-                index_ = j;
+                construct_on_valueless<j>(alt.value);
             }
         });
     }
@@ -158,8 +157,7 @@ public:
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
         {
             if constexpr (j != std::variant_npos) {
-                std::construct_at(&storage_, std::in_place_index<j>, std::move(alt).value);
-                index_ = j;
+                construct_on_valueless<j>(std::move(alt).value);
             }
         });
     }
@@ -187,10 +185,7 @@ public:
                     // copy(throw)    && move(noexcept) => B
                     if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
                         // A, (2.4): emplace<j>(rhs_alt.value)
-                        visit_reset();
-                        std::construct_at(&storage_, std::in_place_index<j>, rhs_alt.value);
-                        index_ = j;
-
+                        reset_construct<j>(rhs_alt.value);
                     } else {
                         // B, (2.5): operator=(rvariant(rhs))
 
@@ -200,9 +195,7 @@ public:
 
                         // ... is equivalent to:
                         auto tmp = rhs_alt.value;
-                        visit_reset();
-                        std::construct_at(&storage_, std::in_place_index<j>, std::move(tmp));
-                        index_ = j;
+                        reset_construct<j>(std::move(tmp));
                     }
                 }
             }
@@ -226,9 +219,7 @@ public:
                     // (10.2): index() will be j
                 } else {
                     // (8.4): emplace<j>(std::move(rhs_alt).value)
-                    visit_reset();
-                    std::construct_at(&storage(), std::in_place_index<j>, std::move(rhs_alt).value);
-                    index_ = j;
+                    reset_construct<j>(std::move(rhs_alt).value);
                     // (10.1): in case of exception, hold no value
                 }
             }
@@ -254,33 +245,6 @@ public:
 
     [[nodiscard]] constexpr bool valueless_by_exception() const noexcept { return index_ == std::variant_npos; }
     [[nodiscard]] constexpr std::size_t index() const noexcept { return static_cast<std::size_t>(index_); }
-
-    // internal
-    template<std::size_t I, class... Args>
-    constexpr decltype(auto)
-        emplace_on_valueless(Args&&... args) noexcept(std::is_nothrow_constructible_v<pack_indexing_t<I, Ts...>, Args...>)
-        YK_LIFETIMEBOUND
-    {
-        assert(valueless_by_exception());
-        std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
-        index_ = I;
-        return unwrap_recursive(raw_get<I>(storage_).value);
-    }
-
-    // internal
-    constexpr void dynamic_emplace_from(rvariant_base&& rhs)
-        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
-    {
-        visit_reset();
-
-        std::move(rhs).raw_visit([this]<std::size_t i, class RhsAlt>([[maybe_unused]] alternative<i, RhsAlt>&& rhs_alt)
-            noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
-        {
-            if constexpr (i != variant_npos) {
-                this->template emplace_on_valueless<i>(std::move(rhs_alt).value);
-            }
-        });
-    }
 
     // internal; must be called only from the destructor of variant itself
     constexpr void destroy_final() noexcept
@@ -319,6 +283,41 @@ public:
             raw_get<I>(storage_).value.~T();
             index_ = variant_npos;
         }
+    }
+
+    template<std::size_t I, class... Args>
+    constexpr void construct_on_valueless(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<pack_indexing_t<I, Ts...>, Args...>)
+    {
+        static_assert(I != variant_npos);
+        assert(index_ == variant_npos);
+        std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
+        index_ = I;
+    }
+
+    template<std::size_t I, class... Args>
+    constexpr void reset_construct(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<pack_indexing_t<I, Ts...>, Args...>)
+    {
+        static_assert(I != variant_npos);
+        visit_reset();
+        std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
+        index_ = I;
+    }
+
+    // used in swap operation
+    constexpr void reset_steal_from(rvariant_base&& rhs)
+        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
+    {
+        visit_reset();
+
+        std::move(rhs).raw_visit([this]<std::size_t i, class RhsAlt>([[maybe_unused]] alternative<i, RhsAlt>&& rhs_alt)
+            noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
+        {
+            if constexpr (i != variant_npos) {
+                this->template construct_on_valueless<i>(std::move(rhs_alt).value);
+            }
+        });
     }
 
     [[nodiscard]] constexpr storage_type &       storage() &       noexcept { return storage_; }
@@ -428,8 +427,7 @@ public:
                 constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
-                std::construct_at(&storage(), std::in_place_index<i>, detail::rewrap_maybe_recursive<VT>(alt.value));
-                index_ = i;
+                construct_on_valueless<i>(detail::rewrap_maybe_recursive<VT>(alt.value));
             }
         });
     }
@@ -450,8 +448,7 @@ public:
                 constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
-                std::construct_at(&storage(), std::in_place_index<i>, detail::rewrap_maybe_recursive<VT>(std::move(alt).value));
-                index_ = i;
+                construct_on_valueless<i>(detail::rewrap_maybe_recursive<VT>(std::move(alt).value));
             }
         });
     }
@@ -549,9 +546,7 @@ public:
                 if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
                     // (13.2)
                     //emplace<j>(std::forward<T>(t));
-                    visit_reset();
-                    std::construct_at(&storage(), std::in_place_index<j>, std::forward<T>(t));
-                    index_ = j;
+                    reset_construct<j>(std::forward<T>(t));
                     // (16.2): permitted to be valueless
 
                 } else {
@@ -561,9 +556,7 @@ public:
                     // (13.3)
                     //emplace<j>(Tj(std::forward<T>(t)));
                     Tj tmp(std::forward<T>(t));
-                    visit_reset();
-                    std::construct_at(&storage(), std::in_place_index<j>, std::move(tmp));
-                    index_ = j;
+                    reset_construct<j>(std::move(tmp));
                     // (16.2): permitted to be valueless
                 }
             }
@@ -602,29 +595,21 @@ public:
                         } else {
                             if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
                                 //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
-                                visit_reset();
-                                std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
-                                index_ = corresponding_i;
+                                reset_construct<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
                             } else {
                                 //this->operator=(rvariant<Us...>(rhs));
                                 auto tmp = rhs_alt.value;
-                                visit_reset();
-                                std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(tmp)));
-                                index_ = corresponding_i;
+                                reset_construct<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(tmp)));
                             }
                         }
                     } else { // rhs holds something, and *this is valueless
                         if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
                             //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
-                            visit_reset();
-                            std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
-                            index_ = corresponding_i;
+                            reset_construct<corresponding_i>(detail::rewrap_maybe_recursive<VT>(rhs_alt.value));
                         } else {
                             //this->operator=(rvariant<Us...>(rhs));
                             auto tmp = rhs_alt.value;
-                            visit_reset();
-                            std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(tmp)));
-                            index_ = corresponding_i;
+                            reset_construct<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(tmp)));
                         }
                     }
                 });
@@ -661,15 +646,11 @@ public:
                             this_alt.value = detail::rewrap_maybe_recursive<ThisAlt>(std::move(rhs_alt).value);
                         } else {
                             //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
-                            visit_reset();
-                            std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
-                            index_ = corresponding_i;
+                            reset_construct<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
                         }
                     } else { // rhs holds something, and *this is valueless
                         //emplace<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
-                        visit_reset();
-                        std::construct_at(&storage(), std::in_place_index<corresponding_i>, detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
-                        index_ = corresponding_i;
+                        reset_construct<corresponding_i>(detail::rewrap_maybe_recursive<VT>(std::move(rhs_alt).value));
                     }
                 });
             }
@@ -687,9 +668,7 @@ public:
         noexcept(std::is_nothrow_constructible_v<T, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
-        visit_reset();
-        std::construct_at(&storage(), std::in_place_index<I>, std::forward<Args>(args)...);
-        index_ = I;
+        reset_construct<I>(std::forward<Args>(args)...);
         return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
@@ -701,9 +680,7 @@ public:
         noexcept(std::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = detail::find_index_v<T, unwrapped_types>;
-        visit_reset();
-        std::construct_at(&storage(), std::in_place_index<I>, il, std::forward<Args>(args)...);
-        index_ = I;
+        reset_construct<I>(il, std::forward<Args>(args)...);
         return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
@@ -714,9 +691,7 @@ public:
         noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        visit_reset();
-        std::construct_at(&storage(), std::in_place_index<I>, std::forward<Args>(args)...);
-        index_ = I;
+        reset_construct<I>(std::forward<Args>(args)...);
         return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
@@ -727,9 +702,7 @@ public:
         noexcept(std::is_nothrow_constructible_v<detail::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        visit_reset();
-        std::construct_at(&storage(), std::in_place_index<I>, il, std::forward<Args>(args)...);
-        index_ = I;
+        reset_construct<I>(il, std::forward<Args>(args)...);
         return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
     }
 
@@ -760,19 +733,19 @@ public:
                         }
 
                     } else if constexpr (i == detail::variant_npos) {
-                        this->template emplace_on_valueless<j>(std::move(rhs_alt.value));
+                        this->template construct_on_valueless<j>(std::move(rhs_alt.value));
                         rhs.template reset<j>();
 
                     } else if constexpr (j == detail::variant_npos) {
-                        rhs.template emplace_on_valueless<i>(std::move(this_alt.value));
+                        rhs.template construct_on_valueless<i>(std::move(this_alt.value));
                         this->template reset<i>();
 
                     } else {
                         auto tmp = std::move(this_alt.value);
                         this->template reset<i>();
-                        this->template emplace_on_valueless<j>(std::move(rhs_alt.value));
+                        this->template construct_on_valueless<j>(std::move(rhs_alt.value));
                         rhs.template reset<j>();
-                        rhs.template emplace_on_valueless<i>(std::move(tmp));
+                        rhs.template construct_on_valueless<i>(std::move(tmp));
                     }
                 });
             });
@@ -788,8 +761,8 @@ public:
                 });
             } else {
                 auto tmp = std::move(*this);
-                this->dynamic_emplace_from(std::move(rhs));
-                rhs.dynamic_emplace_from(std::move(tmp));
+                this->reset_steal_from(std::move(rhs));
+                rhs.reset_steal_from(std::move(tmp));
             }
         }
     }
@@ -922,6 +895,12 @@ public:
     friend struct detail::exactly_once_index;
 
 private:
+    // hack: reduce compile error by half on unrelated overloads
+    template<std::same_as<detail::valueless_t> Valueless>
+    constexpr explicit rvariant(Valueless const&) noexcept
+        : base_type(detail::valueless)
+    {}
+
     template<class From, class To>
     friend constexpr std::size_t detail::subset_reindex(std::size_t index) noexcept;
 
@@ -931,11 +910,19 @@ private:
         return detail::subset_reindex<W, rvariant>(index);
     }
 
-    // hack: reduce compile error by half on unrelated overloads
-    template<std::same_as<detail::valueless_t> Valueless>
-    constexpr explicit rvariant(Valueless const&) noexcept
-        : base_type(detail::valueless)
-    {}
+    template<std::size_t I, class... Args>
+    constexpr void reset_construct(Args&&... args)
+        noexcept(noexcept(base_type::template reset_construct<I>(std::forward<Args>(args)...)))
+    {
+        return base_type::template reset_construct<I>(std::forward<Args>(args)...);
+    }
+
+    template<std::size_t I, class... Args>
+    constexpr void construct_on_valueless(Args&&... args)
+        noexcept(noexcept(base_type::template construct_on_valueless<I>(std::forward<Args>(args)...)))
+    {
+        return base_type::template construct_on_valueless<I>(std::forward<Args>(args)...);
+    }
 };
 
 // -------------------------------------------------
