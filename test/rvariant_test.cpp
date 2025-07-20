@@ -113,7 +113,7 @@ TEST_CASE("storage")
         }
 
         using VD = yk::detail::variadic_union<true, A>;
-        STATIC_REQUIRE(std::is_same_v<yk::detail::variant_storage_t<T>, VD>);
+        STATIC_REQUIRE(std::is_same_v<yk::detail::variant_storage_for<T>, VD>);
         {
             STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);   // valueless
 
@@ -877,7 +877,7 @@ TEST_CASE("emplace")
 TEST_CASE("raw_get")
 {
     yk::rvariant<int, float> var = 42;
-    using Storage = yk::detail::variant_storage_t<int, float>;
+    using Storage = yk::detail::variant_storage_for<int, float>;
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&>())), yk::detail::alternative<0, int>&>);
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&&>())), yk::detail::alternative<0, int>&&>);
 }

@@ -226,31 +226,25 @@ constexpr bool raw_visit_noexcept<Visitor, Storage, std::index_sequence<Is...>> 
 template<class Visitor, class Storage, class Seq = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
 struct raw_visit_dispatch_table;
 
+template<class Visitor, class Storage>
+using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visitor&&, Storage&&)
+    noexcept(raw_visit_noexcept<Visitor, Storage>);
+
 template<class Visitor, class Storage, std::size_t... Is>
 struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
 {
-    using function_type = raw_visit_return_type<Visitor, Storage> (*)(Visitor&&, Storage&&)
-        noexcept(raw_visit_noexcept<Visitor, Storage>);
-
-    static constexpr function_type value[] = {
+    static constexpr raw_visit_function_ptr<Visitor, Storage> value[] = {
         &raw_visit_valueless<Visitor, Storage>,
         &raw_visit_dispatch<Is, Visitor, Storage>...
     };
 };
 
-template<class Visitor, class Storage>
-constexpr raw_visit_return_type<Visitor, Storage>
-raw_visit(std::size_t index, Storage&& storage, Visitor&& vis) noexcept(raw_visit_noexcept<Visitor, Storage>)
-{
-    constexpr auto const& table = raw_visit_dispatch_table<Visitor, Storage>::value;
-    return std::invoke(table[index + 1], std::forward<Visitor>(vis), std::forward<Storage>(storage));
-}
 
 template<class Seq, class... Ts>
-struct variant_storage_selector;
+struct variant_storage_for_impl;
 
 template<std::size_t... Is, class... Ts>
-struct variant_storage_selector<std::index_sequence<Is...>, Ts...>
+struct variant_storage_for_impl<std::index_sequence<Is...>, Ts...>
 {
     // sanity check
     static_assert(
@@ -265,7 +259,7 @@ struct variant_storage_selector<std::index_sequence<Is...>, Ts...>
 };
 
 template<class... Ts>
-using variant_storage_t = typename variant_storage_selector<std::index_sequence_for<Ts...>, Ts...>::type;
+using variant_storage_for = typename variant_storage_for_impl<std::index_sequence_for<Ts...>, Ts...>::type;
 
 } // yk::detail
 
