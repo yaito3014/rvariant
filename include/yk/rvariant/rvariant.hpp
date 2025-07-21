@@ -9,6 +9,7 @@
 
 #include <yk/detail/lang_core.hpp>
 #include <yk/detail/cond_trivial.hpp>
+#include <yk/core/type_traits.hpp>
 
 #include <functional>
 #include <initializer_list>
@@ -23,70 +24,6 @@
 namespace yk {
 
 namespace detail {
-
-// Not used because it ruins some type traits.
-// Exists for historical reference.
-#if 0
-template<class Alt, class T>
-struct FUN_body
-{
-    // https://eel.is/c++draft/variant#ctor-14
-
-    /* constexpr */ T&& invent_ref(); // { return static_cast<T&&>(*static_cast<T*>(nullptr)); }
-    Alt x[1] = {std::forward<T>(invent_ref())};
-
-    // Does not work on non-MSVC
-    //Alt x[1] = {std::forward<T>(std::declval<T>())};
-};
-#endif
-
-template<std::size_t I, class Alt, class T>
-struct FUN_overload
-{
-    using dest_array = Alt[]; // this was the existing vendors' approach
-
-    constexpr std::integral_constant<std::size_t, I>
-    operator()(Alt)
-        requires requires(T&& t) {
-            { dest_array{std::forward<T>(t)} }; // this was the existing vendors' approach
-
-            // This appears to work, but certainly breaks something on MSVC
-            // e.g. std::is_constructible_v<rvariant<int>, double> shows wrong value on Intellisense only
-            //{ FUN_body<Alt, T>{} };
-        }
-    {
-        return {}; // silence MSVC warning
-    }
-};
-
-// imaginary function
-template<class T, class Variant, class Seq = std::make_index_sequence<variant_size_v<Variant>>>
-struct FUN;
-
-template<class T, class... Ts, std::size_t... Is>
-struct FUN<T, rvariant<Ts...>, std::index_sequence<Is...>>
-    : FUN_overload<Is, pack_indexing_t<Is, Ts...>, T>...
-{
-    using FUN_overload<Is, pack_indexing_t<Is, Ts...>, T>::operator()...;
-};
-
-template<class T, class Variant>
-using accepted_index = decltype(FUN<T, Variant>{}(std::declval<T>()));
-
-template<class T, class Variant>
-inline constexpr std::size_t accepted_index_v = accepted_index<T, Variant>::value;
-
-template<class T, class Variant>
-struct accepted_type;
-
-template<class T, class... Ts>
-struct accepted_type<T, rvariant<Ts...>> {
-    using type = pack_indexing_t<accepted_index_v<T, rvariant<Ts...>>, Ts...>;
-};
-
-template<class T, class Variant>
-using accepted_type_t = typename accepted_type<T, Variant>::type;
-
 
 template<class T, class... Ts>
 struct has_recursive_wrapper_duplicate
@@ -505,11 +442,10 @@ public:
             (!std::is_same_v<std::remove_cvref_t<T>, rvariant>) &&
             (!detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>) &&
             (!detail::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>) &&
-            requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); } &&
-            std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>
+            std::is_constructible_v<core::aggregate_initialize_resolution_t<T, Ts...>, T>
     constexpr /* not explicit */ rvariant(T&& t)
-        noexcept(std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>)
-        : base_type(std::in_place_index<detail::accepted_index_v<T, rvariant>>, std::forward<T>(t))
+        noexcept(std::is_nothrow_constructible_v<core::aggregate_initialize_resolution_t<T, Ts...>, T>)
+        : base_type(std::in_place_index<core::aggregate_initialize_resolution_index<T, Ts...>>, std::forward<T>(t))
     {}
 
     // Generic assignment operator
@@ -517,23 +453,22 @@ public:
     template<class T>
         requires
             (!std::is_same_v<std::remove_cvref_t<T>, rvariant>) &&
-            requires(T&& t) { detail::FUN<T, rvariant>{}(std::forward<T>(t)); } &&
-            std::is_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
-            std::is_constructible_v<detail::accepted_type_t<T, rvariant>, T>
+            std::is_assignable_v<core::aggregate_initialize_resolution_t<T, Ts...>&, T> &&
+            std::is_constructible_v<core::aggregate_initialize_resolution_t<T, Ts...>, T>
     constexpr rvariant& operator=(T&& t)
         noexcept(
-            std::is_nothrow_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
-            std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>
+            std::is_nothrow_assignable_v<core::aggregate_initialize_resolution_t<T, Ts...>&, T> &&
+            std::is_nothrow_constructible_v<core::aggregate_initialize_resolution_t<T, Ts...>, T>
         )
     {
-        using Tj = detail::accepted_type_t<T, rvariant>; // either plain type or wrapped with recursive_wrapper
-        constexpr std::size_t j = detail::accepted_index_v<T, rvariant>;
+        using Tj = core::aggregate_initialize_resolution_t<T, Ts...>; // either plain type or wrapped with recursive_wrapper
+        constexpr std::size_t j = core::aggregate_initialize_resolution_index<T, Ts...>;
         static_assert(j != std::variant_npos);
 
         this->raw_visit([this, &t]<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt>& this_alt)
             noexcept(
-                std::is_nothrow_assignable_v<detail::accepted_type_t<T, rvariant>&, T> &&
-                std::is_nothrow_constructible_v<detail::accepted_type_t<T, rvariant>, T>
+                std::is_nothrow_assignable_v<Tj&, T> &&
+                std::is_nothrow_constructible_v<Tj, T>
             )
         {
             if constexpr (i == j) {
@@ -804,7 +739,7 @@ public:
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
-                    static_assert(j != detail::find_index_npos);
+                    static_assert(j != detail::find_npos);
                     return rvariant<Us...>(std::in_place_index<j>, alt.value);
                 }
             });
@@ -816,7 +751,7 @@ public:
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
-                    if constexpr (j == detail::find_index_npos) {
+                    if constexpr (j == detail::find_npos) {
                         throw std::bad_variant_access{};
                     } else {
                         return rvariant<Us...>(std::in_place_index<j>, alt.value);
@@ -844,7 +779,7 @@ public:
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
-                    static_assert(j != detail::find_index_npos);
+                    static_assert(j != detail::find_npos);
                     return rvariant<Us...>(std::in_place_index<j>, std::move(alt).value);
                 }
             });
@@ -856,7 +791,7 @@ public:
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
-                    if constexpr (j == detail::find_index_npos) {
+                    if constexpr (j == detail::find_npos) {
                         throw std::bad_variant_access{};
                     } else {
                         return rvariant<Us...>(std::in_place_index<j>, std::move(alt).value);

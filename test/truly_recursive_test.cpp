@@ -1,4 +1,4 @@
-#include "yk/rvariant/recursive_wrapper.hpp"
+﻿#include "yk/rvariant/recursive_wrapper.hpp"
 #include "yk/rvariant/rvariant.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -8,11 +8,30 @@
 # pragma warning(disable: 4244) // implicit numeric conversion
 #endif
 
-TEST_CASE("truly recursive", "[recursive]")
+TEST_CASE("truly recursive", "[wrapper][recursive]")
 {
     // Although this pattern is perfectly valid in type level,
     // it inherently allocates infinite amount of memory.
     // We just need to make sure it has the correct type traits.
+
+    // std::variant
+    {
+        struct SubExpr;
+        using Expr = std::variant<yk::recursive_wrapper<SubExpr>>;
+        struct SubExpr { Expr expr; };
+
+        STATIC_REQUIRE( std::is_constructible_v<Expr, Expr>);
+        STATIC_REQUIRE( std::is_constructible_v<Expr, SubExpr>);
+        STATIC_REQUIRE(!std::is_constructible_v<Expr, int>); // this should result in infinite recursion if our implementation is wrong
+
+        STATIC_REQUIRE( std::is_constructible_v<SubExpr, SubExpr>);
+        STATIC_REQUIRE( std::is_constructible_v<SubExpr, Expr>);
+        STATIC_REQUIRE(!std::is_constructible_v<SubExpr, int>);
+
+        //Expr expr; // infinite malloc
+    }
+
+    // rvariant
     {
         struct SubExpr;
         using Expr = yk::rvariant<yk::recursive_wrapper<SubExpr>>;
@@ -20,7 +39,7 @@ TEST_CASE("truly recursive", "[recursive]")
 
         STATIC_REQUIRE( std::is_constructible_v<Expr, Expr>);
         STATIC_REQUIRE( std::is_constructible_v<Expr, SubExpr>);
-        STATIC_REQUIRE(!std::is_constructible_v<Expr, int>);
+        STATIC_REQUIRE(!std::is_constructible_v<Expr, int>); // this should result in infinite recursion if our implementation is wrong
 
         STATIC_REQUIRE( std::is_constructible_v<SubExpr, SubExpr>);
         STATIC_REQUIRE( std::is_constructible_v<SubExpr, Expr>);
@@ -46,24 +65,22 @@ TEST_CASE("truly recursive", "[recursive]")
         STATIC_REQUIRE( std::is_constructible_v<Expr, int>);
         STATIC_REQUIRE(!std::is_constructible_v<Expr, double>); // false because equally viable
 
-        //STATIC_REQUIRE(std::is_constructible_v<SubExpr, int>); // why fail in MSVC?????
-        STATIC_REQUIRE( std::is_constructible_v<SubExpr, int&&>); // ok
+        STATIC_REQUIRE( std::is_constructible_v<SubExpr, int>);
         STATIC_REQUIRE(!std::is_constructible_v<SubExpr, double>); // false because equally viable
 
         REQUIRE_NOTHROW(Expr{});
         REQUIRE_NOTHROW(SubExpr{});
         REQUIRE_NOTHROW(Expr{42});
-        REQUIRE_NOTHROW(SubExpr{42}); // OK in MSVC.... (in contrast to failure above)
+        REQUIRE_NOTHROW(SubExpr{42});
 
-        {
-            Expr expr{std::in_place_index<0>, 42};
-        }
-        {
-            Expr expr{std::in_place_index<1>, SubExpr{42}};
-        }
-        {
-            Expr expr{42};
-        }
+        STATIC_REQUIRE(std::is_constructible_v<Expr, std::in_place_index_t<0>, int>);
+        CHECK_NOTHROW(Expr{std::in_place_index<0>, 42});
+
+        STATIC_REQUIRE(std::is_constructible_v<Expr, std::in_place_index_t<1>, SubExpr>);
+        CHECK_NOTHROW(Expr{std::in_place_index<1>, SubExpr{42}});
+
+        STATIC_REQUIRE(std::is_constructible_v<Expr, int>);
+        CHECK_NOTHROW(Expr{42});
     }
 }
 

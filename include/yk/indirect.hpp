@@ -19,10 +19,6 @@ public:
     using pointer = typename std::allocator_traits<Alloc>::pointer;
     using const_pointer = typename std::allocator_traits<Alloc>::const_pointer;
 
-    constexpr explicit scoped_allocation(Alloc const& a)
-        : alloc_(a)
-        , ptr_(std::allocator_traits<Alloc>::allocate(alloc_, 1))
-    {}
 
     template<class... Args>
     constexpr explicit scoped_allocation(Alloc const& a, std::in_place_t, Args&&... args)
@@ -32,6 +28,7 @@ public:
     }
 
     constexpr ~scoped_allocation()
+        noexcept(noexcept(std::allocator_traits<Alloc>::deallocate(alloc_, ptr_, 1)))
     {
         if (ptr_) std::allocator_traits<Alloc>::deallocate(alloc_, ptr_, 1);
     }
@@ -41,6 +38,11 @@ public:
     [[nodiscard]] constexpr pointer release() noexcept { return std::exchange(ptr_, nullptr); }
 
 private:
+    constexpr explicit scoped_allocation(Alloc const& a)
+        : alloc_(a)
+        , ptr_(std::allocator_traits<Alloc>::allocate(alloc_, 1))
+    {}
+
     YK_NO_UNIQUE_ADDRESS Alloc alloc_;
     pointer ptr_;
 };

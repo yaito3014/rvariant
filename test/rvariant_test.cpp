@@ -42,7 +42,7 @@ TEST_CASE("find_index", "[lang_core]")
     STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<int, float, double>> == 0);
     STATIC_REQUIRE(yk::detail::find_index_v<float, yk::detail::type_list<int, float, double>> == 1);
     STATIC_REQUIRE(yk::detail::find_index_v<double, yk::detail::type_list<int, float, double>> == 2);
-    STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<float, double>> == yk::detail::find_index_npos);
+    STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<float, double>> == yk::detail::find_npos);
 }
 
 TEST_CASE("pack_union", "[lang_core]")
@@ -373,14 +373,6 @@ TEST_CASE("storage")
     // NOLINTEND(modernize-use-equals-default)
 }
 
-// Note: Requires either (A) constexpr reinterpret_cast (C++26) or (B) std::default_construct_at
-constexpr bool is_constexpr_default_construct_testable =
-#if __cpp_lib_constexpr_new >= 202406L
-    true;
-#else
-    false;
-#endif
-
 TEST_CASE("default construction")
 {
     {
@@ -417,7 +409,7 @@ TEST_CASE("default construction")
             return value;
         };
 
-#if is_constexpr_default_construct_testable
+#if __cpp_lib_constexpr_new >= 202406L
         STATIC_CHECK(default_constructed_value() == 0);
 #else
         CHECK(default_constructed_value() == 0);
@@ -731,10 +723,10 @@ TEST_CASE("raw_get")
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&&>())), yk::detail::alternative<0, int>&&>);
 }
 
+// Required for suppressing std::move(const&)
+// NOLINTBEGIN(performance-move-const-arg)
 TEST_CASE("get")
 {
-    // Required for suppressing std::move(const&)
-    // NOLINTBEGIN(performance-move-const-arg)
     {
         yk::rvariant<int, float> var = 42;
         REQUIRE(yk::get<0>(std::as_const(var)) == 42);
@@ -751,6 +743,10 @@ TEST_CASE("get")
         REQUIRE(yk::get<int>(std::move(var)) == 42);
         REQUIRE_THROWS(yk::get<float>(var));
     }
+}
+
+TEST_CASE("get", "[wrapper]")
+{
     {
         yk::rvariant<yk::recursive_wrapper<int>, float> var = 42;
         REQUIRE(yk::get<0>(std::as_const(var)) == 42);
@@ -765,8 +761,8 @@ TEST_CASE("get")
         REQUIRE(yk::get<int>(std::move(std::as_const(var))) == 42);
         REQUIRE(yk::get<int>(std::move(var)) == 42);
     }
-    // NOLINTEND(performance-move-const-arg)
 }
+// NOLINTEND(performance-move-const-arg)
 
 TEST_CASE("get_if")
 {
@@ -837,6 +833,11 @@ TEST_CASE("holds_alternative")
         REQUIRE(yk::holds_alternative<int>(var));
     }
 }
+
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4244) // implicit numeric conversion
+#endif
 
 TEST_CASE("recursive_wrapper") // not [recursive]
 {
@@ -930,6 +931,10 @@ TEST_CASE("recursive_wrapper") // not [recursive]
     }
 }
 
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+
 TEST_CASE("unwrap_recursive") // not [recursive]
 {
     STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::unwrap_recursive(std::declval<int&>())), int&>);
@@ -979,19 +984,8 @@ TEST_CASE("maybe_wrapped") // not [recursive]
     }
 }
 
-template<class... Ts>
-constexpr auto FUN_not_UB = []<class T>(T&& t) constexpr {
-    yk::detail::FUN<T, yk::rvariant<Ts...>>{}(std::forward<T>(t));
-    return true;
-};
-
 TEST_CASE("non_recursive_same_as_std") // not [recursive]
 {
-    {
-        STATIC_REQUIRE(FUN_not_UB<int>(42));
-        STATIC_REQUIRE(FUN_not_UB<int, double>(42));
-    }
-
     {
         using V = std::variant<int>;
         STATIC_REQUIRE(std::is_constructible_v<V, V>);

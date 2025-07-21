@@ -2,7 +2,7 @@
 #define YK_RVARIANT_RECURSIVE_WRAPPER_HPP
 
 #include <yk/detail/lang_core.hpp>
-#include <yk/rvariant/detail/rvariant_fwd.hpp>
+#include <yk/core/type_traits.hpp>
 #include <yk/indirect.hpp>
 
 #include <compare>
@@ -25,11 +25,6 @@ class recursive_wrapper
     static_assert(std::is_same_v<T, typename std::allocator_traits<Allocator>::value_type>);
 
     using base_type = yk::indirect<T, Allocator>;
-
-    [[nodiscard]] constexpr base_type&        base() &       noexcept { return static_cast<base_type&       >(*this); }
-    [[nodiscard]] constexpr base_type const&  base() const&  noexcept { return static_cast<base_type const& >(*this); }
-    [[nodiscard]] constexpr base_type&&       base() &&      noexcept { return static_cast<base_type&&      >(*this); }
-    [[nodiscard]] constexpr base_type const&& base() const&& noexcept { return static_cast<base_type const&&>(*this); }
 
 public:
     using typename base_type::allocator_type;
@@ -63,12 +58,21 @@ public:
         : base_type(std::allocator_arg, a, std::move(other))
     {}
 
+    // Converting constructor
     template<class U = T>
         requires
             (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>) &&
             (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>) &&
-            std::is_constructible_v<T, U> &&
-            std::is_default_constructible_v<Allocator>
+            std::is_default_constructible_v<Allocator> &&
+            //std::is_constructible_v<T, U> && // UNIMPLEMENTABLE for recursive types; instantiates infinitely
+            (
+                // Required for `recursive_wrapper<double> i = 3;`
+                std::is_convertible_v<U, T> ||
+
+                // Required for making recursive_wrapper itself SFINAE-friendly;
+                // otherwise `std::is_constructible_v<recursive_wrapper<int>, X>` will be true for any `X`
+                core::is_aggregate_initializable_v<T, U>
+            )
     constexpr explicit(!std::is_convertible_v<U, T>)
     recursive_wrapper(U&& x)
         noexcept(noexcept(base_type(std::forward<U>(x))))
@@ -145,12 +149,7 @@ public:
         return *this;
     }
 
-    template<class Self>
-    [[nodiscard]] constexpr auto&& operator*(this Self&& self) noexcept
-    {
-        return *std::forward<Self>(self).base();
-    }
-
+    using base_type::operator*;
     using base_type::operator->;
     using base_type::valueless_after_move;
     using base_type::get_allocator;

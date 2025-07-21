@@ -15,98 +15,232 @@ TEST_CASE("alternative", "[flexible]")
 
 TEST_CASE("flexible", "[flexible]")
 {
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int>, int>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int>, yk::recursive_wrapper<int>>);
-
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>>, yk::recursive_wrapper<int>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>>, int>);
-
     struct X {};
     struct NonExistent {};
-
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, int>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, X>);
-
     // ------------------------------------------
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int>, int>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int>, NonExistent>);
+
+    // ==========================================
+    // <int, X> order for the LHS
+    // ==========================================
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, int>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, X>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, NonExistent>);
+    // ------------------------------------------
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, int>>);
 
     STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, int>>);
     STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X>>);
     STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, int, X>>);
     STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X, int>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, int, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X,      NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, int, NonExistent>>);
 
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X, int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X, int>>);
-    // ------------------------------------------
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<X, int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<X, int>>);
-
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, int>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, int, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, X, int>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, int, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, X, int>>);
-
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<X, int>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<int, X>>);
-    STATIC_REQUIRE(std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<X, int>>);
-    // ------------------------------------------
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, yk::recursive_wrapper<int>>>);
-
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X, yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X, yk::recursive_wrapper<int>>>);
-
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<yk::recursive_wrapper<int>>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<int>>);
     STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X, yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X, yk::recursive_wrapper<int>>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X, int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<X, int>>);
     // ------------------------------------------
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<X, yk::recursive_wrapper<int>>>);
 
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, X, yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<yk::recursive_wrapper<int>, X>, yk::rvariant<NonExistent, X, yk::recursive_wrapper<int>>>);
+    // ==========================================
+    // <X, int> order for the LHS
+    // ==========================================
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, int>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, X>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, NonExistent>);
+    // ------------------------------------------
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X, int>>);
 
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<yk::recursive_wrapper<int>>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<X>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<yk::recursive_wrapper<int>, X>>);
-    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, yk::recursive_wrapper<int>, X>, yk::rvariant<X, yk::recursive_wrapper<int>>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, X, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X,      NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X, int, NonExistent>>);
+
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<X, int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<X, int>>);
+    // ------------------------------------------
+}
+
+TEST_CASE("flexible", "[flexible][wrapper]")
+{
+    struct X {};
+    struct NonExistent {};
+    using RW_int = yk::recursive_wrapper<int>;
+    // ------------------------------------------
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int>, RW_int>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int>, RW_int>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int>, int>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int>, NonExistent>);
+
+    // ==========================================
+    // <int, X> order for the LHS
+    // ==========================================
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X, int>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, X, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X,      NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X, int, NonExistent>>);
+
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<X, int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<X, int>>);
+    // ------------------------------------------
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, RW_int>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<NonExistent, X, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<RW_int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X,         NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<RW_int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X>, yk::rvariant<X, RW_int, NonExistent>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, int, X>, yk::rvariant<X, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<int, X, NonExistent>, yk::rvariant<X, RW_int>>);
+    // ------------------------------------------
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X, RW_int>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<NonExistent, X, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<RW_int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X,         NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<RW_int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<RW_int, X>, yk::rvariant<X, RW_int, NonExistent>>);
+
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, RW_int, X>, yk::rvariant<X, RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<RW_int, X, NonExistent>, yk::rvariant<X, RW_int>>);
+
+    // ==========================================
+    // <X, int> order for the LHS
+    // ==========================================
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X, int>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, X, int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<int, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X, int, NonExistent>>);
+
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<X, int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<X, int>>);
+    // ------------------------------------------
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X, RW_int>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<NonExistent, X, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<RW_int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X,         NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<RW_int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int>, yk::rvariant<X, RW_int, NonExistent>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<NonExistent, X, int>, yk::rvariant<X, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, int, NonExistent>, yk::rvariant<X, RW_int>>);
+    // ------------------------------------------
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X, RW_int>>);
+
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, RW_int, X>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<NonExistent, X, RW_int>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<RW_int,    NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X,         NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<RW_int, X, NonExistent>>);
+    STATIC_REQUIRE(!std::is_constructible_v<yk::rvariant<X, RW_int>, yk::rvariant<X, RW_int, NonExistent>>);
+
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<NonExistent, X, RW_int>, yk::rvariant<X, RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<RW_int>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<RW_int, X>>);
+    STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<X, RW_int>>);
 }
 
 TEST_CASE("flexible copy construction", "[flexible]")
@@ -215,6 +349,11 @@ TEST_CASE("flexible move assignment", "[flexible]")
     }
 }
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4244) // implicit numeric conversion
+#endif
+
 TEST_CASE("subset", "[flexible]")
 {
     STATIC_REQUIRE(yk::detail::subset_reindex<yk::rvariant<int, float>, yk::rvariant<int, float>>(0) == 0);
@@ -250,3 +389,7 @@ TEST_CASE("subset", "[flexible]")
 
     // TODO: valueless case
 }
+
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif

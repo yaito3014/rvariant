@@ -11,10 +11,14 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(
     yk_rvariant_test
+
+    # Independent Polyfill
     indirect_test.cpp
+
     rvariant_test.cpp
     flexible_test.cpp
-    recursive_test.cpp
+    recursive_wrapper_test.cpp
+    truly_recursive_test.cpp
 )
 
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)

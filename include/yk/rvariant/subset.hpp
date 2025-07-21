@@ -16,9 +16,7 @@ namespace detail {
 template<class From, class To>
 struct subset_reindex_impl;
 
-template<
-    class... Ts, class... Us
->
+template<class... Ts, class... Us>
 struct subset_reindex_impl<type_list<Ts...>, type_list<Us...>>
 {
     static constexpr std::size_t table[]{
@@ -47,8 +45,10 @@ template<class... Us, class... Ts>
 struct is_subset_of<rvariant<Us...>, rvariant<Ts...>>
     : std::conjunction<
         std::disjunction<
-            detail::is_in<Us, Ts...>,
-            detail::is_in<Us, unwrap_recursive_t<Ts>...>
+            detail::disjunction_for<std::is_same, Us, Ts...>,
+            detail::disjunction_for<std::is_same, Us, unwrap_recursive_t<Ts>...>
+            //detail::disjunction_for<std::is_convertible, Us, Ts...>,
+            //detail::disjunction_for<std::is_convertible, Us, unwrap_recursive_t<Ts>...>
         >...
     >
 {};
