@@ -111,29 +111,17 @@ public:
                 visit_reset();
             } else {
                 if (index_ == j) {
-                    // (2.3)
                     raw_get<j>(storage()).value = rhs_alt.value;
                 } else {
-                    // Related:
-                    // (C++17) 2904. Make variant move-assignment more exception safe https://cplusplus.github.io/LWG/issue2904
-
                     // copy(noexcept) && move(throw)    => A
                     // copy(noexcept) && move(noexcept) => A
                     // copy(throw)    && move(throw)    => A
                     // copy(throw)    && move(noexcept) => B
                     if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
-                        // A, (2.4): emplace<j>(rhs_alt.value)
-                        reset_construct<j>(rhs_alt.value);
+                        reset_construct<j>(rhs_alt.value);  // A
                     } else {
-                        // B, (2.5): operator=(rvariant(rhs))
-
-                        // ... is semantically equivalent to above
-                        // auto tmp = rhs_alt.value;
-                        // emplace<j>(std::move(tmp));
-
-                        // ... is equivalent to:
                         auto tmp = rhs_alt.value;
-                        reset_construct<j>(std::move(tmp));
+                        reset_construct<j>(std::move(tmp)); // B
                     }
                 }
             }
@@ -152,13 +140,9 @@ public:
 
             } else {
                 if (index_ == j) {
-                    // (8.3)
                     raw_get<j>(storage()).value = std::move(rhs_alt).value;
-                    // (10.2): index() will be j
                 } else {
-                    // (8.4): emplace<j>(std::move(rhs_alt).value)
                     reset_construct<j>(std::move(rhs_alt).value);
-                    // (10.1): in case of exception, hold no value
                 }
             }
         });
@@ -347,7 +331,7 @@ public:
 
     // --------------------------------------
 
-    // Generic constructor (non-wrapped T)
+    // Generic constructor
     // <https://eel.is/c++draft/variant#lib:variant,constructor___>
     template<class T>
         requires
@@ -385,25 +369,13 @@ public:
             )
         {
             if constexpr (i == j) {
-                // (13.1)
                 this_alt.value = std::forward<T>(t);
-                // (16.1): valueless_by_exception will be `false` even if exception is thrown
             } else {
                 if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
-                    // (13.2)
-                    //emplace<j>(std::forward<T>(t));
                     reset_construct<j>(std::forward<T>(t));
-                    // (16.2): permitted to be valueless
-
                 } else {
-                    // Related:
-                    // (C++23) 3585. Variant converting assignment with immovable alternative https://cplusplus.github.io/LWG/issue3585
-
-                    // (13.3)
-                    //emplace<j>(Tj(std::forward<T>(t)));
                     Tj tmp(std::forward<T>(t));
                     reset_construct<j>(std::move(tmp));
-                    // (16.2): permitted to be valueless
                 }
             }
         });
@@ -494,20 +466,16 @@ public:
                             this_alt.value = detail::forward_maybe_wrapped<ThisAlt>(rhs_alt.value);
                         } else {
                             if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
-                                //emplace<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt.value));
                                 reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt.value));
                             } else {
-                                //this->operator=(rvariant<Us...>(rhs));
                                 auto tmp = rhs_alt.value;
                                 reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(tmp)));
                             }
                         }
                     } else {
                         if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
-                            //emplace<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt.value));
                             reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt.value));
                         } else {
-                            //this->operator=(rvariant<Us...>(rhs));
                             auto tmp = rhs_alt.value;
                             reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(tmp)));
                         }
@@ -540,7 +508,7 @@ public:
             if constexpr (j == std::variant_npos) {
                 this->visit_reset();
 
-            } else { // rhs holds something
+            } else {
                 static constexpr std::size_t corresponding_i = subset_reindex_for<rvariant<Us...>>(j);
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<Uj>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<Uj>>);
@@ -551,15 +519,13 @@ public:
                         rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
                     )
                 {
-                    if constexpr (i != std::variant_npos) { // rhs holds something, and *this holds something
+                    if constexpr (i != std::variant_npos) {
                         if constexpr (std::is_same_v<unwrap_recursive_t<Uj>, unwrap_recursive_t<ThisAlt>>) {
                             this_alt.value = detail::forward_maybe_wrapped<ThisAlt>(std::move(rhs_alt).value);
                         } else {
-                            //emplace<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt).value));
                             reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt).value));
                         }
-                    } else { // rhs holds something, and *this is valueless
-                        //emplace<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt).value));
+                    } else {
                         reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt).value));
                     }
                 });
