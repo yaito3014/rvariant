@@ -78,10 +78,11 @@ struct variant_alternative<I, rvariant<Ts...>> : core::pack_indexing<I, unwrap_r
 namespace detail {
 
 template<class VT, class RHS>
-struct rewrap_maybe_recursive_impl;
+struct forward_maybe_wrapped_impl; // [rvariant.rvariant.general]: different allocators are not allowed
 
+// recursive_wrapper<int> val = recursive_wrapper<int>{42};
 template<class T, class Allocator>
-struct rewrap_maybe_recursive_impl<recursive_wrapper<T, Allocator>, recursive_wrapper<T, Allocator>>
+struct forward_maybe_wrapped_impl<recursive_wrapper<T, Allocator>, recursive_wrapper<T, Allocator>>
 {
     template<class Wrapped>
     [[nodiscard]] static constexpr decltype(auto) apply(Wrapped&& wrapped YK_LIFETIMEBOUND) noexcept
@@ -91,21 +92,9 @@ struct rewrap_maybe_recursive_impl<recursive_wrapper<T, Allocator>, recursive_wr
     }
 };
 
-// [rvariant.rvariant.general]: different allocators are not allowed
-
+// recursive_wrapper<int> val = 42;
 template<class T, class Allocator>
-struct rewrap_maybe_recursive_impl<T, recursive_wrapper<T, Allocator>>
-{
-    template<class Wrapped>
-    [[nodiscard]] static constexpr decltype(auto) apply(Wrapped&& wrapped YK_LIFETIMEBOUND) noexcept
-    {
-        static_assert(std::is_same_v<std::remove_cvref_t<Wrapped>, recursive_wrapper<T, Allocator>>);
-        return *std::forward<Wrapped>(wrapped);
-    }
-};
-
-template<class T, class Allocator>
-struct rewrap_maybe_recursive_impl<recursive_wrapper<T, Allocator>, T>
+struct forward_maybe_wrapped_impl<recursive_wrapper<T, Allocator>, T>
 {
     template<class Value>
     [[nodiscard]] static constexpr decltype(auto) apply(Value&& value YK_LIFETIMEBOUND) noexcept
@@ -115,8 +104,9 @@ struct rewrap_maybe_recursive_impl<recursive_wrapper<T, Allocator>, T>
     }
 };
 
+// int val = 42;
 template<class T>
-struct rewrap_maybe_recursive_impl<T, T>
+struct forward_maybe_wrapped_impl<T, T>
 {
     template<class Value>
     [[nodiscard]] static constexpr decltype(auto) apply(Value&& value YK_LIFETIMEBOUND) noexcept
@@ -127,10 +117,10 @@ struct rewrap_maybe_recursive_impl<T, T>
 };
 
 template<class VT, class RHS>
-[[nodiscard]] constexpr decltype(auto) rewrap_maybe_recursive(RHS&& rhs YK_LIFETIMEBOUND) noexcept
+[[nodiscard]] constexpr decltype(auto) forward_maybe_wrapped(RHS&& rhs YK_LIFETIMEBOUND) noexcept
 {
     static_assert(!std::is_reference_v<VT> && !std::is_const_v<VT>);
-    return rewrap_maybe_recursive_impl<VT, std::remove_cvref_t<RHS>>::apply(std::forward<RHS>(rhs));
+    return forward_maybe_wrapped_impl<VT, std::remove_cvref_t<RHS>>::apply(std::forward<RHS>(rhs));
 }
 
 } // detail
