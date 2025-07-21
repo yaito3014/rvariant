@@ -18,34 +18,34 @@
 #include <cstddef>
 
 
-TEST_CASE("pack_indexing", "[lang_core]")
+TEST_CASE("pack_indexing", "[core]")
 {
-    STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int>, int>);
-    STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<0, int, float>, int>);
-    STATIC_REQUIRE(std::is_same_v<yk::detail::pack_indexing_t<1, int, float>, float>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, int>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, int, float>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<1, int, float>, float>);
 }
 
-TEST_CASE("exactly_once", "[lang_core]")
+TEST_CASE("exactly_once", "[core]")
 {
-    STATIC_REQUIRE(yk::detail::exactly_once_v<int, yk::detail::type_list<int, float>>);
-    STATIC_REQUIRE_FALSE(yk::detail::exactly_once_v<int, yk::detail::type_list<int, int>>);
+    STATIC_REQUIRE(yk::core::exactly_once_v<int, yk::core::type_list<int, float>>);
+    STATIC_REQUIRE_FALSE(yk::core::exactly_once_v<int, yk::core::type_list<int, int>>);
 }
 
-TEST_CASE("is_in", "[lang_core]")
+TEST_CASE("is_in", "[core]")
 {
-    STATIC_REQUIRE(yk::detail::is_in_v<int, int, float>);
-    STATIC_REQUIRE_FALSE(yk::detail::is_in_v<int, float>);
+    STATIC_REQUIRE(yk::core::is_in_v<int, int, float>);
+    STATIC_REQUIRE_FALSE(yk::core::is_in_v<int, float>);
 }
 
-TEST_CASE("find_index", "[lang_core]")
+TEST_CASE("find_index", "[core]")
 {
-    STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<int, float, double>> == 0);
-    STATIC_REQUIRE(yk::detail::find_index_v<float, yk::detail::type_list<int, float, double>> == 1);
-    STATIC_REQUIRE(yk::detail::find_index_v<double, yk::detail::type_list<int, float, double>> == 2);
-    STATIC_REQUIRE(yk::detail::find_index_v<int, yk::detail::type_list<float, double>> == yk::detail::find_npos);
+    STATIC_REQUIRE(yk::core::find_index_v<int,    yk::core::type_list<int, float, double>> == 0);
+    STATIC_REQUIRE(yk::core::find_index_v<float,  yk::core::type_list<int, float, double>> == 1);
+    STATIC_REQUIRE(yk::core::find_index_v<double, yk::core::type_list<int, float, double>> == 2);
+    STATIC_REQUIRE(yk::core::find_index_v<int,    yk::core::type_list<float, double>> == yk::core::find_npos);
 }
 
-TEST_CASE("pack_union", "[lang_core]")
+TEST_CASE("pack_union", "[core]")
 {
     using yk::detail::pack_union_t;
     STATIC_REQUIRE(std::is_same_v<pack_union_t<yk::rvariant, int, float>, yk::rvariant<int, float>>);

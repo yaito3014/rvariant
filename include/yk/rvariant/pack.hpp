@@ -3,9 +3,7 @@
 
 // Utilities related to [rvariant.pack]
 
-#include <yk/detail/lang_core.hpp>
-
-#include <type_traits>
+#include <yk/core/type_traits.hpp>
 
 namespace yk {
 
@@ -15,17 +13,17 @@ template<template<class...> class TT, class T, class... Us>
 struct pack_union_impl;
 
 template<template<class...> class TT, class... Ts>
-struct pack_union_impl<TT, type_list<Ts...>>
+struct pack_union_impl<TT, core::type_list<Ts...>>
 {
     using type = TT<Ts...>;
 };
 
 template<template<class...> class TT, class... Ts, class U, class... Us>
-struct pack_union_impl<TT, type_list<Ts...>, U, Us...>
+struct pack_union_impl<TT, core::type_list<Ts...>, U, Us...>
     : std::conditional_t<
-        is_in_v<U, Ts...>,
-        pack_union_impl<TT, type_list<Ts...>, Us...>,
-        pack_union_impl<TT, type_list<Ts..., U>, Us...>
+    core::is_in_v<U, Ts...>,
+        pack_union_impl<TT, core::type_list<Ts...>, Us...>,
+        pack_union_impl<TT, core::type_list<Ts..., U>, Us...>
     >
 {};
 
@@ -33,16 +31,16 @@ template<template<class...> class TT, class A, class B>
 struct pack_union;
 
 template<template<class...> class TT, class A, class B>
-struct pack_union : detail::pack_union_impl<TT, detail::type_list<>, A, B> {};
+struct pack_union : detail::pack_union_impl<TT, core::type_list<>, A, B> {};
 
 template<template<class...> class TT, class... As, class B>
-struct pack_union<TT, TT<As...>, B> : detail::pack_union_impl<TT, detail::type_list<>, As..., B> {};
+struct pack_union<TT, TT<As...>, B> : detail::pack_union_impl<TT, core::type_list<>, As..., B> {};
 
 template<template<class...> class TT, class A, class... Bs>
-struct pack_union<TT, A, TT<Bs...>> : detail::pack_union_impl<TT, detail::type_list<>, A, Bs...> {};
+struct pack_union<TT, A, TT<Bs...>> : detail::pack_union_impl<TT, core::type_list<>, A, Bs...> {};
 
 template<template<class...> class TT, class... As, class... Bs>
-struct pack_union<TT, TT<As...>, TT<Bs...>> : detail::pack_union_impl<TT, detail::type_list<>, As..., Bs...> {};
+struct pack_union<TT, TT<As...>, TT<Bs...>> : detail::pack_union_impl<TT, core::type_list<>, As..., Bs...> {};
 
 template<template<class...> class TT, class A, class B>
 using pack_union_t = typename pack_union<TT, A, B>::type;

@@ -1,9 +1,9 @@
-﻿#ifndef YK_DETAIL_COND_TRIVIAL_HPP
-#define YK_DETAIL_COND_TRIVIAL_HPP
+﻿#ifndef YK_CORE_COND_TRIVIAL_HPP
+#define YK_CORE_COND_TRIVIAL_HPP
 
 #include <type_traits>
 
-namespace yk::detail {
+namespace yk::core {
 
 // Old-school helper utility for enabling trivial special
 // functions conditionally. Note that even when C++20's
@@ -14,7 +14,7 @@ namespace yk::detail {
 // e.g. std::is_trivially_move_constructible evaluates to
 // false even when only copy constructor is non-trivial.
 
-namespace cond_trivial_detail {
+namespace detail::cond_trivial_detail {
 
 template<class Base>
 struct non_trivial_CC : Base
@@ -196,10 +196,10 @@ using cond_trivial = std::conditional_t<
     >
 >;
 
-} // cond_trivial_detail
+} // detail::cond_trivial_detail
 
-using cond_trivial_detail::cond_trivial;
+using detail::cond_trivial_detail::cond_trivial;
 
-} // yk::detail
+} // yk::core
 
 #endif

@@ -3,10 +3,9 @@
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/variant_helper.hpp>
-#include <yk/detail/lang_core.hpp>
+#include <yk/core/type_traits.hpp>
 
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 namespace yk::detail {

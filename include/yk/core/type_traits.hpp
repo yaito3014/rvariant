@@ -1,23 +1,152 @@
 ﻿#ifndef YK_CORE_TYPE_TRAITS_HPP
 #define YK_CORE_TYPE_TRAITS_HPP
 
+#include <yk/core/config.hpp>
+
 #include <type_traits>
 #include <utility>
 
 
 namespace yk::core {
 
+template<class T, template<class...> class TT>
+struct is_ttp_specialization_of : std::false_type {};
+
+template<template<class...> class TT, class... Ts>
+struct is_ttp_specialization_of<TT<Ts...>, TT> : std::true_type {};
+
+template<class T, template<class...> class TT>
+inline constexpr bool is_ttp_specialization_of_v = is_ttp_specialization_of<T, TT>::value;
+
+
+template<class T, template<auto...> class TT>
+struct is_nttp_specialization_of : std::false_type {};
+
+template<template<auto...> class TT, auto... Ts>
+struct is_nttp_specialization_of<TT<Ts...>, TT> : std::true_type {};
+
+template<class T, template<auto...> class TT>
+inline constexpr bool is_nttp_specialization_of_v = is_nttp_specialization_of<T, TT>::value;
+
+
+template<class... Ts>
+struct type_list {};
+
+
+template<std::size_t I, class... Ts>
+struct pack_indexing;
+
+template<std::size_t I, class... Ts>
+using pack_indexing_t = typename pack_indexing<I, Ts...>::type;
+
+template<class T, class... Ts>
+struct pack_indexing<0, T, Ts...> { using type = T; };
+
+template<std::size_t I, class T, class... Ts>
+struct pack_indexing<I, T, Ts...> : pack_indexing<I - 1, Ts...> {};
+
+
+inline constexpr std::size_t find_npos = -1;
+
+template<std::size_t I, class T, class... Ts>
+struct find_index_impl
+    : std::integral_constant<std::size_t, find_npos>
+{};
+
+template<std::size_t I, class T, class U, class... Us>
+struct find_index_impl<I, T, U, Us...>
+    : std::conditional_t<
+        std::is_same_v<T, U>,
+        std::integral_constant<std::size_t, I>,
+        find_index_impl<I + 1, T, Us...>
+    >
+{};
+
+template<class T, class List>
+struct find_index;
+
+template<class T, template<class...> class TT, class... Ts>
+struct find_index<T, TT<Ts...>> : find_index_impl<0, T, Ts...> {};
+
+template<class T, class List>
+inline constexpr std::size_t find_index_v = find_index<T, List>::value;
+
+
+template<class T, class... Ts>
+struct is_in : std::disjunction<std::is_same<T, Ts>...> {};
+
+template<class T, class... Ts>
+inline constexpr bool is_in_v = is_in<T, Ts...>::value;
+
+
+template<template<class A, class B> class F, class U, class... Ts>
+struct disjunction_for : std::disjunction<F<U, Ts>...> {};
+
+template<template<class A, class B> class F, class U, class... Ts>
+inline constexpr bool disjunction_for_v = disjunction_for<F, U, Ts...>::value;
+
+template<template<class A, class B> class F, class U, class... Ts>
+struct conjunction_for : std::conjunction<F<U, Ts>...> {};
+
+template<template<class A, class B> class F, class U, class... Ts>
+inline constexpr bool conjunction_for_v = conjunction_for<F, U, Ts...>::value;
+
+
+template<bool Found, class T, class... Us>
+struct exactly_once_impl : std::bool_constant<Found> {};
+
+template<class T, class U, class... Us>
+struct exactly_once_impl<false, T, U, Us...>
+    : exactly_once_impl<std::is_same_v<T, U>, T, Us...> {};
+
+template<class T, class U, class... Us>
+struct exactly_once_impl<true, T, U, Us...>
+    : std::conditional_t<std::is_same_v<T, U>, std::false_type, exactly_once_impl<true, T, Us...>> {};
+
+template<class T, class List>
+struct exactly_once;
+
+template<class T, template<class...> class TT, class... Ts>
+struct exactly_once<T, TT<Ts...>> : exactly_once_impl<false, T, Ts...>
+{
+    static_assert(sizeof...(Ts) > 0);
+};
+
+template<class T, class List>
+inline constexpr bool exactly_once_v = exactly_once<T, List>::value;
+
+
+// Provides definition equivalent to MSVC's STL for semantic compatibility
+namespace detail::has_ADL_swap_detail {
+
+#if defined(__clang__) || defined(__EDG__)
+void swap() = delete; // poison pill
+#else
+void swap();
+#endif
+
+template<class, class = void> struct has_ADL_swap : std::false_type {};
+template<class T> struct has_ADL_swap<T, std::void_t<decltype(swap(std::declval<T&>(), std::declval<T&>()))>> : std::true_type {};
+
+} // detail::has_ADL_swap_detail
+
+
+template<class T>
+struct is_trivially_swappable : std::conjunction<
+    std::is_trivially_destructible<T>,
+    std::is_trivially_move_constructible<T>,
+    std::is_trivially_move_assignable<T>,
+    // std::is_swappable cannot be used for this purpose because it assumes `using std::swap`
+    std::negation<detail::has_ADL_swap_detail::has_ADL_swap<T>>
+>
+{};
+template<> struct is_trivially_swappable<std::byte> : std::true_type {};
+
+template<class T>
+constexpr bool is_trivially_swappable_v = is_trivially_swappable<T>::value;
+
+
 namespace detail {
-
-// Imaginary function FUN from https://eel.is/c++draft/variant#ctor-14
-//   Ti x[] = {std::forward<T>(t)};
-// https://eel.is/c++draft/dcl.init.general#14
-// https://eel.is/c++draft/dcl.init.list#3.4
-// https://eel.is/c++draft/dcl.init.aggr#3
-
-#define YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD_MSVC 0
-#define YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD_YK 1
-#define YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD_YK
 
 template<std::size_t I, class Ti>
 struct aggregate_initialize_tag
@@ -26,61 +155,46 @@ struct aggregate_initialize_tag
     using type = Ti;
 };
 
-#if YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD == YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD_MSVC
-template<std::size_t I, class Ti>
-auto aggregate_initialize_body(Ti(&&)[1]) -> aggregate_initialize_tag<I, Ti>;
-
-template<std::size_t I, class Ti, class T>
-using aggregate_initialize_body_t = decltype(
-    aggregate_initialize_body<I, Ti>({std::declval<T>()})
-);
-
-template<std::size_t I, class Ti>
-struct aggregate_initialize_overload
-{
-    template<class T>
-    auto operator()(Ti, T&&) -> aggregate_initialize_body_t<I, Ti, T>;
-};
-
-#elif YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD == YK_RVARIANT_AGGREGATE_INITIALIZE_METHOD_YK
-
-// This version works better, does not break IntelliSense or ReSharper
+// This version works better than MSVC's, does not break IntelliSense or ReSharper
 template<std::size_t I, class Ti>
 struct aggregate_initialize_overload
 {
     using TiA = Ti[];
 
+    // https://eel.is/c++draft/dcl.init.general#14
+    // https://eel.is/c++draft/dcl.init.list#3.4
+    // https://eel.is/c++draft/dcl.init.aggr#3
+
     template<class T>
     auto operator()(Ti, T&&) -> aggregate_initialize_tag<I, Ti>
-        requires requires(T&& t) { { TiA{std::forward<T>(t)} }; }
+        requires requires(T&& t) { { TiA{std::forward<T>(t)} }; } // emulate `Ti x[] = {std::forward<T>(t)};`
     {
         return {}; // silence MSVC warning
     }
 };
-#endif
-
 
 template<class Is, class... Ts>
-struct aggregate_initialize_func_impl;
+struct aggregate_initialize_fun;
 
+// Imaginary function FUN of https://eel.is/c++draft/variant#ctor-14
 template<std::size_t... Is, class... Ts>
-struct aggregate_initialize_func_impl<std::index_sequence<Is...>, Ts...>
+struct aggregate_initialize_fun<std::index_sequence<Is...>, Ts...>
     : aggregate_initialize_overload<Is, Ts>...
 {
     using aggregate_initialize_overload<Is, Ts>::operator()...;
 };
 
 template<class... Ts>
-using aggregate_initialize_func = aggregate_initialize_func_impl<std::index_sequence_for<Ts...>, Ts...>;
+using aggregate_initialize_fun_for = aggregate_initialize_fun<std::index_sequence_for<Ts...>, Ts...>;
 
 template<class Enabled, class T, class... Ts>
 struct aggregate_initialize_resolution {};
 
 template<class T, class... Ts>
 struct aggregate_initialize_resolution<
-    std::void_t<decltype(aggregate_initialize_func<Ts...>{}(std::declval<T>(), std::declval<T>()))>, T, Ts...
+    std::void_t<decltype(aggregate_initialize_fun_for<Ts...>{}(std::declval<T>(), std::declval<T>()))>, T, Ts...
 > {
-    using tag = decltype(aggregate_initialize_func<Ts...>{}(std::declval<T>(), std::declval<T>()));
+    using tag = decltype(aggregate_initialize_fun_for<Ts...>{}(std::declval<T>(), std::declval<T>()));
     using type = typename tag::type;
     static constexpr std::size_t index = tag::index;
 };

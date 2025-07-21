@@ -4,7 +4,7 @@
 // Utilities related to [rvariant.helper], [rvariant.recursive.helper]
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
-#include <yk/detail/lang_core.hpp>
+#include <yk/core/type_traits.hpp>
 
 #include <utility>
 #include <type_traits>
@@ -45,7 +45,7 @@ template<class T>
 [[nodiscard]] constexpr decltype(auto)
 unwrap_recursive(T&& o YK_LIFETIMEBOUND) noexcept
 {
-    if constexpr (yk::detail::is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) {
+    if constexpr (core::is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) {
         return *std::forward<T>(o);
     } else {
         return std::forward<T>(o);
@@ -69,7 +69,7 @@ template<std::size_t I, class Variant>
 struct variant_alternative<I, Variant const> : std::add_const<variant_alternative_t<I, Variant>> {};
 
 template<std::size_t I, class... Ts>
-struct variant_alternative<I, rvariant<Ts...>> : detail::pack_indexing<I, unwrap_recursive_t<Ts>...>
+struct variant_alternative<I, rvariant<Ts...>> : core::pack_indexing<I, unwrap_recursive_t<Ts>...>
 {
     static_assert(I < sizeof...(Ts));
 };

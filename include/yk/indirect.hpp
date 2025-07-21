@@ -1,7 +1,7 @@
 #ifndef YK_INDIRECT_HPP
 #define YK_INDIRECT_HPP
 
-#include <yk/detail/lang_core.hpp>
+#include <yk/core/type_traits.hpp>
 
 #include <compare>
 #include <memory>
@@ -58,7 +58,7 @@ class indirect
     static_assert(std::is_object_v<T>);
     static_assert(!std::is_array_v<T>);
     static_assert(!std::is_same_v<T, std::in_place_t>);
-    static_assert(!detail::is_ttp_specialization_of_v<T, std::in_place_type_t>);
+    static_assert(!core::is_ttp_specialization_of_v<T, std::in_place_type_t>);
     static_assert(!std::is_const_v<T> && !std::is_volatile_v<T>);
     static_assert(std::is_same_v<T, typename std::allocator_traits<Allocator>::value_type>);
 

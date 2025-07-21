@@ -2,7 +2,7 @@
 #define YK_RVARIANT_DETAIL_RECURSIVE_TRAITS_HPP
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
-#include <yk/detail/lang_core.hpp>
+#include <yk/core/type_traits.hpp>
 
 namespace yk::detail {
 
@@ -32,7 +32,7 @@ struct select_maybe_wrapped : select_maybe_wrapped_impl<false, 0, T, Ts...>
 {
     // Precondition: either T or recursive_wrapper<T> occurs at least once in Ts...
     static_assert(sizeof...(Ts) > 0);
-    static_assert(!ttp_specialization_of<T, recursive_wrapper>);
+    static_assert(!core::is_ttp_specialization_of_v<T, recursive_wrapper>);
 };
 
 template<class T, class... Ts>

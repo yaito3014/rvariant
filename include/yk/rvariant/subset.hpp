@@ -3,7 +3,7 @@
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/variant_helper.hpp>
-#include <yk/detail/lang_core.hpp>
+#include <yk/core/type_traits.hpp>
 
 #include <type_traits>
 
@@ -15,10 +15,10 @@ template<class From, class To>
 struct subset_reindex_impl;
 
 template<class... Ts, class... Us>
-struct subset_reindex_impl<type_list<Ts...>, type_list<Us...>>
+struct subset_reindex_impl<core::type_list<Ts...>, core::type_list<Us...>>
 {
     static constexpr std::size_t table[]{
-        find_index_v<Ts, type_list<Us...>>...
+        core::find_index_v<Ts, core::type_list<Us...>>...
     };
 };
 
@@ -35,16 +35,16 @@ namespace rvariant_set {
 template<class W, class V>
 struct is_subset_of : std::false_type
 {
-    static_assert(detail::is_ttp_specialization_of_v<W, rvariant>);
-    static_assert(detail::is_ttp_specialization_of_v<V, rvariant>);
+    static_assert(core::is_ttp_specialization_of_v<W, rvariant>);
+    static_assert(core::is_ttp_specialization_of_v<V, rvariant>);
 };
 
 template<class... Us, class... Ts>
 struct is_subset_of<rvariant<Us...>, rvariant<Ts...>>
     : std::conjunction<
         std::disjunction<
-            detail::is_in<Us, Ts...>,
-            detail::is_in<Us, unwrap_recursive_t<Ts>...>
+            core::is_in<Us, Ts...>,
+            core::is_in<Us, unwrap_recursive_t<Ts>...>
         >...
     >
 {};
