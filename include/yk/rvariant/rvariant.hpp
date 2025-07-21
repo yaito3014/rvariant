@@ -337,99 +337,11 @@ public:
         : base_type(std::in_place_index<0>) // value-initialized
     {}
 
-    // Generic constructor => see below: "Generic assignment operator"
-
-    // -------------------------------------------------
-
     ~rvariant() noexcept = default;
     rvariant(rvariant const&) = default;
     rvariant(rvariant&&) = default;
     rvariant& operator=(rvariant const&) = default;
     rvariant& operator=(rvariant&&) = default;
-
-    // Flexible copy constructor
-    template<class... Us>
-        requires
-            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
-            rvariant_set::subset_of<rvariant<Us...>, rvariant> &&
-            std::conjunction_v<std::is_copy_constructible<Us>...>
-    constexpr /* not explicit */ rvariant(rvariant<Us...> const& w)
-        noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Us>...>) // TODO: possibly wrong
-    {
-        w.raw_visit([this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT> const& alt)
-            noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Us>...>) // TODO: sync with above
-        {
-            if constexpr (j != std::variant_npos) {
-                constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
-                using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
-                static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
-                construct_on_valueless<i>(detail::rewrap_maybe_recursive<VT>(alt.value));
-            }
-        });
-    }
-
-    // Flexible move constructor
-    template<class... Us>
-        requires
-            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
-            rvariant_set::subset_of<rvariant<Us...>, rvariant> &&
-            std::conjunction_v<std::is_move_constructible<Us>...>
-    constexpr /* not explicit */ rvariant(rvariant<Us...>&& w)
-        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>) // TODO: possibly wrong
-    {
-        std::move(w).raw_visit([this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT>&& alt)
-            noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
-        {
-            if constexpr (j != std::variant_npos) {
-                constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
-                using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
-                static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
-                construct_on_valueless<i>(detail::rewrap_maybe_recursive<VT>(std::move(alt).value));
-            }
-        });
-    }
-
-    // ------------------------------------------------
-
-    // in_place_type<T>, args...
-    template<class T, class... Args>
-        requires
-            detail::non_wrapped_exactly_once_v<T, unwrapped_types> &&
-            std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>
-    constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>)
-        : base_type(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, std::forward<Args>(args)...)
-    {}
-
-    // in_place_type<T>, il, args...
-    template<class T, class U, class... Args>
-        requires
-            detail::non_wrapped_exactly_once_v<T, unwrapped_types> &&
-            std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>
-    constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>)
-        : base_type(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, il, std::forward<Args>(args)...)
-    {}
-
-    // in_place_index<I>, args...
-    template<std::size_t I, class... Args>
-        requires
-            (I < sizeof...(Ts)) &&
-            std::is_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>
-    constexpr explicit rvariant(std::in_place_index_t<I>, Args&&... args) // NOLINT
-        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>)
-        : base_type(std::in_place_index<I>, std::forward<Args>(args)...)
-    {}
-
-    // in_place_index<I>, il, args...
-    template<std::size_t I, class U, class... Args>
-        requires
-            (I < sizeof...(Ts)) &&
-            std::is_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
-    constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args) // NOLINT
-        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>)
-        : base_type(std::in_place_index<I>, il, std::forward<Args>(args)...)
-    {}
 
     // --------------------------------------
 
@@ -494,6 +406,50 @@ public:
             }
         });
         return *this;
+    }
+
+    // --------------------------------------
+
+    // Flexible copy constructor
+    template<class... Us>
+        requires
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            rvariant_set::subset_of<rvariant<Us...>, rvariant> &&
+            std::conjunction_v<std::is_copy_constructible<Us>...>
+    constexpr /* not explicit */ rvariant(rvariant<Us...> const& w)
+        noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Us>...>) // TODO: possibly wrong
+    {
+        w.raw_visit([this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT> const& alt)
+            noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Us>...>) // TODO: sync with above
+        {
+            if constexpr (j != std::variant_npos) {
+                constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
+                using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
+                static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
+                construct_on_valueless<i>(detail::rewrap_maybe_recursive<VT>(alt.value));
+            }
+        });
+    }
+
+    // Flexible move constructor
+    template<class... Us>
+        requires
+            (!std::is_same_v<rvariant<Us...>, rvariant>) &&
+            rvariant_set::subset_of<rvariant<Us...>, rvariant> &&
+            std::conjunction_v<std::is_move_constructible<Us>...>
+    constexpr /* not explicit */ rvariant(rvariant<Us...>&& w)
+        noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>) // TODO: possibly wrong
+    {
+        std::move(w).raw_visit([this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT>&& alt)
+            noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Us>...>)
+        {
+            if constexpr (j != std::variant_npos) {
+                constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
+                using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
+                static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
+                construct_on_valueless<i>(detail::rewrap_maybe_recursive<VT>(std::move(alt).value));
+            }
+        });
     }
 
     // --------------------------------------
@@ -589,6 +545,48 @@ public:
         });
         return *this;
     }
+
+    // ------------------------------------------------
+
+    // in_place_type<T>, args...
+    template<class T, class... Args>
+        requires
+            detail::non_wrapped_exactly_once_v<T, unwrapped_types> &&
+            std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>
+    constexpr explicit rvariant(std::in_place_type_t<T>, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>)
+        : base_type(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, std::forward<Args>(args)...)
+    {}
+
+    // in_place_type<T>, il, args...
+    template<class T, class U, class... Args>
+        requires
+            detail::non_wrapped_exactly_once_v<T, unwrapped_types> &&
+            std::is_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>
+    constexpr explicit rvariant(std::in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>)
+        : base_type(std::in_place_index<detail::select_maybe_wrapped_index<T, Ts...>>, il, std::forward<Args>(args)...)
+    {}
+
+    // in_place_index<I>, args...
+    template<std::size_t I, class... Args>
+        requires
+            (I < sizeof...(Ts)) &&
+            std::is_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>
+    constexpr explicit rvariant(std::in_place_index_t<I>, Args&&... args) // NOLINT
+        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>)
+        : base_type(std::in_place_index<I>, std::forward<Args>(args)...)
+    {}
+
+    // in_place_index<I>, il, args...
+    template<std::size_t I, class U, class... Args>
+        requires
+            (I < sizeof...(Ts)) &&
+            std::is_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>
+    constexpr explicit rvariant(std::in_place_index_t<I>, std::initializer_list<U> il, Args&&... args) // NOLINT
+        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>)
+        : base_type(std::in_place_index<I>, il, std::forward<Args>(args)...)
+    {}
 
     // -------------------------------------------
 
