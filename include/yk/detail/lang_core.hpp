@@ -155,62 +155,6 @@ struct conjunction_for : std::conjunction<F<U, Ts>...> {};
 template<template<class A, class B> class F, class U, class... Ts>
 inline constexpr bool conjunction_for_v = conjunction_for<F, U, Ts...>::value;
 
-template<std::size_t I, class F>
-struct indexed_metafunction
-    : std::conditional_t<
-        static_cast<bool>(F::value),
-        std::integral_constant<std::size_t, I + 1>, // bias [npos, max) to [0, max+1)
-        std::false_type
-    >
-{};
-
-namespace core_detail { // TODO: rename
-
-template<std::size_t I, template<class A, class B> class F, class U, class... Ts>
-struct indexed_disjunction_for_impl
-    : std::integral_constant<std::size_t, find_npos + 1>
-{};
-
-template<std::size_t I, template<class A, class B> class F, class U, class T, class... Ts>
-struct indexed_disjunction_for_impl<I, F, U, T, Ts...>
-    : std::disjunction<
-        indexed_metafunction<I, F<U, T>>,
-        indexed_disjunction_for_impl<I + 1, F, U, Ts...>
-    >
-{};
-
-} // core_detail
-
-template<template<class A, class B> class F, class U, class... Ts>
-struct indexed_disjunction_for
-    : std::integral_constant<std::size_t, core_detail::indexed_disjunction_for_impl<0, F, U, Ts...>::value - 1>
-{};
-
-template<class... Branch>
-struct find_or : std::integral_constant<std::size_t, find_npos> {};
-
-template<class Branch, class... Rest>
-struct find_or<Branch, Rest...>
-    : std::conditional_t<
-        Branch::value != find_npos,
-        Branch,
-        find_or<Rest...>
-    >
-{};
-
-//template<template<class A, class B> class F, class U, class... Ts>
-//struct find_branch
-//    : indexed_disjunction_for<F, U, Ts...>
-//{};
-
-//template<class U, class... Ts>
-//struct find_most_accurate_type
-//    : find_or<
-//        find_branch<std::is_same, U, Ts...>,
-//        find_branch<std::is_same, U, unwrap_recursive_t<Ts>...>
-//    >
-//{};
-
 
 template<bool Found, class T, class... Us>
 struct exactly_once_impl : std::bool_constant<Found> {};
