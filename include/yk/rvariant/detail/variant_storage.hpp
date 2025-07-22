@@ -139,6 +139,14 @@ struct alternative
         : value(std::forward<Args>(args)...)
     {}
 
+    constexpr alternative(alternative const&) = default;
+    constexpr alternative(alternative&&) = default;
+    constexpr alternative& operator=(alternative const&) = default;
+    constexpr alternative& operator=(alternative&&) = default;
+
+    constexpr ~alternative() requires std::is_trivially_destructible_v<T> = default;
+    constexpr ~alternative() requires (!std::is_trivially_destructible_v<T>) {}
+
     T value;
 };
 
