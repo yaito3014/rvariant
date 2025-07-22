@@ -272,40 +272,6 @@ public:
         return lhs.swap(rhs);
     }
 
-    template<class U, class AA>
-    friend constexpr bool operator==(indirect const& lhs, indirect<U, AA> const& rhs)
-        noexcept(noexcept(*lhs == *rhs))
-    {
-        if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
-            return lhs.valueless_after_move() == rhs.valueless_after_move();
-        }
-        return *lhs == *rhs;
-    }
-
-    template<class U, class AA>
-    friend constexpr auto operator<=>(indirect const& lhs, indirect<U, AA> const& rhs) noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result<T, U>
-    {
-        if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
-            return !lhs.valueless_after_move() <=> !rhs.valueless_after_move();
-        }
-        return core::synth_three_way(*lhs, *rhs);
-    }
-
-    template<class U>
-    friend constexpr bool operator==(indirect const& lhs, U const& rhs)
-        noexcept(noexcept(*lhs == rhs))
-    {
-        if (lhs.valueless_after_move()) return false;
-        return *lhs == rhs;
-    }
-
-    template<class U>
-    friend constexpr auto operator<=>(indirect const& lhs, U const& rhs) noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result<T, U>
-    {
-        if (lhs.valueless_after_move()) return std::strong_ordering::less;
-        return core::synth_three_way(*lhs, rhs);
-    }
-
 private:
     constexpr pointer reset(pointer p)
     {
@@ -334,6 +300,43 @@ indirect(Value)
 template<class Value, class Allocator>
 indirect(std::allocator_arg_t, Allocator, Value)
     -> indirect<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
+
+
+template<class T, class Allocator, class U, class AA>
+constexpr bool operator==(indirect<T, Allocator> const& lhs, indirect<U, AA> const& rhs)
+    noexcept(noexcept(*lhs == *rhs))
+{
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+        return lhs.valueless_after_move() == rhs.valueless_after_move();
+    }
+    return *lhs == *rhs;
+}
+
+template<class T, class Allocator, class U, class AA>
+constexpr auto operator<=>(indirect<T, Allocator> const& lhs, indirect<U, AA> const& rhs)
+    noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result_t<T, U>
+{
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+        return !lhs.valueless_after_move() <=> !rhs.valueless_after_move();
+    }
+    return core::synth_three_way(*lhs, *rhs);
+}
+
+template<class T, class Allocator, class U>
+constexpr bool operator==(indirect<T, Allocator> const& lhs, U const& rhs)
+    noexcept(noexcept(*lhs == rhs))
+{
+    if (lhs.valueless_after_move()) return false;
+    return *lhs == rhs;
+}
+
+template<class T, class Allocator, class U> requires (!core::is_ttp_specialization_of_v<U, indirect>)
+constexpr auto operator<=>(indirect<T, Allocator> const& lhs, U const& rhs)
+    noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result_t<T, U>
+{
+    if (lhs.valueless_after_move()) return std::strong_ordering::less;
+    return core::synth_three_way(*lhs, rhs);
+}
 
 }  // yk
 
