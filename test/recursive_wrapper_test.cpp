@@ -9,6 +9,71 @@
 #include <type_traits>
 #include <concepts>
 
+TEST_CASE("relational operators", "[wrapper]")
+{
+    {
+        yk::recursive_wrapper<int> a(33), b(4);
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        yk::recursive_wrapper<int> a(33);
+        int b = 4;
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        int a = 33;
+        yk::recursive_wrapper<int> b(4);
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        struct MyAllocator : std::allocator<int> {};
+
+        yk::recursive_wrapper<int> a(33);
+        yk::recursive_wrapper<int, MyAllocator> b(4);
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+}
+
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable: 4244) // implicit numeric conversion

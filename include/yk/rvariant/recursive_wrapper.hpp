@@ -159,38 +159,6 @@ public:
     {
         lhs.swap(rhs);
     }
-
-    friend constexpr bool operator==(recursive_wrapper const& lhs, recursive_wrapper const& rhs)
-        noexcept(noexcept(*lhs == *rhs))
-    {
-        if (lhs.valuless_after_move() || rhs.valueless_after_move()) {
-            return lhs.valuless_after_move() == rhs.valuless_after_move();
-        }
-        return *lhs == *rhs;
-    }
-
-    friend constexpr auto operator<=>(recursive_wrapper const& lhs, recursive_wrapper const& rhs)
-    {
-        if (lhs.valuless_after_move() || rhs.valueless_after_move()) {
-            return !lhs.valuless_after_move() <=> !rhs.valuless_after_move();
-        }
-        return *lhs <=> *rhs;
-    }
-
-    template<class U>
-    friend constexpr bool operator==(recursive_wrapper const& lhs, U const& rhs)
-        noexcept(noexcept(*lhs == rhs))
-    {
-        if (lhs.valueless_after_move()) return false;
-        return *lhs == rhs;
-    }
-
-    template<class U>
-    friend constexpr auto operator<=>(recursive_wrapper const& lhs, U const& rhs)
-    {
-        if (lhs.valueless_after_move()) return std::strong_ordering::less;
-        return *lhs <=> rhs;
-    }
 };
 
 template<class Value>
@@ -200,6 +168,41 @@ recursive_wrapper(Value)
 template<class Allocator, class Value>
 recursive_wrapper(std::allocator_arg_t, Allocator, Value)
     -> recursive_wrapper<Value, typename std::allocator_traits<Allocator>::template rebind_alloc<Value>>;
+
+template<class T, class TA, class U, class UA>
+constexpr bool operator==(recursive_wrapper<T, TA> const& lhs, recursive_wrapper<U, UA> const& rhs)
+    noexcept(noexcept(*lhs == *rhs))
+{
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+        return lhs.valueless_after_move() == rhs.valueless_after_move();
+    }
+    return *lhs == *rhs;
+}
+
+template<class T, class TA, class U, class UA>
+constexpr auto operator<=>(recursive_wrapper<T, TA> const& lhs, recursive_wrapper<U, UA> const& rhs) noexcept(core::synth_three_way_noexcept<T, U>)
+    -> core::synth_three_way_result_t<T, U>
+{
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+        return !lhs.valueless_after_move() <=> !rhs.valueless_after_move();
+    }
+    return core::synth_three_way(*lhs, *rhs);
+}
+
+template<class T, class A, class U>
+constexpr bool operator==(recursive_wrapper<T, A> const& lhs, U const& rhs)
+    noexcept(noexcept(*lhs == rhs))
+{
+    if (lhs.valueless_after_move()) return false;
+    return *lhs == rhs;
+}
+
+template<class T, class A, class U>
+constexpr auto operator<=>(recursive_wrapper<T, A> const& lhs, U const& rhs) noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result_t<T, U>
+{
+    if (lhs.valueless_after_move()) return std::strong_ordering::less;
+    return core::synth_three_way(*lhs, rhs);
+}
 
 }  // yk
 
