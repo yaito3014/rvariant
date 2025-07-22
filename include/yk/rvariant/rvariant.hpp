@@ -1,8 +1,6 @@
 #ifndef YK_RVARIANT_RVARIANT_HPP
 #define YK_RVARIANT_RVARIANT_HPP
 
-#include "rvariant.hpp"
-
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/detail/variant_storage.hpp>
 #include <yk/rvariant/detail/recursive_traits.hpp>
@@ -288,6 +286,20 @@ using rvariant_destructor_base_t = std::conditional_t<
 
 template<class... Ts>
 using rvariant_base_t = core::cond_trivial<rvariant_destructor_base_t<Ts...>, Ts...>;
+
+template<class Compare, class... Ts>
+[[nodiscard]] constexpr bool compare_relops(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
+{
+    return v.raw_visit([&w]<std::size_t i, class T>([[maybe_unused]] detail::alternative<i, T> const& alt)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
+    {
+        if constexpr (i != detail::variant_npos) {
+            return Compare{}(alt.value, detail::raw_get<i>(w.storage()).value);
+        } else {
+            return Compare{}(0, 0);
+        }
+    });
+}
 
 }  // detail
 
@@ -806,6 +818,15 @@ public:
     template<class T, class... Ts_> friend constexpr std::add_pointer_t<T> get(rvariant<Ts_...>*) noexcept;
     template<class T, class... Ts_> friend constexpr std::add_pointer_t<T const> get(rvariant<Ts_...> const*) noexcept;
 
+    template<class Compare, class... Ts_>
+    friend constexpr bool detail::compare_relops(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires (std::three_way_comparable<Ts_> && ...)
+    friend constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts_>...> operator<=>(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts_ const&, Ts_ const&>...>);
+
     template<class... Us>
     friend class rvariant;
 
@@ -1002,6 +1023,77 @@ template<class T, class... Ts>
 get(rvariant<Ts...> const* v) noexcept
 {
     return get_if<T>(v);
+}
+
+template<class... Ts, class Compare = std::equal_to<>>
+    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+[[nodiscard]] constexpr bool operator==(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+{
+    if (v.index() != w.index()) return false;
+    return detail::compare_relops<Compare>(v, w);
+}
+
+template<class... Ts, class Compare = std::not_equal_to<>>
+    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+[[nodiscard]] constexpr bool operator!=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+{
+    if (v.index() != w.index()) return true;
+    return detail::compare_relops<Compare>(v, w);
+}
+
+template<class... Ts, class Compare = std::less<>>
+    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+[[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+{
+    if (v.index() < w.index()) return true;
+    if (v.index() > w.index()) return false;
+    return detail::compare_relops<Compare>(v, w);
+}
+
+template<class... Ts, class Compare = std::greater<>>
+    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+[[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+{
+    if (v.index() > w.index()) return true;
+    if (v.index() < w.index()) return false;
+    return detail::compare_relops<Compare>(v, w);
+}
+
+template<class... Ts, class Compare = std::less_equal<>>
+    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+[[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+{
+    if (v.index() < w.index()) return true;
+    if (v.index() > w.index()) return false;
+    return detail::compare_relops<Compare>(v, w);
+}
+
+template<class... Ts, class Compare = std::greater_equal<>>
+    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+[[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+{
+    if (v.index() > w.index()) return true;
+    if (v.index() < w.index()) return false;
+    return detail::compare_relops<Compare>(v, w);
+}
+
+template<class... Ts>
+    requires (std::three_way_comparable<Ts> && ...)
+[[nodiscard]] constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...> operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
+{
+    if (v.valueless_by_exception() || w.valueless_by_exception()) return w.valueless_by_exception() <=> v.valueless_by_exception();
+    if (auto c = v.index() <=> w.index(); c != 0) return c;
+    return v.raw_visit([&w]<std::size_t i, class T>(detail::alternative<i, T> const& alt)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
+        -> std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
+    {
+        if constexpr (i != detail::variant_npos) {
+            return alt.value <=> detail::raw_get<i>(w.storage()).value;
+        } else {
+            return std::strong_ordering::equivalent;
+        }
+    });
 }
 
 }  // namespace yk

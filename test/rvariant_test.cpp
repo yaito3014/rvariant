@@ -1001,3 +1001,82 @@ TEST_CASE("non_recursive_same_as_std") // not [recursive]
         //V{3.14}; // ill-formed
     }
 }
+
+TEST_CASE("relational operators")
+{
+    {
+        yk::rvariant<int> a = 33, b = 4;
+        CHECK(a == a);
+        CHECK(!(a == b));
+
+        CHECK(a != b);
+        CHECK(!(a != a));
+        
+        CHECK(b < a);
+        CHECK(!(a < a));
+        CHECK(!(a < b));
+
+        CHECK(a > b);
+        CHECK(!(a > a));
+        CHECK(!(b > a));
+
+        CHECK(b <= a);
+        CHECK(a <= a);
+        CHECK(!(a <= b));
+
+        CHECK(a >= b);
+        CHECK(a >= a);
+        CHECK(!(b >= a));
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        yk::rvariant<int, double> a = 42, b = 3.14;
+
+        CHECK(a == a);
+        CHECK(!(a == b));
+
+        CHECK(a != b);
+        CHECK(!(a != a));
+
+        CHECK(a < b);
+        CHECK(!(b < a));
+
+        CHECK(b > a);
+        CHECK(!(a > b));
+
+        CHECK(a <= b);
+        CHECK(!(b <= a));
+
+        CHECK(b >= a);
+        CHECK(!(a >= b));
+
+        CHECK((a <=> a) == std::partial_ordering::equivalent);
+        CHECK((a <=> b) == std::partial_ordering::less);
+        CHECK((b <=> a) == std::partial_ordering::greater);
+    }
+    {
+        std::vector<yk::rvariant<int, double>> vec {
+            42,
+            33,
+            4,
+            3.141,
+            2.718,
+            1.414,
+            1.618,
+        };
+        std::ranges::sort(vec);
+        CHECK(vec == std::vector<yk::rvariant<int, double>>{
+            4,
+            33,
+            42,
+            1.414,
+            1.618,
+            2.718,
+            3.141,
+        });
+    }
+    // TODO: valueless case
+}
