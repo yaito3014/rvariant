@@ -3,7 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 
-TEST_CASE("construction and assignment")
+TEST_CASE("construction and assignment", "[indirect]")
 {
     yk::indirect<int> a(42);
     yk::indirect<int> b = a;             // copy ctor
@@ -26,7 +26,7 @@ TEST_CASE("construction and assignment")
     REQUIRE_FALSE(c.valueless_after_move());
 }
 
-TEST_CASE("dereference")
+TEST_CASE("dereference", "[indirect]")
 {
     yk::indirect<int> a(42);
 
@@ -41,4 +41,69 @@ TEST_CASE("dereference")
 
     CHECK(*std::move(std::as_const(a)) == 42);
     STATIC_CHECK(std::is_same_v<decltype(*std::move(std::as_const(a))), int const&&>);
+}
+
+TEST_CASE("relational operators", "[indirect]")
+{
+    {
+        yk::indirect<int> a(33), b(4);
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        yk::indirect<int> a(33);
+        int b = 4;
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        int a = 33;
+        yk::indirect<int> b(4);
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
+    {
+        struct MyAllocator : std::allocator<int> {};
+
+        yk::indirect<int> a(33);
+        yk::indirect<int, MyAllocator> b(4);
+
+        CHECK(a == a);
+        CHECK(a != b);
+        CHECK(b < a);
+        CHECK(a > b);
+        CHECK(b <= a);
+        CHECK(a >= b);
+
+        CHECK((a <=> a) == std::strong_ordering::equal);
+        CHECK((b <=> a) == std::strong_ordering::less);
+        CHECK((a <=> b) == std::strong_ordering::greater);
+    }
 }

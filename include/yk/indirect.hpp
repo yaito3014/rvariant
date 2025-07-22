@@ -1,12 +1,12 @@
 #ifndef YK_INDIRECT_HPP
 #define YK_INDIRECT_HPP
 
+#include <yk/core/library.hpp>
 #include <yk/core/type_traits.hpp>
 
 #include <compare>
 #include <memory>
 #include <utility>
-
 
 namespace yk {
 
@@ -283,12 +283,12 @@ public:
     }
 
     template<class U, class AA>
-    friend constexpr auto operator<=>(indirect const& lhs, indirect<U, AA> const& rhs)
+    friend constexpr auto operator<=>(indirect const& lhs, indirect<U, AA> const& rhs) noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result<T, U>
     {
         if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
             return !lhs.valueless_after_move() <=> !rhs.valueless_after_move();
         }
-        return *lhs <=> *rhs;
+        return core::synth_three_way(*lhs, *rhs);
     }
 
     template<class U>
@@ -300,10 +300,10 @@ public:
     }
 
     template<class U>
-    friend constexpr auto operator<=>(indirect const& lhs, U const& rhs)
+    friend constexpr auto operator<=>(indirect const& lhs, U const& rhs) noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result<T, U>
     {
         if (lhs.valueless_after_move()) return std::strong_ordering::less;
-        return *lhs <=> rhs;
+        return core::synth_three_way(*lhs, rhs);
     }
 
 private:
