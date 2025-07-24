@@ -75,6 +75,13 @@ struct variant_alternative<I, rvariant<Ts...>> : core::pack_indexing<I, unwrap_r
 };
 
 
+template<class... Fs>
+struct overloaded : Fs...
+{
+    using Fs::operator()...;
+};
+
+
 namespace detail {
 
 template<class VT, class RHS>

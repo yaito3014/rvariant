@@ -86,34 +86,8 @@ TEST_CASE("storage")
     // NOLINTBEGIN(modernize-use-equals-default)
     {
         using T = int;
-        using A = yk::detail::alternative<0, T>;
-        {
-            STATIC_REQUIRE(std::is_nothrow_default_constructible_v<A>);   // valueless
-
-            STATIC_REQUIRE(std::is_trivially_copy_constructible_v<A>);
-            STATIC_REQUIRE(std::is_nothrow_copy_constructible_v<A>);
-
-            STATIC_REQUIRE(std::is_trivially_move_constructible_v<A>);
-            STATIC_REQUIRE(std::is_nothrow_move_constructible_v<A>);
-
-            STATIC_REQUIRE(std::is_trivially_copy_assignable_v<A>);
-            STATIC_REQUIRE(std::is_nothrow_copy_assignable_v<A>);
-
-            STATIC_REQUIRE(std::is_trivially_move_assignable_v<A>);
-            STATIC_REQUIRE(std::is_nothrow_move_assignable_v<A>);
-
-            STATIC_REQUIRE(std::is_trivially_destructible_v<A>);
-            STATIC_REQUIRE(std::is_nothrow_destructible_v<A>);
-
-            STATIC_REQUIRE(std::is_trivially_copyable_v<A>);
-
-            STATIC_REQUIRE(std::is_nothrow_default_constructible_v<A>); // default construct
-            STATIC_REQUIRE(std::is_constructible_v<A, T>);
-            STATIC_REQUIRE(!std::is_constructible_v<A, NonExistent>);
-        }
-
-        using VD = yk::detail::variadic_union<true, A>;
-        STATIC_REQUIRE(std::is_same_v<yk::detail::variant_storage_for<T>, VD>);
+        using VD = yk::detail::variadic_union<true, T>;
+        STATIC_REQUIRE(std::is_same_v<yk::detail::make_variadic_union_t<T>, VD>);
         {
             STATIC_REQUIRE(std::is_nothrow_default_constructible_v<VD>);   // valueless
 
@@ -373,6 +347,18 @@ TEST_CASE("storage")
     // NOLINTEND(modernize-use-equals-default)
 }
 
+struct S
+{
+    S() { throw std::exception{}; }
+    S(S const&) = default;
+    S(S&&) = default;
+    S& operator=(S const&) = default;
+    S& operator=(S&&) = default;
+    ~S() = default;
+};
+static_assert(!std::is_nothrow_default_constructible_v<S>);
+static_assert(!std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
+
 TEST_CASE("default construction")
 {
     {
@@ -455,24 +441,6 @@ TEST_CASE("copy construction")
         yk::rvariant<int, double> b(a);
         CHECK_FALSE(b.valueless_by_exception());
         CHECK(b.index() == 0);
-    }
-    {
-        struct S
-        {
-            S() = default;
-            S(S const&) = default;
-            S(S&&) = default;
-            S& operator=(S const&) { return *this; }
-            S& operator=(S&&) = default;
-        };
-        std::variant<S> a, b;
-
-        // TODO: investigate why is this not even implemented in MSVC/STL.
-        // I have no idea why this works; why is the defaulted operator NOT invalid for non-trivial storage?
-
-        static_assert(!std::is_trivially_copy_assignable_v<S>);
-        static_assert(!std::is_trivially_copy_assignable_v<std::variant<S>>);
-        a.operator=(b); // no implementation on MSVC/STL; calls memcpy?
     }
 
     // NOLINTBEGIN(modernize-use-equals-default)
@@ -699,6 +667,12 @@ TEST_CASE("generic assignment")
 TEST_CASE("emplace")
 {
     {
+        yk::rvariant<int> a;
+        STATIC_REQUIRE(std::is_same_v<decltype(a.emplace<int>()), int&>);
+        STATIC_REQUIRE(std::is_same_v<decltype(std::move(a).emplace<int>()), int&>);
+    }
+
+    {
         yk::rvariant<int> a = 42;
         REQUIRE_NOTHROW(a.emplace<int>(12));
         REQUIRE_NOTHROW(a.emplace<0>(12));
@@ -717,10 +691,158 @@ TEST_CASE("emplace")
 
 TEST_CASE("raw_get")
 {
-    yk::rvariant<int, float> var = 42;
-    using Storage = yk::detail::variant_storage_for<int, float>;
-    STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&>())), yk::detail::alternative<0, int>&>);
-    STATIC_REQUIRE(std::is_same_v<decltype(yk::detail::raw_get<0>(std::declval<Storage&&>())), yk::detail::alternative<0, int>&&>);
+    using yk::detail::raw_get;
+    using Storage = yk::detail::make_variadic_union_t<int>;
+
+    STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage&>())), int&>);
+    STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage const&>())), int const&>);
+    STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage&&>())), int&&>);
+    STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage const&&>())), int const&&>);
+}
+
+template<bool IsNoexcept, class R, class F, class Visitor, class Storage>
+constexpr bool is_noexcept_invocable_r_v = std::conditional_t<
+    IsNoexcept,
+    std::conjunction<std::is_invocable_r<R, F, Visitor, Storage>, std::is_nothrow_invocable_r<R, F, Visitor, Storage>>,
+    std::conjunction<std::is_invocable_r<R, F, Visitor, Storage>, std::negation<std::is_nothrow_invocable_r<R, F, Visitor, Storage>>>
+>::value;
+
+TEST_CASE("raw_visit")
+{
+    using yk::detail::raw_visit_dispatch;
+    using yk::detail::raw_visit_dispatch_table;
+    using yk::detail::raw_visit_noexcept;
+    using Storage = yk::detail::make_variadic_union_t<int, double>;
+    using yk::detail::valueless_t;
+    using yk::detail::variant_npos;
+
+    // NOLINTBEGIN(cppcoreguidelines-rvalue-reference-param-not-moved)
+
+    // invoke(overload{noexcept(true), noexcept(true)}, &)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int&) noexcept(true) { return true; },
+            [](std::in_place_index_t<1>, double&) noexcept(true) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage&>);
+    }
+    // invoke(overload{noexcept(true), noexcept(false)}, &)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int&) noexcept(false) { return true; },
+            [](std::in_place_index_t<1>, double&) noexcept(false) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage&>);
+    }
+
+    // invoke(overload{noexcept(true), noexcept(true)}, const&)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t const&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int const&) noexcept(true) { return true; },
+            [](std::in_place_index_t<1>, double const&) noexcept(true) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage const&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage const&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage const&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage const&>);
+    }
+    // invoke(overload{noexcept(true), noexcept(false)}, const&)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t const&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int const&) noexcept(false) { return true; },
+            [](std::in_place_index_t<1>, double const&) noexcept(false) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage const&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage const&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage const&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage const&>);
+    }
+
+    // invoke(overload{noexcept(true), noexcept(true)}, &&)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t&&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int&&) noexcept(true) { return true; },
+            [](std::in_place_index_t<1>, double&&) noexcept(true) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage&&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage&&>);
+    }
+    // invoke(overload{noexcept(true), noexcept(false)}, &&)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t&&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int&&) noexcept(false) { return true; },
+            [](std::in_place_index_t<1>, double&&) noexcept(false) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage&&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage&&>);
+    }
+
+    // invoke(overload{noexcept(true), noexcept(true)}, const&&)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t const&&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int const&&) noexcept(true) { return true; },
+            [](std::in_place_index_t<1>, double const&&) noexcept(true) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage const&&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage const&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage const&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage const&&>);
+    }
+    // invoke(overload{noexcept(true), noexcept(false)}, const&&)
+    {
+        [[maybe_unused]] auto const vis = yk::overloaded{
+            [](std::in_place_index_t<variant_npos>, valueless_t const&&) noexcept { return true; },
+            [](std::in_place_index_t<0>, int const&&) noexcept(false) { return true; },
+            [](std::in_place_index_t<1>, double const&&) noexcept(false) { return true; },
+        };
+        using Visitor = decltype(vis);
+        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage const&&>);
+
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&&>::value;
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[variant_npos + 1]), Visitor const&, Storage const&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage const&&>);
+        STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage const&&>);
+    }
+
+    // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 }
 
 // Required for suppressing std::move(const&)
@@ -808,19 +930,53 @@ TEST_CASE("get_if")
     }
 }
 
+template<std::size_t I>
+struct just_index {};
+
 TEST_CASE("swap")
 {
     {
+        STATIC_REQUIRE(yk::core::is_trivially_swappable_v<int>);
         yk::rvariant<int> a = 33, b = 4;
         REQUIRE_NOTHROW(a.swap(b));
-        REQUIRE(yk::get<0>(a) == 4);
-        REQUIRE(yk::get<0>(b) == 33);
+        CHECK(yk::get<0>(a) == 4);
+        CHECK(yk::get<0>(b) == 33);
     }
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
         REQUIRE_NOTHROW(a.swap(b));
-        REQUIRE(yk::get<1>(a) == 3.14f);
-        REQUIRE(yk::get<0>(b) == 42);
+        CHECK(yk::get<1>(a) == 3.14f);
+        CHECK(yk::get<0>(b) == 42);
+    }
+    {
+        struct S
+        {
+            S() = default;
+            S(S const&) = default;
+            S(S&&) {}
+            S& operator=(S const&) = default;
+            S& operator=(S&&) { return *this; }
+        };
+
+        STATIC_REQUIRE(!yk::core::is_trivially_swappable_v<S>);
+        yk::rvariant<int, S> a{42}, b{S{}};
+        REQUIRE_NOTHROW(a.swap(b));
+        CHECK(yk::holds_alternative<S>(a));
+        CHECK(yk::holds_alternative<int>(b));
+    }
+    {
+        using V = yk::rvariant<
+            just_index<0>, just_index<1>, just_index<2>, just_index<3>, just_index<4>, just_index<5>, just_index<6>, just_index<7>,
+            just_index<8>, just_index<9>, just_index<10>, just_index<11>, just_index<12>, just_index<13>, just_index<14>, just_index<15>,
+            just_index<16>, just_index<17>, just_index<18>, just_index<19>, just_index<20>, just_index<21>, just_index<22>, just_index<23>,
+            just_index<24>, just_index<25>, just_index<26>, just_index<27>, just_index<28>, just_index<29>, just_index<30>, just_index<31>
+        >;
+        static_assert((yk::variant_size_v<V> * yk::variant_size_v<V>) >= yk::detail::visit_instantiation_limit);
+
+        V a{std::in_place_type<just_index<10>>}, b{std::in_place_type<just_index<20>>};
+        REQUIRE_NOTHROW(a.swap(b));
+        CHECK(yk::holds_alternative<just_index<20>>(a));
+        CHECK(yk::holds_alternative<just_index<10>>(b));
     }
 
     // TODO: valueless case
@@ -1011,7 +1167,7 @@ TEST_CASE("relational operators")
 
         CHECK(a != b);
         CHECK(!(a != a));
-        
+
         CHECK(b < a);
         CHECK(!(a < a));
         CHECK(!(a < b));

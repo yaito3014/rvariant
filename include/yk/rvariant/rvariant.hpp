@@ -64,7 +64,7 @@ struct rvariant_base
     static constexpr bool need_destructor_call = !std::conjunction_v<std::is_trivially_destructible<Ts>...>;
 
 public:
-    using storage_type = variant_storage_for<Ts...>;
+    using storage_type = make_variadic_union_t<Ts...>;
 
     // internal constructor; this is not the same as the most derived class' default constructor (which uses T0)
     constexpr rvariant_base() noexcept
@@ -76,11 +76,11 @@ public:
     constexpr void _copy_construct(rvariant_base const& w)
         noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>...>)
     {
-        w.raw_visit([this]<std::size_t j, class T>([[maybe_unused]] alternative<j, T> const& alt)
+        w.raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T const& alt)
             noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>...>)
         {
             if constexpr (j != std::variant_npos) {
-                construct_on_valueless<j>(alt.value);
+                construct_on_valueless<j>(alt);
             }
         });
     }
@@ -89,11 +89,12 @@ public:
     constexpr void _move_construct(rvariant_base&& w)
         noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
     {
-        std::move(w).raw_visit([this]<std::size_t j, class T>([[maybe_unused]] alternative<j, T>&& alt)
+        std::move(w).raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T&& alt)
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
         {
             if constexpr (j != std::variant_npos) {
-                construct_on_valueless<j>(std::move(alt).value);
+                static_assert(std::is_rvalue_reference_v<T&&>);
+                construct_on_valueless<j>(std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
             }
         });
     }
@@ -102,23 +103,23 @@ public:
     constexpr void _copy_assign(rvariant_base const& rhs)
         noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>..., std::is_nothrow_copy_assignable<Ts>...>)
     {
-        rhs.raw_visit([this]<std::size_t j, class T>([[maybe_unused]] alternative<j, T> const& rhs_alt)
+        rhs.raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T const& rhs_alt)
             noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>..., std::is_nothrow_copy_assignable<Ts>...>)
         {
             if constexpr (j == std::variant_npos) {
                 visit_reset();
             } else {
                 if (index_ == j) {
-                    raw_get<j>(storage()).value = rhs_alt.value;
+                    raw_get<j>(storage()) = rhs_alt;
                 } else {
                     // copy(noexcept) && move(throw)    => A
                     // copy(noexcept) && move(noexcept) => A
                     // copy(throw)    && move(throw)    => A
                     // copy(throw)    && move(noexcept) => B
                     if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
-                        reset_construct<j>(rhs_alt.value);  // A
+                        reset_construct<j>(rhs_alt);  // A
                     } else {
-                        auto tmp = rhs_alt.value;
+                        auto tmp = rhs_alt;
                         reset_construct<j>(std::move(tmp)); // B
                     }
                 }
@@ -130,17 +131,18 @@ public:
     constexpr void _move_assign(rvariant_base&& rhs)
         noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
     {
-        std::move(rhs).raw_visit([this]<std::size_t j, class T>([[maybe_unused]] alternative<j, T>&& rhs_alt)
+        std::move(rhs).raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T&& rhs_alt)
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
         {
             if constexpr (j == std::variant_npos) {
                 visit_reset();
 
             } else {
+                static_assert(std::is_rvalue_reference_v<T&&>);
                 if (index_ == j) {
-                    raw_get<j>(storage()).value = std::move(rhs_alt).value;
+                    raw_get<j>(storage()) = std::move(rhs_alt); // NOLINT(bugprone-move-forwarding-reference)
                 } else {
-                    reset_construct<j>(std::move(rhs_alt).value);
+                    reset_construct<j>(std::move(rhs_alt)); // NOLINT(bugprone-move-forwarding-reference)
                 }
             }
         });
@@ -170,9 +172,9 @@ public:
     constexpr void destroy_final() noexcept
     {
         if constexpr (need_destructor_call) {
-            this->raw_visit([this]<std::size_t i, class T>([[maybe_unused]] alternative<i, T>& alt) noexcept {
+            this->raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T& alt) noexcept {
                 if constexpr (i != variant_npos) {
-                    alt.value.~T();
+                    alt.~T();
                 }
             });
         }
@@ -182,9 +184,9 @@ public:
     constexpr void visit_reset() noexcept
     {
         if constexpr (need_destructor_call) {
-            this->raw_visit([this]<std::size_t i, class T>([[maybe_unused]] alternative<i, T>& alt) noexcept {
+            this->raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T& alt) noexcept {
                 if constexpr (i != variant_npos) {
-                    alt.value.~T();
+                    alt.~T();
                     index_ = variant_npos;
                 }
             });
@@ -199,8 +201,10 @@ public:
     {
         assert(index_ == I);
         if constexpr (I != std::variant_npos) {
+            // ReSharper disable once CppTypeAliasNeverUsed
             using T = core::pack_indexing_t<I, Ts...>;
-            raw_get<I>(storage_).value.~T();
+            auto&& alt = raw_get<I>(storage_);
+            alt.~T();
             index_ = variant_npos;
         }
     }
@@ -231,11 +235,12 @@ public:
     {
         visit_reset();
 
-        std::move(rhs).raw_visit([this]<std::size_t i, class RhsAlt>([[maybe_unused]] alternative<i, RhsAlt>&& rhs_alt)
+        std::move(rhs).raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T&& alt)
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
         {
             if constexpr (i != variant_npos) {
-                this->template construct_on_valueless<i>(std::move(rhs_alt).value);
+                static_assert(std::is_rvalue_reference_v<T&&>);
+                this->template construct_on_valueless<i>(std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
             }
         });
     }
@@ -251,7 +256,7 @@ public:
         -> raw_visit_return_type<Visitor, decltype(std::forward<Self>(self).storage())>
     {
         using Storage = decltype(std::forward<Self>(self).storage());
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor, Storage>::value;
+        constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, Storage>::value;
         auto&& f = table[self.index_ + 1];
         return std::invoke(f, std::forward<Visitor>(vis), std::forward<Self>(self).storage());
     }
@@ -290,11 +295,11 @@ using rvariant_base_t = core::cond_trivial<rvariant_destructor_base_t<Ts...>, Ts
 template<class Compare, class... Ts>
 [[nodiscard]] constexpr bool compare_relops(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
 {
-    return v.raw_visit([&w]<std::size_t i, class T>([[maybe_unused]] detail::alternative<i, T> const& alt)
+    return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& alt)
         noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
     {
-        if constexpr (i != detail::variant_npos) {
-            return Compare{}(alt.value, detail::raw_get<i>(w.storage()).value);
+        if constexpr (i != variant_npos) {
+            return Compare{}(alt, detail::raw_get<i>(w.storage()));
         } else {
             return Compare{}(0, 0);
         }
@@ -374,20 +379,20 @@ public:
         constexpr std::size_t j = core::aggregate_initialize_resolution_index<T, Ts...>;
         static_assert(j != std::variant_npos);
 
-        this->raw_visit([this, &t]<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt>& this_alt)
+        this->raw_visit([this, &t]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt& this_alt)
             noexcept(
                 std::is_nothrow_assignable_v<Tj&, T> &&
                 std::is_nothrow_constructible_v<Tj, T>
             )
         {
             if constexpr (i == j) {
-                this_alt.value = std::forward<T>(t);
+                this_alt = std::forward<T>(t);
             } else {
                 if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
-                    reset_construct<j>(std::forward<T>(t));
+                    base_type::template reset_construct<j>(std::forward<T>(t));
                 } else {
                     Tj tmp(std::forward<T>(t));
-                    reset_construct<j>(std::move(tmp));
+                    base_type::template reset_construct<j>(std::move(tmp));
                 }
             }
         });
@@ -405,14 +410,14 @@ public:
     constexpr /* not explicit */ rvariant(rvariant<Us...> const& w)
         noexcept(rvariant_set::conjunction_for_v<rvariant, rvariant<Us...> const&, std::is_nothrow_constructible>)
     {
-        w.raw_visit([this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT> const& alt)
+        w.raw_visit([this]<std::size_t j, class WT>(std::in_place_index_t<j>, [[maybe_unused]] WT const& alt)
             noexcept(rvariant_set::conjunction_for_v<rvariant, rvariant<Us...> const&, std::is_nothrow_constructible>)
         {
             if constexpr (j != std::variant_npos) {
                 constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
-                construct_on_valueless<i>(detail::forward_maybe_wrapped<VT>(alt.value));
+                base_type::template construct_on_valueless<i>(detail::forward_maybe_wrapped<VT>(alt));
             }
         });
     }
@@ -426,14 +431,15 @@ public:
     constexpr /* not explicit */ rvariant(rvariant<Us...>&& w)
         noexcept(rvariant_set::conjunction_for_v<rvariant, rvariant<Us...>&&, std::is_nothrow_constructible>)
     {
-        std::move(w).raw_visit([this]<std::size_t j, class WT>([[maybe_unused]] detail::alternative<j, WT>&& alt)
+        std::move(w).raw_visit([this]<std::size_t j, class WT>(std::in_place_index_t<j>, [[maybe_unused]] WT&& alt)
             noexcept(rvariant_set::conjunction_for_v<rvariant, rvariant<Us...>&&, std::is_nothrow_constructible>)
         {
             if constexpr (j != std::variant_npos) {
                 constexpr std::size_t i = subset_reindex_for<rvariant<Us...>>(j);
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<WT>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<WT>>);
-                construct_on_valueless<i>(detail::forward_maybe_wrapped<VT>(std::move(alt).value));
+                static_assert(std::is_rvalue_reference_v<WT&&>);
+                base_type::template construct_on_valueless<i>(detail::forward_maybe_wrapped<VT>(std::move(alt))); // NOLINT(bugprone-move-forwarding-reference)
             }
         });
     }
@@ -453,7 +459,7 @@ public:
             rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...> const&, std::is_nothrow_assignable>
         )
     {
-        rhs.raw_visit([this, &rhs]<std::size_t j, class Uj>([[maybe_unused]] detail::alternative<j, Uj> const& rhs_alt)
+        rhs.raw_visit([this, &rhs]<std::size_t j, class Uj>(std::in_place_index_t<j>, [[maybe_unused]] Uj const& rhs_alt)
             noexcept(
                 rvariant_set::conjunction_for_v<rvariant, rvariant<Us...> const&, std::is_nothrow_constructible> &&
                 rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...> const&, std::is_nothrow_assignable>
@@ -467,7 +473,7 @@ public:
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<Uj>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<Uj>>);
 
-                this->raw_visit([this, &rhs, &rhs_alt]<std::size_t i, class ThisAlt>([[maybe_unused]] detail::alternative<i, ThisAlt>& this_alt)
+                this->raw_visit([this, &rhs, &rhs_alt]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                     noexcept(
                         rvariant_set::conjunction_for_v<rvariant, rvariant<Us...> const&, std::is_nothrow_constructible> &&
                         rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...> const&, std::is_nothrow_assignable>
@@ -475,21 +481,21 @@ public:
                 {
                     if constexpr (i != std::variant_npos) {
                         if constexpr (std::is_same_v<unwrap_recursive_t<Uj>, unwrap_recursive_t<ThisAlt>>) {
-                            this_alt.value = detail::forward_maybe_wrapped<ThisAlt>(rhs_alt.value);
+                            this_alt = detail::forward_maybe_wrapped<ThisAlt>(rhs_alt);
                         } else {
                             if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
-                                reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt.value));
+                                base_type::template reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt));
                             } else {
-                                auto tmp = rhs_alt.value;
-                                reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(tmp)));
+                                auto tmp = rhs_alt;
+                                base_type::template reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(tmp)));
                             }
                         }
                     } else {
                         if constexpr (std::is_nothrow_copy_constructible_v<Uj> || !std::is_nothrow_move_constructible_v<Uj>) {
-                            reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt.value));
+                            base_type::template reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(rhs_alt));
                         } else {
-                            auto tmp = rhs_alt.value;
-                            reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(tmp)));
+                            auto tmp = rhs_alt;
+                            base_type::template reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(tmp)));
                         }
                     }
                 });
@@ -511,7 +517,7 @@ public:
             rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
         )
     {
-        std::move(rhs).raw_visit([this, &rhs]<std::size_t j, class Uj>([[maybe_unused]] detail::alternative<j, Uj>&& rhs_alt)
+        std::move(rhs).raw_visit([this, &rhs]<std::size_t j, class Uj>(std::in_place_index_t<j>, [[maybe_unused]] Uj&& rhs_alt)
             noexcept(
                 rvariant_set::conjunction_for_v<rvariant, rvariant<Us...>&&, std::is_nothrow_constructible> &&
                 rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
@@ -525,20 +531,21 @@ public:
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<Uj>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<Uj>>);
 
-                this->raw_visit([this, &rhs, &rhs_alt]<std::size_t i, class ThisAlt>([[maybe_unused]] detail::alternative<i, ThisAlt>& this_alt)
+                this->raw_visit([this, &rhs, &rhs_alt]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                     noexcept(
                         rvariant_set::conjunction_for_v<rvariant, rvariant<Us...>&&, std::is_nothrow_constructible> &&
                         rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
                     )
                 {
+                    static_assert(std::is_rvalue_reference_v<Uj&&>);
                     if constexpr (i != std::variant_npos) {
                         if constexpr (std::is_same_v<unwrap_recursive_t<Uj>, unwrap_recursive_t<ThisAlt>>) {
-                            this_alt.value = detail::forward_maybe_wrapped<ThisAlt>(std::move(rhs_alt).value);
+                            this_alt = detail::forward_maybe_wrapped<ThisAlt>(std::move(rhs_alt)); // NOLINT(bugprone-move-forwarding-reference)
                         } else {
-                            reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt).value));
+                            base_type::template reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt))); // NOLINT(bugprone-move-forwarding-reference)
                         }
                     } else {
-                        reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt).value));
+                        base_type::template reset_construct<corresponding_i>(detail::forward_maybe_wrapped<VT>(std::move(rhs_alt))); // NOLINT(bugprone-move-forwarding-reference)
                     }
                 });
             }
@@ -598,8 +605,8 @@ public:
         noexcept(std::is_nothrow_constructible_v<T, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = core::find_index_v<T, unwrapped_types>;
-        reset_construct<I>(std::forward<Args>(args)...);
-        return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
+        base_type::template reset_construct<I>(std::forward<Args>(args)...);
+        return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
     template<class T, class U, class... Args>
@@ -610,8 +617,8 @@ public:
         noexcept(std::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = core::find_index_v<T, unwrapped_types>;
-        reset_construct<I>(il, std::forward<Args>(args)...);
-        return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
+        base_type::template reset_construct<I>(il, std::forward<Args>(args)...);
+        return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
     template<std::size_t I, class... Args>
@@ -621,8 +628,8 @@ public:
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        reset_construct<I>(std::forward<Args>(args)...);
-        return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
+        base_type::template reset_construct<I>(std::forward<Args>(args)...);
+        return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
     template<std::size_t I, class U, class... Args>
@@ -632,8 +639,8 @@ public:
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        reset_construct<I>(il, std::forward<Args>(args)...);
-        return detail::unwrap_recursive(detail::raw_get<I>(storage()).value);
+        base_type::template reset_construct<I>(il, std::forward<Args>(args)...);
+        return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
     constexpr void swap(rvariant& rhs)
@@ -642,38 +649,37 @@ public:
         static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
         static_assert(std::conjunction_v<std::is_swappable<Ts>...>);
         constexpr bool all_nothrow_swappable = std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_swappable<Ts>...>;
-        constexpr std::size_t instantiation_limit = 1024; // TODO: apply same logic to other visits with >= O(n^2) branch
 
         if constexpr (std::conjunction_v<core::is_trivially_swappable<Ts>...>) {
             static_assert(core::is_trivially_swappable_v<decltype(storage())>);
             std::swap(storage(), rhs.storage()); // no ADL
             std::swap(index_, rhs.index_);
 
-        } else if constexpr (sizeof...(Ts) * sizeof...(Ts) < instantiation_limit) {
-            this->raw_visit([this, &rhs]<std::size_t i, class ThisAlt>([[maybe_unused]] detail::alternative<i, ThisAlt>& this_alt)
+        } else if constexpr (sizeof...(Ts) * sizeof...(Ts) < detail::visit_instantiation_limit) {
+            this->raw_visit([this, &rhs]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                 noexcept(all_nothrow_swappable)
             {
-                rhs.raw_visit([this, &rhs, &this_alt]<std::size_t j, class RhsAlt>([[maybe_unused]] detail::alternative<j, RhsAlt>& rhs_alt)
+                rhs.raw_visit([this, &rhs, &this_alt]<std::size_t j, class RhsAlt>(std::in_place_index_t<j>, [[maybe_unused]] RhsAlt& rhs_alt)
                     noexcept(all_nothrow_swappable)
                 {
                     if constexpr (i == j) {
                         if constexpr (i != detail::variant_npos) {
                             using std::swap;
-                            swap(this_alt.value, rhs_alt.value);
+                            swap(this_alt, rhs_alt);
                         }
 
                     } else if constexpr (i == detail::variant_npos) {
-                        this->template construct_on_valueless<j>(std::move(rhs_alt.value));
+                        this->template construct_on_valueless<j>(std::move(rhs_alt));
                         rhs.template reset<j>();
 
                     } else if constexpr (j == detail::variant_npos) {
-                        rhs.template construct_on_valueless<i>(std::move(this_alt.value));
+                        rhs.template construct_on_valueless<i>(std::move(this_alt));
                         this->template reset<i>();
 
                     } else {
-                        auto tmp = std::move(this_alt.value);
+                        auto tmp = std::move(this_alt);
                         this->template reset<i>();
-                        this->template construct_on_valueless<j>(std::move(rhs_alt.value));
+                        this->template construct_on_valueless<j>(std::move(rhs_alt));
                         rhs.template reset<j>();
                         rhs.template construct_on_valueless<i>(std::move(tmp));
                     }
@@ -681,12 +687,12 @@ public:
             });
         } else {
             if (index_ == rhs.index_) {
-                rhs.raw_visit([this]<std::size_t i, class RhsAlt>([[maybe_unused]] detail::alternative<i, RhsAlt>& rhs_alt)
+                rhs.raw_visit([this]<std::size_t i, class RhsAlt>(std::in_place_index_t<i>, [[maybe_unused]] RhsAlt& rhs_alt)
                     noexcept(std::conjunction_v<std::is_nothrow_swappable<Ts>...>)
                 {
                     if constexpr (i != detail::variant_npos) {
                         using std::swap;
-                        swap(detail::raw_get<i>(storage()).value, rhs_alt.value);
+                        swap(detail::raw_get<i>(this->storage()), rhs_alt);
                     }
                 });
             } else {
@@ -729,7 +735,7 @@ public:
         )
     {
         if constexpr (rvariant_set::equivalent_to<rvariant<Us...>, rvariant>) {
-            return this->raw_visit([]<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt> const& alt)
+            return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt)
                 noexcept(std::is_nothrow_constructible_v<rvariant<Us...>, rvariant const&>) -> rvariant<Us...>
             {
                 if constexpr (i == detail::variant_npos) {
@@ -737,11 +743,11 @@ public:
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
                     static_assert(j != core::find_npos);
-                    return rvariant<Us...>(std::in_place_index<j>, alt.value);
+                    return rvariant<Us...>(std::in_place_index<j>, alt);
                 }
             });
         } else {
-            return this->raw_visit([]<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt> const& alt)
+            return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt)
                 /* not noexcept */ -> rvariant<Us...>
             {
                 if constexpr (i == detail::variant_npos) {
@@ -751,7 +757,7 @@ public:
                     if constexpr (j == core::find_npos) {
                         throw std::bad_variant_access{};
                     } else {
-                        return rvariant<Us...>(std::in_place_index<j>, alt.value);
+                        return rvariant<Us...>(std::in_place_index<j>, alt);
                     }
                 }
             });
@@ -769,7 +775,7 @@ public:
         )
     {
         if constexpr (rvariant_set::equivalent_to<rvariant<Us...>, rvariant>) {
-            return std::move(*this).raw_visit([]<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt>&& alt)
+            return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt)
                 noexcept(std::is_nothrow_constructible_v<rvariant<Us...>, rvariant&&>) -> rvariant<Us...>
             {
                 if constexpr (i == detail::variant_npos) {
@@ -777,11 +783,12 @@ public:
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
                     static_assert(j != core::find_npos);
-                    return rvariant<Us...>(std::in_place_index<j>, std::move(alt).value);
+                    static_assert(std::is_rvalue_reference_v<Alt&&>);
+                    return rvariant<Us...>(std::in_place_index<j>, std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
                 }
             });
         } else {
-            return std::move(*this).raw_visit([]<std::size_t i, class Alt>([[maybe_unused]] detail::alternative<i, Alt>&& alt)
+            return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt)
                 /* not noexcept */ -> rvariant<Us...>
             {
                 if constexpr (i == detail::variant_npos) {
@@ -791,7 +798,8 @@ public:
                     if constexpr (j == core::find_npos) {
                         throw std::bad_variant_access{};
                     } else {
-                        return rvariant<Us...>(std::in_place_index<j>, std::move(alt).value);
+                        static_assert(std::is_rvalue_reference_v<Alt&&>);
+                        return rvariant<Us...>(std::in_place_index<j>, std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
                     }
                 }
             });
@@ -799,14 +807,14 @@ public:
     }
 
 
-    template<std::size_t I, class... Ts_> friend constexpr auto&& get(rvariant<Ts_...>&);
-    template<std::size_t I, class... Ts_> friend constexpr auto&& get(rvariant<Ts_...> const&);
-    template<std::size_t I, class... Ts_> friend constexpr auto&& get(rvariant<Ts_...>&&);
-    template<std::size_t I, class... Ts_> friend constexpr auto&& get(rvariant<Ts_...> const&&);
-    template<class T, class... Ts_> friend constexpr T& get(rvariant<Ts_...>&);
-    template<class T, class... Ts_> friend constexpr T const& get(rvariant<Ts_...> const&);
-    template<class T, class... Ts_> friend constexpr T&& get(rvariant<Ts_...>&&);
-    template<class T, class... Ts_> friend constexpr T const&& get(rvariant<Ts_...> const&&);
+    template<std::size_t I, class... Ts_> friend constexpr variant_alternative_t<I, rvariant<Ts_...>> &       get(rvariant<Ts_...> & v YK_LIFETIMEBOUND);
+    template<std::size_t I, class... Ts_> friend constexpr variant_alternative_t<I, rvariant<Ts_...>> &&      get(rvariant<Ts_...> && v YK_LIFETIMEBOUND);
+    template<std::size_t I, class... Ts_> friend constexpr variant_alternative_t<I, rvariant<Ts_...>> const&  get(rvariant<Ts_...> const& v YK_LIFETIMEBOUND);
+    template<std::size_t I, class... Ts_> friend constexpr variant_alternative_t<I, rvariant<Ts_...>> const&& get(rvariant<Ts_...> const&& v YK_LIFETIMEBOUND);
+    template<class T, class... Ts_> friend constexpr T&        get(rvariant<Ts_...> & v YK_LIFETIMEBOUND);
+    template<class T, class... Ts_> friend constexpr T&&       get(rvariant<Ts_...> && v YK_LIFETIMEBOUND);
+    template<class T, class... Ts_> friend constexpr T const&  get(rvariant<Ts_...> const& v YK_LIFETIMEBOUND);
+    template<class T, class... Ts_> friend constexpr T const&& get(rvariant<Ts_...> const&& v YK_LIFETIMEBOUND);
 
     template<std::size_t I, class... Ts_> friend constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts_...>>> get_if(rvariant<Ts_...>*) noexcept;
     template<std::size_t I, class... Ts_> friend constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts_...>> const> get_if(rvariant<Ts_...> const*) noexcept;
@@ -848,20 +856,6 @@ private:
     {
         return detail::subset_reindex<W, rvariant>(index);
     }
-
-    template<std::size_t I, class... Args>
-    constexpr void reset_construct(Args&&... args)
-        noexcept(noexcept(base_type::template reset_construct<I>(std::forward<Args>(args)...)))
-    {
-        return base_type::template reset_construct<I>(std::forward<Args>(args)...);
-    }
-
-    template<std::size_t I, class... Args>
-    constexpr void construct_on_valueless(Args&&... args)
-        noexcept(noexcept(base_type::template construct_on_valueless<I>(std::forward<Args>(args)...)))
-    {
-        return base_type::template construct_on_valueless<I>(std::forward<Args>(args)...);
-    }
 };
 
 // -------------------------------------------------
@@ -880,35 +874,35 @@ template<class T, class... Ts>
 // -------------------------------------------------
 
 template<std::size_t I, class... Ts>
-[[nodiscard]] constexpr auto&&
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>&
 get(rvariant<Ts...>& v YK_LIFETIMEBOUND)
 {
     if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_));
 }
 
 template<std::size_t I, class... Ts>
-[[nodiscard]] constexpr auto&&
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>&&
 get(rvariant<Ts...>&& v YK_LIFETIMEBOUND)
 {
     if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_));
 }
 
 template<std::size_t I, class... Ts>
-[[nodiscard]] constexpr auto&&
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const&
 get(rvariant<Ts...> const& v YK_LIFETIMEBOUND)
 {
     if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_));
 }
 
 template<std::size_t I, class... Ts>
-[[nodiscard]] constexpr auto&&
+[[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
 get(rvariant<Ts...> const&& v YK_LIFETIMEBOUND)
 {
     if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_));
 }
 
 template<class T, class... Ts>
@@ -917,7 +911,7 @@ get(rvariant<Ts...>& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_));
 }
 
 template<class T, class... Ts>
@@ -926,7 +920,7 @@ get(rvariant<Ts...>&& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_));
 }
 
 template<class T, class... Ts>
@@ -935,7 +929,7 @@ get(rvariant<Ts...> const& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(v.storage_));
 }
 
 template<class T, class... Ts>
@@ -944,7 +938,7 @@ get(rvariant<Ts...> const&& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_).value);
+    return detail::unwrap_recursive(detail::raw_get<I>(std::move(v).storage_));
 }
 
 template<class T, class... Ts>
@@ -970,7 +964,7 @@ template<std::size_t I, class... Ts>
 get_if(rvariant<Ts...>* v) noexcept
 {
     if (v == nullptr || v->index() != I) return nullptr;
-    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(v->storage()).value));
+    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(v->storage())));
 }
 
 template<std::size_t I, class... Ts>
@@ -978,7 +972,7 @@ template<std::size_t I, class... Ts>
 get_if(rvariant<Ts...> const* v) noexcept
 {
     if (v == nullptr || v->index() != I) return nullptr;
-    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(v->storage()).value));
+    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(v->storage())));
 }
 
 template<std::size_t I, class... Ts>
@@ -1084,12 +1078,12 @@ template<class... Ts>
 {
     if (v.valueless_by_exception() || w.valueless_by_exception()) return w.valueless_by_exception() <=> v.valueless_by_exception();
     if (auto c = v.index() <=> w.index(); c != 0) return c;
-    return v.raw_visit([&w]<std::size_t i, class T>(detail::alternative<i, T> const& alt)
+    return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, T const& alt)
         noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
         -> std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
     {
         if constexpr (i != detail::variant_npos) {
-            return alt.value <=> detail::raw_get<i>(w.storage()).value;
+            return alt <=> detail::raw_get<i>(w.storage());
         } else {
             return std::strong_ordering::equivalent;
         }

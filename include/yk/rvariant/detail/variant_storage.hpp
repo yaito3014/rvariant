@@ -3,7 +3,6 @@
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/variant_helper.hpp>
-#include <yk/core/type_traits.hpp>
 
 #include <functional>
 #include <utility>
@@ -25,6 +24,7 @@ struct variadic_union<true, T, Ts...>
     static constexpr std::size_t size = sizeof...(Ts) + 1;
 
     // no active member
+    // ReSharper disable once CppPossiblyUninitializedMember
     constexpr explicit variadic_union() noexcept {}
 
 #ifdef __RESHARPER__
@@ -80,6 +80,7 @@ struct variadic_union<false, T, Ts...>
     static constexpr std::size_t size = sizeof...(Ts) + 1;
 
     // no active member
+    // ReSharper disable once CppPossiblyUninitializedMember
     constexpr explicit variadic_union() noexcept {}
 
     constexpr ~variadic_union() noexcept {}
@@ -123,49 +124,18 @@ struct variadic_union<false, T, Ts...>
     };
 };
 
-template<std::size_t I, class T>
-struct alternative
-{
-    static constexpr std::size_t index = I;
-    using type = T;
-
-    constexpr explicit alternative() noexcept(std::is_nothrow_default_constructible_v<T>)
-        = default;
-
-    template<class... Args>
-        requires (sizeof...(Args) > 0) && std::is_constructible_v<T, Args...>
-    constexpr explicit alternative(Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        : value(std::forward<Args>(args)...)
-    {}
-
-    constexpr alternative(alternative const&) = default;
-    constexpr alternative(alternative&&) = default;
-    constexpr alternative& operator=(alternative const&) = default;
-    constexpr alternative& operator=(alternative&&) = default;
-
-    constexpr ~alternative() requires std::is_trivially_destructible_v<T> = default;
-    constexpr ~alternative() requires (!std::is_trivially_destructible_v<T>) {}
-
-    T value;
-};
-
-struct raw_visit_unit_type {};
-
-template<>
-struct alternative<variant_npos, raw_visit_unit_type>
-{
-    static constexpr std::size_t index = variant_npos;
-};
-
+// TODO: apply same logic to other visits with >= O(n^2) branch
+inline constexpr std::size_t visit_instantiation_limit = 1024;
 
 template<std::size_t I>
 struct get_alternative
 {
+    static_assert(I != variant_npos);
+
     template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept
+    static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
     {
-        return get_alternative<I - 1>{}(std::forward<Union>(u).rest);
+        return get_alternative<I - 1>::apply(std::forward<Union>(u).rest);
     }
 };
 
@@ -173,51 +143,68 @@ template<>
 struct get_alternative<0>
 {
     template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept
+    static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
     {
         return std::forward<Union>(u).first;
     }
 };
 
-template<>
-struct get_alternative<variant_npos>
-{
-    template<class Union>
-    constexpr auto&& operator()(Union&& u YK_LIFETIMEBOUND) noexcept
-    {
-        return std::forward<Union>(u); // valueless storage itself
-    }
-};
-
-
 template<std::size_t I, class Storage>
-[[nodiscard]] constexpr auto&& raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
+[[nodiscard]] constexpr decltype(auto) raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
 {
-    return get_alternative<I>{}(std::forward<Storage>(storage));
+    return get_alternative<I>::apply(std::forward<Storage>(storage));
 }
 
 template<std::size_t I, class Storage>
-using alternative_t = decltype(raw_get<I>(std::declval<Storage>()));
+using raw_get_t = decltype(raw_get<I>(std::declval<Storage>()));
+
+
+template<class Visitor, class Storage, class Is = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
+struct raw_visit_return_type_impl;
+
+template<class Visitor, class Storage, std::size_t I>
+struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I>>
+{
+    static_assert(
+        std::is_invocable_v<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
+        "The spec requires Visitor to accept all alternative types (with the value category being identical)." // https://eel.is/c++draft/variant#visit-5
+    );
+
+    using type = std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>;
+};
+
+template<class Visitor, class Storage, std::size_t I, std::size_t... Is> requires (sizeof...(Is) > 0)
+struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I, Is...>>
+    : raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<Is...>>
+{
+    static_assert(
+        std::conjunction_v<std::is_same<
+            std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
+            std::invoke_result_t<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>
+        >...>,
+        "The spec requires the Visitor to return the same type and value category for all alternatives." // https://eel.is/c++draft/variant#visit-5
+    );
+};
 
 template<class Visitor, class Storage>
-using raw_visit_return_type = std::invoke_result_t<Visitor, alternative_t<0, Storage>>;
+using raw_visit_return_type = typename raw_visit_return_type_impl<Visitor, Storage>::type;
 
 
 template<class Visitor, class Storage>
 constexpr raw_visit_return_type<Visitor, Storage>
-raw_visit_valueless(Visitor&& vis, Storage&&)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative<variant_npos, raw_visit_unit_type>>)
+raw_visit_valueless(Visitor&& vis, Storage&&)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    noexcept(std::is_nothrow_invocable_v<Visitor, std::in_place_index_t<variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>)
 {
-    alternative<variant_npos, raw_visit_unit_type> fake_alternative;
-    return std::invoke(std::forward<Visitor>(vis), std::forward_like<Storage>(fake_alternative));
+    valueless_t valueless_;
+    return std::invoke(std::forward<Visitor>(vis), std::in_place_index<variant_npos>, std::forward_like<Storage>(valueless_));
 }
 
 template<std::size_t I, class Visitor, class Storage>
 constexpr raw_visit_return_type<Visitor, Storage>
-raw_visit_dispatch(Visitor&& vis, Storage&& storage)
-    noexcept(std::is_nothrow_invocable_v<Visitor, alternative_t<I, Storage>>)
+raw_visit_dispatch(Visitor&& vis, Storage&& storage)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    noexcept(std::is_nothrow_invocable_v<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>)
 {
-    return std::invoke(std::forward<Visitor>(vis), raw_get<I>(std::forward<Storage>(storage)));
+    return std::invoke(std::forward<Visitor>(vis), std::in_place_index<I>, raw_get<I>(std::forward<Storage>(storage)));
 }
 
 template<class Visitor, class Storage, class Is = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
@@ -225,8 +212,8 @@ constexpr bool raw_visit_noexcept = false;
 
 template<class Visitor, class Storage, std::size_t... Is>
 constexpr bool raw_visit_noexcept<Visitor, Storage, std::index_sequence<Is...>> = std::conjunction_v<
-    std::is_nothrow_invocable<Visitor, alternative<variant_npos, raw_visit_unit_type>>,
-    std::is_nothrow_invocable<Visitor, alternative_t<Is, Storage>>...
+    std::is_nothrow_invocable<Visitor, std::in_place_index_t<variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>,
+    std::is_nothrow_invocable<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>...
 >;
 
 
@@ -240,33 +227,14 @@ using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visit
 template<class Visitor, class Storage, std::size_t... Is>
 struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
 {
+    static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
+    static_assert(std::is_reference_v<Storage>, "Storage must be one of: &, const&, &&, const&&");
+
     static constexpr raw_visit_function_ptr<Visitor, Storage> value[] = {
         &raw_visit_valueless<Visitor, Storage>,
         &raw_visit_dispatch<Is, Visitor, Storage>...
     };
 };
-
-
-template<class Seq, class... Ts>
-struct variant_storage_for_impl;
-
-template<std::size_t... Is, class... Ts>
-struct variant_storage_for_impl<std::index_sequence<Is...>, Ts...>
-{
-    // sanity check
-    static_assert(
-        ((std::is_trivially_destructible_v<alternative<Is, Ts>> == std::is_trivially_destructible_v<Ts>) && ...)
-    );
-
-    using type = variadic_union<
-        //(std::is_trivially_destructible_v<Ts> && ...),
-        (std::is_trivially_destructible_v<alternative<Is, Ts>> && ...),
-        alternative<Is, Ts>...
-    >;
-};
-
-template<class... Ts>
-using variant_storage_for = typename variant_storage_for_impl<std::index_sequence_for<Ts...>, Ts...>::type;
 
 } // yk::detail
 
