@@ -10,11 +10,23 @@ namespace unit_test {
 
 struct MoveThrows
 {
+    struct non_throwing_t {};
+    struct throwing_t {};
+    struct potentially_throwing_t {};
+    
+    static constexpr non_throwing_t non_throwing{};
+    static constexpr throwing_t throwing{};
+    static constexpr potentially_throwing_t potentially_throwing{};
+
     MoveThrows() = default;
     MoveThrows(MoveThrows const&) = default;
     MoveThrows(MoveThrows&&) { throw std::exception{}; }
     MoveThrows& operator=(MoveThrows const&) = default;
     MoveThrows& operator=(MoveThrows&&) = default;
+
+    MoveThrows(non_throwing_t) noexcept {}
+    MoveThrows(throwing_t) noexcept(false) { throw std::exception{}; }
+    MoveThrows(potentially_throwing_t) noexcept(false) {}
 };
 
 template <class... Ts, class... Args>

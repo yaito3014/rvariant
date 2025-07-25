@@ -710,6 +710,31 @@ TEST_CASE("generic assignment")
         a = 3.14f;
         CHECK(a.index() == 1);
     }
+
+    {
+        yk::rvariant<int, MoveThrows> a;
+        try {
+            a = MoveThrows::non_throwing;
+        } catch(...) {
+        }
+        CHECK(!a.valueless_by_exception());
+    }
+    {
+        yk::rvariant<int, MoveThrows> a;
+        try {
+            a = MoveThrows::throwing;
+        } catch(...) {
+        }
+        CHECK(!a.valueless_by_exception());
+    }
+    {
+        yk::rvariant<int, MoveThrows> a;
+        try {
+            a = MoveThrows::potentially_throwing;
+        } catch(...) {
+        }
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 TEST_CASE("emplace")
