@@ -10,6 +10,8 @@
 #include <utility>
 #include <type_traits>
 
+#include <cassert>
+
 namespace yk::detail {
 
 template<bool TriviallyDestructible, class... Ts>
@@ -480,6 +482,7 @@ struct flat_index<std::index_sequence<Ns...>, std::integer_sequence<bool, NeverV
     get(RuntimeIndex... index) noexcept
     {
         static_assert(sizeof...(RuntimeIndex) == sizeof...(Ns));
+        assert(((valueless_bias<NeverValueless>(index) < valueless_bias<NeverValueless>(Ns)) && ...));
         return flat_index::get_impl(strides, index...);
     }
 
