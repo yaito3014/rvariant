@@ -420,7 +420,7 @@ decltype(auto) visit(Foo&&, Bar&&...)
 namespace SFINAE_context {
 
 using ::yk::visit;
-using ::not_a_variant_ADL::visit;
+using not_a_variant_ADL::visit;
 
 template<class Visitor, class Variant, class Enabled = void>
 struct overload_resolvable : std::false_type {};
