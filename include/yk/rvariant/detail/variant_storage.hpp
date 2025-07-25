@@ -8,6 +8,7 @@
 #include <variant> // std::bad_variant_access
 #include <functional>
 #include <utility>
+#include <type_traits>
 
 namespace yk::detail {
 
@@ -167,7 +168,7 @@ struct get_alternative<0>
 };
 
 template<std::size_t I, class Storage>
-[[nodiscard]] constexpr decltype(auto) raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
+[[nodiscard]] constexpr auto&& raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
 {
     return get_alternative<I>::apply(std::forward<Storage>(storage));
 }
@@ -310,66 +311,117 @@ forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept 
 }
 
 
-template<class Visitor, class... Variants>
-struct mandated_visit_result
-{
-    static_assert(
-        std::is_invocable_v<Visitor, raw_get_t<0, forward_storage_t<Variants>>...>,
-        "The spec mandates that the Visitor accept all combinations of alternative types "
-        "(https://eel.is/c++draft/variant#visit-5)."
-    );
-    using type = std::invoke_result_t<Visitor, raw_get_t<0, forward_storage_t<Variants>>...>;
-};
+// `std::invoke_result_t` MUST NOT be used here due to its side effects:
+// <https://eel.is/c++draft/meta.trans.other#tab:meta.trans.other-row-11-column-2-note-2>
+// In the case of `variant`, this is not a theoretical concern:
+// it has observable consequences where `visit(...)` may be incorrectly
+// instantiated during the invocation of `visit<R>(...)`.
+// This likely explains why [variant.visit](https://eel.is/c++draft/variant.visit#6)
+// explicitly requires using `decltype(e(m))` instead of `std::invoke_result_t`.
+// Also, we can't wrap this into a `struct` as it becomes not SFINAE-friendly.
 
 template<class Visitor, class... Variants>
-using visit_result_t = typename mandated_visit_result<Visitor, Variants...>::type;
-
+using visit_result_t = decltype(std::invoke( // If you see an error here, your `T0` is not eligible for the `Visitor`.
+    std::declval<Visitor>(),
+    detail::raw_get<0>(forward_storage<Variants>(std::declval<Variants>()))...
+));
 
 template<class T0R, class Visitor, class ArgsList, class... Variants>
-struct visit_invoke_check_impl;
+struct visit_check_impl;
 
 template<class T0R, class Visitor, class... Args>
-struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>>
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>>
 {
-    template<class T> struct INVOKE_is_ill_formed { using type = INVOKE_is_ill_formed<T>; };
-
     static constexpr bool accepts_all_alternatives = std::is_invocable_v<Visitor, Args...>;
+
+    template<class Visitor_, class... Args_>
+    struct lazy_invoke
+    {
+        using type = decltype(std::invoke(std::declval<Visitor_>(), std::declval<Args_>()...));
+    };
+
+    // In case of `accepts_all_alternatives == false`, this
+    // intentionally reports false-positive `true` to avoid
+    // two `static_assert` errors.
     static constexpr bool same_return_type = std::is_same_v<
-        T0R,
         typename std::conditional_t<
             accepts_all_alternatives,
-            std::invoke_result<Visitor, Args...>,
-            INVOKE_is_ill_formed<T0R>
-        >::type
+            lazy_invoke<Visitor, Args...>,
+            std::type_identity<T0R>
+        >::type,
+        T0R
     >;
 
-    static constexpr bool value = same_return_type; // for short-circuiting
+    // for short-circuiting on conjunction
+    static constexpr bool value = accepts_all_alternatives && same_return_type;
 };
 
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
-struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Rest...>
-    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts&>, Rest...>...>
-{};
-
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Rest...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts&>, Rest...>...> {};
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
-struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Rest...>
-    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts const&>, Rest...>...>
-{};
-
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Rest...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts const&>, Rest...>...> {};
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
-struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Rest...>
-    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts>, Rest...>...>
-{};
-
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Rest...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts>, Rest...>...> {};
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
-struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Rest...>
-    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts const>, Rest...>...>
-{};
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Rest...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts const>, Rest...>...> {};
 
-template<class Visitor, class... Variants>
-using visit_invoke_check = visit_invoke_check_impl<
-    visit_result_t<Visitor, Variants...>, Visitor, core::type_list<>, Variants...
->;
+template<class T0R, class Visitor, class... Variants>
+using visit_check = visit_check_impl<T0R, Visitor, core::type_list<>, Variants...>;
+
+
+template<class R, class Visitor, class ArgsList, class... Variants>
+struct visit_R_check_impl;
+
+template<class R, class Visitor, class... Args>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>>
+{
+    // Note that this can't be `std::is_invocable_r_v`,
+    // because we make sure the conditions for `static_assert` be
+    // mutually exclusive in order to provide better errors.
+    static constexpr bool accepts_all_alternatives = std::is_invocable_v<Visitor, Args...>;
+
+    template<class Visitor_, class... Args_>
+    struct lazy_invoke
+    {
+        // This is NOT `std::invoke_r`; we need the plain type for conversion check
+        using type = decltype(std::invoke(std::declval<Visitor_>(), std::declval<Args_>()...));
+    };
+
+    // In case of `accepts_all_alternatives == false`, this
+    // intentionally reports false-positive `true` to avoid
+    // two `static_assert` errors.
+    static constexpr bool return_type_convertible_to_R = std::is_convertible_v<
+        typename std::conditional_t<
+            accepts_all_alternatives,
+            lazy_invoke<Visitor, Args...>,
+            std::type_identity<R>
+        >::type,
+        R
+    >;
+
+    // for short-circuiting on conjunction
+    static constexpr bool value = accepts_all_alternatives && return_type_convertible_to_R;
+};
+
+template<class R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Rest...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts&>, Rest...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Rest...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts const&>, Rest...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Rest...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts>, Rest...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Rest...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts const>, Rest...>...> {};
+
+template<class R, class Visitor, class... Variants>
+using visit_R_check = visit_R_check_impl<R, Visitor, core::type_list<>, Variants...>;
 
 
 // --------------------------------------------------
@@ -509,6 +561,34 @@ struct visit_impl<
 namespace yk {
 
 template<
+    class Visitor,
+    class... Variants,
+    // https://eel.is/c++draft/variant.visit#2
+    class = std::void_t<detail::as_variant_t<Variants>...>
+>
+detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
+visit(Visitor&& vis, Variants&&... vars)
+{
+    using T0R = detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>;
+    using Check = detail::visit_check<T0R, Visitor, detail::as_variant_t<Variants>...>;
+    static_assert(
+        Check::accepts_all_alternatives,
+        "The spec mandates that the Visitor accept all combinations of alternative types "
+        "(https://eel.is/c++draft/variant#visit-5)."
+    );
+    static_assert(
+        Check::same_return_type,
+        "The spec mandates that the Visitor return the same type and value category "
+        "for all combinations of alternative types (https://eel.is/c++draft/variant#visit-5)."
+    );
+    return detail::visit_impl<
+        T0R,
+        core::type_list<detail::as_variant_t<Variants>...>,
+        std::index_sequence<variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...>
+    >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
+}
+
+template<
     class R,
     class Visitor,
     class... Variants,
@@ -517,23 +597,27 @@ template<
 >
 R visit(Visitor&& vis, Variants&&... vars)
 {
+    using Check = detail::visit_R_check<R, Visitor, detail::as_variant_t<Variants>...>;
     static_assert(
-        detail::visit_invoke_check<Visitor, detail::as_variant_t<Variants>...>::accepts_all_alternatives,
+        Check::accepts_all_alternatives,
         "The spec mandates that the Visitor accept all combinations of alternative types "
         "(https://eel.is/c++draft/variant#visit-5)."
     );
     static_assert(
-        detail::visit_invoke_check<Visitor, detail::as_variant_t<Variants>...>::same_return_type,
-        "The spec mandates that the Visitor return the same type and value category "
-        "for all combinations of alternative types (https://eel.is/c++draft/variant#visit-5)."
+        Check::return_type_convertible_to_R,
+        "The spec mandates that each return type of the Visitor be implicitly convertible to `R` "
+        "(https://eel.is/c++draft/variant.visit#6)."
     );
 
     return detail::visit_impl<
         R,
         core::type_list<detail::as_variant_t<Variants>...>,
-        std::index_sequence<variant_size_v<std::remove_cvref_t<detail::as_variant_t<Variants>>>...>
+        std::index_sequence<variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...>
     >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
 }
+
+static_assert(std::is_convertible_v<void, void>);
+
 
 } // yk
 

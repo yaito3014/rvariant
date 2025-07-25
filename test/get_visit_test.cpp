@@ -393,45 +393,113 @@ struct overload_resolvable<
 
 TEST_CASE("visit (Constraints)")
 {
-    auto const vis = yk::overloaded{
+    [[maybe_unused]] auto const vis = yk::overloaded{
         [](int const&) -> std::string_view { return "variant"; },
         [](float const&) -> std::string_view { return "variant"; },
     };
     using Visitor = decltype(vis);
 
+    [[maybe_unused]] auto const different_R_vis = yk::overloaded{
+        [](int const&) -> std::string_view { return "variant"; },
+        [](float const&) -> std::string /* different type */ { return "variant"; },
+    };
+    using DifferentRVisitor = decltype(different_R_vis);
+
     STATIC_REQUIRE(std::is_invocable_v<Visitor, int>);
     STATIC_REQUIRE(std::is_invocable_v<Visitor, float>);
     STATIC_REQUIRE(!std::is_invocable_v<Visitor, double>); // ambiguous
 
+    // for `visit(...)`
     {
-        using IntChecker = yk::detail::visit_invoke_check_impl<std::string_view, Visitor, yk::core::type_list<int>>;
-        using DoubleChecker = yk::detail::visit_invoke_check_impl<std::string_view, Visitor, yk::core::type_list<double>>;
+        using IntChecker = yk::detail::visit_check_impl<std::string_view, Visitor, yk::core::type_list<int>>;
+        using DoubleChecker = yk::detail::visit_check_impl<std::string_view, Visitor, yk::core::type_list<double>>;
 
         static_assert(IntChecker::accepts_all_alternatives);
-        static_assert(IntChecker::same_return_type);
         static_assert(IntChecker::value);
         static_assert(!DoubleChecker::accepts_all_alternatives);
-        static_assert(!DoubleChecker::same_return_type);
         static_assert(!DoubleChecker::value);
 
-        using Check = yk::detail::visit_invoke_check<Visitor, yk::rvariant<int, double>&&>;
-        static_assert(!Check::accepts_all_alternatives);
-        static_assert(!Check::same_return_type);
+        {
+            using Check = yk::detail::visit_check<std::string_view, Visitor, yk::rvariant<int, float>&&>;
+            static_assert(Check::accepts_all_alternatives);
+            static_assert(Check::same_return_type);
+            static_assert(Check::value);
+        }
+        {
+            using Check = yk::detail::visit_check<std::string_view, DifferentRVisitor, yk::rvariant<int, float>&&>;
+            static_assert(Check::accepts_all_alternatives);
+            static_assert(!Check::same_return_type);
+            static_assert(!Check::value);
+        }
+        {
+            using Check = yk::detail::visit_check<std::string_view, Visitor, yk::rvariant<int, double>&&>;
+            static_assert(!Check::accepts_all_alternatives);
+            static_assert(!Check::value);
+        }
+    }
+    // for `visit<R>(...)`
+    {
+        using IntChecker = yk::detail::visit_R_check_impl<std::string_view, Visitor, yk::core::type_list<int>>;
+        using DoubleChecker = yk::detail::visit_R_check_impl<std::string_view, Visitor, yk::core::type_list<double>>;
+
+        static_assert(IntChecker::accepts_all_alternatives);
+        static_assert(IntChecker::return_type_convertible_to_R);
+        static_assert(IntChecker::value);
+        static_assert(!DoubleChecker::accepts_all_alternatives);
+        static_assert(!DoubleChecker::value);
+
+        {
+            using Check = yk::detail::visit_R_check<std::string_view, Visitor, yk::rvariant<int, float>&&>;
+            static_assert(Check::accepts_all_alternatives);
+            static_assert(Check::return_type_convertible_to_R);
+            static_assert(Check::value);
+        }
+        {
+            using Check = yk::detail::visit_R_check<std::string, DifferentRVisitor, yk::rvariant<int, float>&&>;
+            static_assert(Check::accepts_all_alternatives);
+            static_assert(!Check::return_type_convertible_to_R);
+            static_assert(!Check::value);
+        }
+        {
+            using Check = yk::detail::visit_R_check<std::string_view, Visitor, yk::rvariant<int, double>&&>;
+            static_assert(!Check::accepts_all_alternatives);
+            static_assert(!Check::value);
+        }
     }
     {
-        using ::yk::visit;
-
         // Asserts the "Constraints:" is implemented correctly
         // https://eel.is/c++draft/variant.visit#2
         STATIC_REQUIRE(requires {
             requires std::same_as<std::true_type, SFINAE_context::overload_resolvable<Visitor, not_a_variant_ADL::not_a_variant<int, float>>::type>;
         });
 
+        using std::visit;
+        CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
+        CHECK(visit<std::string_view>(vis, std::variant<int, float>{}) == "variant");
+    }
+    {
+        // Asserts the "Constraints:" is implemented correctly
+        // https://eel.is/c++draft/variant.visit#2
+        STATIC_REQUIRE(requires {
+            requires std::same_as<std::true_type, SFINAE_context::overload_resolvable<Visitor, not_a_variant_ADL::not_a_variant<int, float>>::type>;
+        });
+
+        using ::yk::visit;
         CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
         CHECK(visit<std::string_view>(vis, yk::rvariant<int, float>{}) == "variant");
 
         // Asserts as-variant is working
         CHECK(visit<std::string_view>(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
+    }
+    {
+        // Not permitted (hard error); std::string_view -> std::string is not implicitly convertible
+        //CHECK(std::visit<std::string>(different_R_vis, std::variant<int>{}) == "variant");
+        //CHECK(yk::visit<std::string>(different_R_vis, yk::rvariant<int>{}) == "variant");
+    }
+    {
+        // Implicit cast from different types shall be permitted as per INVOKE<R>(...)
+        CHECK(std::visit<std::string_view>(different_R_vis, std::variant<int, float>{}) == "variant");
+        CHECK(yk::visit<std::string_view>(different_R_vis, yk::rvariant<int, float>{}) == "variant");
     }
     {
         // Case for T0 leading to ill-formed invocation.
@@ -440,14 +508,17 @@ TEST_CASE("visit (Constraints)")
         // `static_assert` error instead of numerous hard errors.
 
         // ill-formed (not even a `static_assert` error on MSVC)
-         //std::visit<std::string_view>(vis, std::variant<double>{});
+        //std::visit<std::string_view>(vis, std::variant<double>{});
 
         // expected static_assert error
         //yk::visit<std::string_view>(vis, yk::rvariant<double>{});
+
     }
 
     // TODO: add test for this
     //std::visit(vis, std::variant<double>{}); // no matching overload
+    //yk::visit(vis, yk::rvariant<double>{}); // no matching overload
+    // Make sure "no matching overload" is SFINAE-friendly.
 }
 
 TEST_CASE("visit")
@@ -467,6 +538,8 @@ TEST_CASE("visit")
 
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}) == 0);
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
     }
     {
         auto const vis = yk::overloaded{
@@ -478,6 +551,8 @@ TEST_CASE("visit")
 
         CHECK(yk::visit<int>(vis, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
         CHECK(yk::visit<int>(vis, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
     }
     {
         auto const vis = yk::overloaded{
@@ -495,6 +570,10 @@ TEST_CASE("visit")
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
     }
 
     // TODO: valueless case

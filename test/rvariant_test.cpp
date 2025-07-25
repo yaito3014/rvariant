@@ -295,11 +295,13 @@ template<class Variant>
     using yk::detail::forward_storage;
     using yk::detail::as_variant_t;
     using V = std::remove_cvref_t<Variant>;
+    using ExactV = yk::rvariant<int>;
     using VU = yk::detail::make_variadic_union_t<int>;
 
     constexpr bool IsExact = yk::core::is_ttp_specialization_of_v<V, yk::rvariant>;
 
     if constexpr (std::is_same_v<Variant&&, V&>) {
+        STATIC_REQUIRE(std::is_same_v<as_variant_t<Variant>, ExactV&>);
         if constexpr (IsExact) {
             STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU&>);
             STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU&>);
@@ -309,6 +311,7 @@ template<class Variant>
         return 0;
 
     } else if constexpr (std::is_same_v<Variant&&, V const&>) {
+        STATIC_REQUIRE(std::is_same_v<as_variant_t<Variant>, ExactV const&>);
         if constexpr (IsExact) {
             STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU const&>);
             STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU const&>);
@@ -318,6 +321,7 @@ template<class Variant>
         return 1;
 
     } else if constexpr (std::is_same_v<Variant&&, V&&>) {
+        STATIC_REQUIRE(std::is_same_v<as_variant_t<Variant>, ExactV&&>);
         if constexpr (IsExact) {
             STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU&&>);
             STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU&&>);
@@ -327,6 +331,7 @@ template<class Variant>
         return 2;
 
     } else if constexpr (std::is_same_v<Variant&&, V const&&>) {
+        STATIC_REQUIRE(std::is_same_v<as_variant_t<Variant>, ExactV const&&>);
         if constexpr (IsExact) {
             STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU const&&>);
             STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU const&&>);
