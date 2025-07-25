@@ -26,6 +26,8 @@ add_executable(
     truly_recursive_test.cpp
 )
 
+target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp)
+
 # Don't remove this; required for ABI compatibility
 target_compile_features(Catch2 PUBLIC cxx_std_23)
 
