@@ -616,9 +616,6 @@ R visit(Visitor&& vis, Variants&&... vars)
     >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
 }
 
-static_assert(std::is_convertible_v<void, void>);
-
-
 } // yk
 
 #endif
