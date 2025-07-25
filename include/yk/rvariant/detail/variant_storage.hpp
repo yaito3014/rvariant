@@ -3,6 +3,7 @@
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/variant_helper.hpp>
+#include <yk/core/seq.hpp>
 
 #include <functional>
 #include <utility>
@@ -16,12 +17,40 @@ template<class... Ts>
 using make_variadic_union_t = variadic_union<std::conjunction_v<std::is_trivially_destructible<Ts>...>, Ts...>;
 
 
+template<bool NeverValueless>
+[[nodiscard]] constexpr std::size_t valueless_bias(std::size_t i) noexcept
+{
+    if constexpr (NeverValueless) {
+        return i;
+    } else {
+        return i + 1;
+    }
+}
+
+template<bool NeverValueless>
+[[nodiscard]] constexpr std::size_t valueless_unbias(std::size_t i) noexcept
+{
+    if constexpr (NeverValueless) {
+        return i;
+    } else {
+        return i - 1;
+    }
+}
+
+template<class... Ts>
+struct is_never_valueless : std::false_type {}; // TODO
+
+template<class... Ts>
+constexpr bool is_never_valueless_v = is_never_valueless<Ts...>::value;
+
+
 template<class T, class... Ts>
 struct variadic_union<true, T, Ts...>
 {
     static_assert(true == std::conjunction_v<std::is_trivially_destructible<T>, std::is_trivially_destructible<Ts>...>);
 
     static constexpr std::size_t size = sizeof...(Ts) + 1;
+    static constexpr bool never_valueless = is_never_valueless_v<Ts...>;
 
     // no active member
     // ReSharper disable once CppPossiblyUninitializedMember
@@ -53,16 +82,9 @@ struct variadic_union<true, T, Ts...>
     {}
 
     template<std::size_t I, class... Args>
-        // required for not confusing some compilers
-        requires
-            (I != 0) &&
-            std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
+        requires (I != 0) && std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
     constexpr explicit variadic_union(std::in_place_index_t<I>, Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<
-            make_variadic_union_t<Ts...>,
-            std::in_place_index_t<I - 1>,
-            Args...
-        >)
+        noexcept(std::is_nothrow_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>)
         : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...)
     {}
 
@@ -78,6 +100,7 @@ struct variadic_union<false, T, Ts...>
     static_assert(false == std::conjunction_v<std::is_trivially_destructible<T>, std::is_trivially_destructible<Ts>...>);
 
     static constexpr std::size_t size = sizeof...(Ts) + 1;
+    static constexpr bool never_valueless = is_never_valueless_v<Ts...>;
 
     // no active member
     // ReSharper disable once CppPossiblyUninitializedMember
@@ -105,16 +128,9 @@ struct variadic_union<false, T, Ts...>
     {}
 
     template<std::size_t I, class... Args>
-        // required for not confusing some compilers
-        requires
-            (I != 0) &&
-            std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
+        requires (I != 0) && std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
     constexpr explicit variadic_union(std::in_place_index_t<I>, Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<
-            make_variadic_union_t<Ts...>,
-            std::in_place_index_t<I - 1>,
-            Args...
-        >)
+        noexcept(std::is_nothrow_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>)
         : rest(std::in_place_index<I - 1>, std::forward<Args>(args)...)
     {}
 
@@ -222,7 +238,7 @@ struct raw_visit_dispatch_table;
 
 template<class Visitor, class Storage>
 using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visitor&&, Storage&&)
-    noexcept(raw_visit_noexcept<Visitor, Storage>);
+noexcept(raw_visit_noexcept<Visitor, Storage>);
 
 template<class Visitor, class Storage, std::size_t... Is>
 struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
@@ -236,6 +252,174 @@ struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
     };
 };
 
+// --------------------------------------------------
+// --------------------------------------------------
+// --------------------------------------------------
+
+// https://eel.is/c++draft/variant.visit
+
+template<class... Ts>
+constexpr auto&& as_variant(rvariant<Ts...>& var) { return var; }
+
+template<class... Ts>
+constexpr auto&& as_variant(rvariant<Ts...> const& var) { return var; }
+
+template<class... Ts>
+constexpr auto&& as_variant(rvariant<Ts...>&& var) { return std::move(var); }
+
+template<class... Ts>
+constexpr auto&& as_variant(rvariant<Ts...> const&& var) { return std::move(var); }
+
+// --------------------------------------------------
+
+template<class R, class Visitor, class OverloadSeq, class... Storage>
+struct multi_visitor;
+
+template<class R, class Visitor, std::size_t... Is, class... Storage>
+struct multi_visitor<R, Visitor, std::index_sequence<Is...>, Storage...>
+{
+    static_assert(sizeof...(Is) == sizeof...(Storage));
+
+    static constexpr R apply([[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
+    {
+        if constexpr (((!std::remove_cvref_t<Storage>::never_valueless && Is == 0) || ...)) {
+            throw std::bad_variant_access{};
+        } else {
+            return std::invoke_r<R>(
+                std::forward<Visitor>(vis),
+                raw_get<valueless_unbias<std::remove_cvref_t<Storage>::never_valueless>(Is)>(std::forward<Storage>(storage))...
+            );
+        }
+    }
+};
+
+// --------------------------------------------------
+
+template<class R, class Visitor, class Storage, class OverloadSeq>
+struct visit_table;
+
+template<class R, class Visitor, class... Storage, class... OverloadSeq>
+struct visit_table<
+    R,
+    Visitor,
+    core::type_list<Storage...>,
+    core::type_list<OverloadSeq...>
+>
+{
+    using function_type = R(*)(Visitor&&, Storage&&...);
+
+    static constexpr function_type table[] = {
+        &multi_visitor<R, Visitor, OverloadSeq, Storage...>::apply...
+    };
+};
+
+// --------------------------------------------------
+
+template<class Ns, class NeverValuelessMap>
+struct flat_index;
+
+template<std::size_t... Ns, bool... NeverValueless>
+struct flat_index<std::index_sequence<Ns...>, std::integer_sequence<bool, NeverValueless...>>
+{
+    template<class... RuntimeIndex>
+    [[nodiscard]] static constexpr std::size_t get(RuntimeIndex... index) noexcept
+    {
+        static_assert(sizeof...(RuntimeIndex) == sizeof...(Ns));
+        return flat_index::get_impl(strides, index...);
+    }
+
+private:
+    template<std::size_t... Stride, class... RuntimeIndex>
+    [[nodiscard]] static constexpr std::size_t get_impl(std::index_sequence<Stride...>, RuntimeIndex... index) noexcept
+    {
+        return ((Stride * valueless_bias<NeverValueless>(index)) + ... + 0);
+    }
+
+    template<std::size_t TheI, std::size_t i, std::size_t... i_rest>
+    [[nodiscard]] static consteval std::size_t calc_single_stride(std::index_sequence<i, i_rest...>, std::size_t const ofs = 1) noexcept
+    {
+        static constexpr std::size_t Max = sizeof...(Ns) - 1;
+        constexpr std::size_t factor = (Max - i) == TheI ? 1 : 0;
+
+        if constexpr (sizeof...(i_rest) > 0) {
+            return ofs * factor + calc_single_stride<TheI>(
+                std::index_sequence<i_rest...>{},
+                ofs * core::npack_indexing_v<Max - i, valueless_bias<NeverValueless>(Ns)...>
+            );
+        } else {
+            return ofs * factor;
+        }
+    }
+
+    static constexpr auto strides = []<std::size_t... Is>(std::index_sequence<Is...>) static consteval {
+        return std::index_sequence<calc_single_stride<Is>(std::make_index_sequence<sizeof...(Ns)>{})...>{};
+    }(std::make_index_sequence<sizeof...(Ns)>{});
+};
+
+// --------------------------------------------------
+
+template<class R, class Visitor, class Variants, class V, class n>
+struct visit_impl;
+
+template<class R, class Visitor, class... Variants, class... V, std::size_t... n>
+struct visit_impl<
+    R,
+    Visitor,
+    core::type_list<Variants...>,
+    core::type_list<V...>,
+    std::index_sequence<n...>
+>
+{
+    static_assert(sizeof...(Variants) == sizeof...(V));
+    static_assert(sizeof...(Variants) == sizeof...(n));
+
+    static constexpr R apply(Visitor&& vis, Variants&&... vars)
+    {
+        using VisitTable = visit_table<
+            R,
+            Visitor,
+            core::type_list<decltype(std::forward<Variants>(vars).storage())...>, // Storage...
+            core::seq_cartesian_product< // OverloadSeq
+                std::index_sequence,
+                std::make_index_sequence<valueless_bias<std::remove_cvref_t<Variants>::never_valueless>(n)>...
+            >
+        >;
+
+        std::size_t const flat_i = flat_index<
+            std::index_sequence<n...>,
+            std::integer_sequence<bool, std::remove_cvref_t<Variants>::never_valueless...>
+        >::get(vars.index()...);
+
+        constexpr auto const& table = VisitTable::table;
+        auto const& f = table[flat_i];
+        return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Variants>(vars).storage()...);
+    }
+};
+
+template<class R, class Visitor, class... Variants>
+struct visit_entry
+{
+    using type = visit_impl<
+        R,
+        Visitor,
+        core::type_list<Variants...>,
+        core::type_list<decltype(as_variant(std::forward<Variants>(std::declval<Variants&&>())))...>,
+        std::index_sequence<variant_size_v<std::remove_cvref_t<Variants>>...>
+    >;
+};
+
 } // yk::detail
+
+
+namespace yk {
+
+template<class R, class Visitor, class... Variants>
+R visit(Visitor&& vis, Variants&&... vars)
+{
+    using impl_type = typename detail::visit_entry<R, Visitor, Variants...>::type;
+    return impl_type::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
+}
+
+} // yk
 
 #endif

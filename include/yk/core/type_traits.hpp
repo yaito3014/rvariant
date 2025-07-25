@@ -46,6 +46,19 @@ template<std::size_t I, class T, class... Ts>
 struct pack_indexing<I, T, Ts...> : pack_indexing<I - 1, Ts...> {};
 
 
+template<std::size_t I, auto... Ns>
+struct npack_indexing;
+
+template<auto N, auto... Ns>
+struct npack_indexing<0, N, Ns...> : std::integral_constant<std::size_t, N> {};
+
+template<std::size_t I, auto N, auto... Ns>
+struct npack_indexing<I, N, Ns...> : npack_indexing<I - 1, Ns...> {};
+
+template<std::size_t I, auto... Ns>
+constexpr auto npack_indexing_v = npack_indexing<I, Ns...>::value;
+
+
 inline constexpr std::size_t find_npos = -1;
 
 template<std::size_t I, class T, class... Ts>

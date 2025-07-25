@@ -65,6 +65,7 @@ struct rvariant_base
 
 public:
     using storage_type = make_variadic_union_t<Ts...>;
+    static constexpr bool never_valueless = storage_type::never_valueless;
 
     // internal constructor; this is not the same as the most derived class' default constructor (which uses T0)
     constexpr rvariant_base() noexcept
@@ -331,6 +332,7 @@ class rvariant : private detail::rvariant_base_t<Ts...>
     using base_type::reset;
 
 public:
+    using base_type::never_valueless;
     using base_type::valueless_by_exception;
     using base_type::index;
 
@@ -840,6 +842,9 @@ public:
 
     template<class Variant, class T>
     friend struct detail::exactly_once_index;
+
+    template<class R, class Visitor, class Variants, class V, class n>
+    friend struct detail::visit_impl;
 
 private:
     // hack: reduce compile error by half on unrelated overloads

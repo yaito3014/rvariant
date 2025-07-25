@@ -845,6 +845,148 @@ TEST_CASE("raw_visit")
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 }
 
+
+// generate (bool, bool, ...) for testing
+
+namespace detail {
+
+template<bool AllNeverValueless, class Seq, auto... n>
+struct never_valueless_seq_impl;
+
+template<bool AllNeverValueless, class Seq>
+struct never_valueless_seq_impl<AllNeverValueless, Seq>
+{
+    using type = Seq;
+};
+
+template<bool AllNeverValueless, auto... n, auto First, auto... Rest>
+struct never_valueless_seq_impl<AllNeverValueless, std::integer_sequence<bool, n...>, First, Rest...>
+    : never_valueless_seq_impl<AllNeverValueless, std::integer_sequence<bool, n..., AllNeverValueless>, Rest...>
+{};
+
+} // detail
+
+template<bool AllNeverValueless, auto... n>
+using never_valueless_seq = typename detail::never_valueless_seq_impl<AllNeverValueless, std::integer_sequence<bool>, n...>::type;
+
+template<auto... n>
+using nv_true_flat_index = yk::detail::flat_index<std::index_sequence<n...>, never_valueless_seq<true, n...>>;
+
+TEST_CASE("flat_index", "[detail]")
+{
+    static constexpr bool NeverValueless = true;
+
+    constexpr auto bias = [](std::size_t i) {
+        return yk::detail::valueless_bias<NeverValueless>(i);
+    };
+
+    STATIC_REQUIRE(nv_true_flat_index<1>::get(0) == bias(0));
+
+    STATIC_REQUIRE(nv_true_flat_index<2>::get(0) == bias(0));
+    STATIC_REQUIRE(nv_true_flat_index<2>::get(1) == bias(1));
+
+    STATIC_REQUIRE(nv_true_flat_index<1, 1>::get(0, 0) == bias(0));
+
+    STATIC_REQUIRE(nv_true_flat_index<2, 1>::get(0, 0) == bias(0));
+    STATIC_REQUIRE(nv_true_flat_index<2, 1>::get(1, 0) == bias(1));
+
+    STATIC_REQUIRE(nv_true_flat_index<1, 2>::get(0, 0) == bias(0));
+    STATIC_REQUIRE(nv_true_flat_index<1, 2>::get(0, 1) == bias(1));
+
+    STATIC_REQUIRE(nv_true_flat_index<2, 2>::get(0, 0) == bias(0));
+    STATIC_REQUIRE(nv_true_flat_index<2, 2>::get(0, 1) == bias(1));
+    STATIC_REQUIRE(nv_true_flat_index<2, 2>::get(1, 0) == bias(2));
+    STATIC_REQUIRE(nv_true_flat_index<2, 2>::get(1, 1) == bias(3));
+
+    STATIC_REQUIRE(nv_true_flat_index<2, 3>::get(0, 0) == bias(0));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3>::get(0, 1) == bias(1));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3>::get(0, 2) == bias(2));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3>::get(1, 0) == bias(3));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3>::get(1, 1) == bias(4));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3>::get(1, 2) == bias(5));
+
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 0, 0) == bias(0));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 0, 1) == bias(1));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 0, 2) == bias(2));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 0, 3) == bias(3));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 1, 0) == bias(4));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 1, 1) == bias(5));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 1, 2) == bias(6));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 1, 3) == bias(7));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 2, 0) == bias(8));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 2, 1) == bias(9));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 2, 2) == bias(10));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(0, 2, 3) == bias(11));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 0, 0) == bias(12));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 0, 1) == bias(13));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 0, 2) == bias(14));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 0, 3) == bias(15));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 1, 0) == bias(16));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 1, 1) == bias(17));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 1, 2) == bias(18));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 1, 3) == bias(19));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 2, 0) == bias(20));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 2, 1) == bias(21));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 2, 2) == bias(22));
+    STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 2, 3) == bias(23));
+}
+
+template<class T>
+struct strong
+{
+    T value;
+};
+
+TEST_CASE("visit")
+{
+    // TODO: valueless case
+
+    using SI = strong<int>;
+    using SD = strong<double>;
+    using SC = strong<char>;
+    using SW = strong<wchar_t>;
+
+    {
+        auto const vis = yk::overloaded{
+            [](SI const&) { return 0; },
+            [](SD const&) { return 1; },
+        };
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SI>}) == 0);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SD>}) == 1);
+
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
+    }
+    {
+        auto const vis = yk::overloaded{
+            [](SC const&) { return 0; },
+            [](SW const&) { return 1; },
+        };
+        CHECK(std::visit<int>(vis, std::variant<SC, SW>{std::in_place_type<SC>}) == 0);
+        CHECK(std::visit<int>(vis, std::variant<SC, SW>{std::in_place_type<SW>}) == 1);
+
+        CHECK(yk::visit<int>(vis, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
+    }
+    {
+        auto const vis = yk::overloaded{
+            [](SI const&, SC const&) { return 0; },
+            [](SI const&, SW const&) { return 1; },
+            [](SD const&, SC const&) { return 2; },
+            [](SD const&, SW const&) { return 3; },
+        };
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SI>}, std::variant<SC, SW>{std::in_place_type<SC>}) == 0);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SI>}, std::variant<SC, SW>{std::in_place_type<SW>}) == 1);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SD>}, std::variant<SC, SW>{std::in_place_type<SC>}) == 2);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SD>}, std::variant<SC, SW>{std::in_place_type<SW>}) == 3);
+
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
+    }
+}
+
 // Required for suppressing std::move(const&)
 // NOLINTBEGIN(performance-move-const-arg)
 TEST_CASE("get")
