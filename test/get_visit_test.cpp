@@ -368,6 +368,13 @@ R visit(Foo&&, Bar&&...)
     return R{"not_a_variant"};
 }
 
+template<class Foo, class... Bar>
+    requires (!std::disjunction_v<yk::core::is_ttp_specialization_of<std::remove_cvref_t<Bar>, DerivedVariant>...>)
+decltype(auto) visit(Foo&&, Bar&&...)
+{
+    return std::string_view{"not_a_variant"};
+}
+
 } // not_a_variant_ADL
 
 namespace SFINAE_context {
@@ -466,6 +473,7 @@ TEST_CASE("visit (Constraints)")
             static_assert(!Check::value);
         }
     }
+
     {
         // Asserts the "Constraints:" is implemented correctly
         // https://eel.is/c++draft/variant.visit#2
@@ -487,9 +495,16 @@ TEST_CASE("visit (Constraints)")
         using ::yk::visit;
         CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
         CHECK(visit<std::string_view>(vis, yk::rvariant<int, float>{}) == "variant");
+        CHECK(visit(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
+        CHECK(visit(vis, yk::rvariant<int, float>{}) == "variant");
+        CHECK(yk::rvariant<int, float>{}.visit<std::string_view>(vis) == "variant");
+        CHECK(yk::rvariant<int, float>{}.visit(vis) == "variant");
 
         // Asserts as-variant is working
         CHECK(visit<std::string_view>(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
+        CHECK(visit(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
+        CHECK(not_a_variant_ADL::DerivedVariant<int, float>{42}.visit<std::string_view>(vis) == "variant");
+        CHECK(not_a_variant_ADL::DerivedVariant<int, float>{42}.visit(vis) == "variant");
     }
     {
         // Not permitted (hard error); std::string_view -> std::string is not implicitly convertible
@@ -512,7 +527,6 @@ TEST_CASE("visit (Constraints)")
 
         // expected static_assert error
         //yk::visit<std::string_view>(vis, yk::rvariant<double>{});
-
     }
 
     // TODO: add test for this
@@ -540,6 +554,11 @@ TEST_CASE("visit")
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
         CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}) == 0);
         CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
+
+        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SI>}.visit<int>(vis) == 0);
+        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SD>}.visit<int>(vis) == 1);
+        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SI>}.visit(vis) == 0);
+        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SD>}.visit(vis) == 1);
     }
     {
         auto const vis = yk::overloaded{
@@ -553,6 +572,11 @@ TEST_CASE("visit")
         CHECK(yk::visit<int>(vis, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
         CHECK(yk::visit(vis, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
         CHECK(yk::visit(vis, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
+
+        CHECK(yk::rvariant<SC, SW>{std::in_place_type<SC>}.visit<int>(vis) == 0);
+        CHECK(yk::rvariant<SC, SW>{std::in_place_type<SW>}.visit<int>(vis) == 1);
+        CHECK(yk::rvariant<SC, SW>{std::in_place_type<SC>}.visit(vis) == 0);
+        CHECK(yk::rvariant<SC, SW>{std::in_place_type<SW>}.visit(vis) == 1);
     }
     {
         auto const vis = yk::overloaded{

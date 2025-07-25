@@ -808,6 +808,47 @@ public:
         }
     }
 
+    // NOLINTBEGIN(cppcoreguidelines-missing-std-forward)
+
+    // Member `.visit(...)`
+    // <https://eel.is/c++draft/variant.visit#lib:visit,variant_>
+    template<int = 0, class Self, class Visitor>
+    constexpr decltype(auto) visit(this Self&& self, Visitor&& vis)
+    {
+        using copy_const_V = std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            rvariant const,
+            rvariant
+        >;
+        using V = std::conditional_t<
+            std::is_rvalue_reference_v<Self&&>,
+            copy_const_V&&,
+            copy_const_V&
+        >;
+        // ReSharper disable once CppCStyleCast
+        return yk::visit(std::forward<Visitor>(vis), (V)self);
+    }
+
+    // Member `.visit<R>(...)`
+    // <https://eel.is/c++draft/variant.visit#lib:visit,variant__>
+    template<class R, class Self, class Visitor>
+    constexpr R visit(this Self&& self, Visitor&& vis)
+    {
+        using copy_const_V = std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            rvariant const,
+            rvariant
+        >;
+        using V = std::conditional_t<
+            std::is_rvalue_reference_v<Self&&>,
+            copy_const_V&&,
+            copy_const_V&
+        >;
+        // ReSharper disable once CppCStyleCast
+        return yk::visit<R>(std::forward<Visitor>(vis), (V)self);
+    }
+
+    // NOLINTEND(cppcoreguidelines-missing-std-forward)
 
     template<std::size_t I, class... Ts_> friend constexpr variant_alternative_t<I, rvariant<Ts_...>> &       get(rvariant<Ts_...> & v YK_LIFETIMEBOUND);
     template<std::size_t I, class... Ts_> friend constexpr variant_alternative_t<I, rvariant<Ts_...>> &&      get(rvariant<Ts_...> && v YK_LIFETIMEBOUND);
