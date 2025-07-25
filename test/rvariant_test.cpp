@@ -17,6 +17,8 @@
 
 #include <cstddef>
 
+namespace unit_test {
+
 TEST_CASE("storage", "[detail]")
 {
     // Test cases for this type is VERY important; some compilers misunderstand relevant type traits
@@ -1047,3 +1049,5 @@ TEST_CASE("compact_alternative", "[pack]")
     STATIC_REQUIRE(std::is_same_v<yk::compact_alternative_t<yk::rvariant, int, float>, yk::rvariant<int, float>>);
     STATIC_REQUIRE(std::is_same_v<yk::compact_alternative_t<yk::rvariant, int, int>, int>);
 }
+
+}  // unit_test

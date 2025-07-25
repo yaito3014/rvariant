@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <utility>
 
+namespace unit_test {
+
 TEST_CASE("raw_get", "[detail]")
 {
     using yk::detail::raw_get;
@@ -664,4 +666,6 @@ TEST_CASE("visit", "[wrapper]")
     }
 
     // TODO: valueless case
+}
+
 }

@@ -3,6 +3,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+namespace unit_test {
+
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable: 4244) // implicit numeric conversion
@@ -87,3 +89,5 @@ TEST_CASE("truly recursive", "[wrapper][recursive]")
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif
+
+}

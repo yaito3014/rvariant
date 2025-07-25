@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+namespace unit_test {
 
 TEST_CASE("construction and assignment", "[indirect]")
 {
@@ -106,4 +107,6 @@ TEST_CASE("relational operators", "[indirect]")
         CHECK((b <=> a) == std::strong_ordering::less);
         CHECK((a <=> b) == std::strong_ordering::greater);
     }
+}
+
 }

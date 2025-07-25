@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+namespace unit_test {
+
 TEST_CASE("pack_indexing", "[core]")
 {
     STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, int>, int>);
@@ -27,4 +29,6 @@ TEST_CASE("find_index", "[core]")
     STATIC_REQUIRE(yk::core::find_index_v<float,  yk::core::type_list<int, float, double>> == 1);
     STATIC_REQUIRE(yk::core::find_index_v<double, yk::core::type_list<int, float, double>> == 2);
     STATIC_REQUIRE(yk::core::find_index_v<int,    yk::core::type_list<float, double>> == yk::core::find_npos);
+}
+
 }

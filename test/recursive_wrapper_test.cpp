@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <concepts>
 
+namespace unit_test {
+
 TEST_CASE("relational operators", "[wrapper]")
 {
     {
@@ -288,3 +290,5 @@ TEST_CASE("implicit conversion + flexible (int/double)", "[wrapper][flexible]")
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif
+
+}

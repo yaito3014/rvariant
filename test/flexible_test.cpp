@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+namespace unit_test {
+
 namespace {
 
 template<class A, class B, class Expected>
@@ -397,3 +399,5 @@ TEST_CASE("subset", "[flexible]")
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif
+
+}
