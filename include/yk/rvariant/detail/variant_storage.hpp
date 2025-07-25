@@ -414,7 +414,13 @@ struct visit_entry
 
 namespace yk {
 
-template<class R, class Visitor, class... Variants>
+template<
+    class R,
+    class Visitor,
+    class... Variants,
+    // https://eel.is/c++draft/variant.visit#2
+    class = std::void_t<decltype(detail::as_variant(std::forward<Variants>(std::declval<Variants&&>())))...>
+>
 R visit(Visitor&& vis, Variants&&... vars)
 {
     using impl_type = typename detail::visit_entry<R, Visitor, Variants...>::type;

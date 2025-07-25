@@ -26,6 +26,9 @@ add_executable(
     truly_recursive_test.cpp
 )
 
+# Don't remove this; required for ABI compatibility
+target_compile_features(Catch2 PUBLIC cxx_std_23)
+
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
 
 if(MSVC)

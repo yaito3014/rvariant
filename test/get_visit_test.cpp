@@ -4,6 +4,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string_view>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -339,10 +341,55 @@ struct strong
     T value;
 };
 
+namespace not_a_variant_ADL {
+
+template<class... Ts>
+struct not_a_variant {};
+
+template<class R, class Foo, class... Bar>
+R visit(Foo&&, Bar&&...)
+{
+    return R{"not_a_variant"};
+}
+
+} // not_a_variant_ADL
+
+namespace SFINAE_context {
+
+using ::yk::visit;
+using ::not_a_variant_ADL::visit;
+
+template<class Visitor, class Variant, class Enabled = void>
+struct overload_resolvable : std::false_type {};
+
+template<class Visitor, class Variant>
+struct overload_resolvable<Visitor, Variant, std::void_t<decltype(visit<std::string_view>( std::declval<Visitor>(), std::declval<Variant>() ))>>
+    : std::true_type
+{};
+
+} // SFINAE_context_ns
+
+
+TEST_CASE("visit (Constraints)")
+{
+    using namespace std::string_view_literals;
+    using ::yk::visit;
+
+    auto const vis = yk::overloaded{[](int const&) { return "variant"; }};
+    using Visitor = decltype(vis);
+
+    // Asserts the "Constraints:" is implemented correctly
+    // https://eel.is/c++draft/variant.visit#2
+    STATIC_REQUIRE(requires {
+        requires std::same_as<std::true_type, SFINAE_context::overload_resolvable<Visitor, not_a_variant_ADL::not_a_variant<int>>::type>;
+    });
+
+    CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int>{}) == "not_a_variant");
+    CHECK(visit<std::string_view>(vis, yk::rvariant<int>{}) == "variant");
+}
+
 TEST_CASE("visit")
 {
-    // TODO: valueless case
-
     using SI = strong<int>;
     using SD = strong<double>;
     using SC = strong<char>;
@@ -387,4 +434,6 @@ TEST_CASE("visit")
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
         CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
     }
+
+    // TODO: valueless case
 }
