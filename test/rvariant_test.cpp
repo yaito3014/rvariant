@@ -885,6 +885,18 @@ TEST_CASE("swap")
         CHECK( a.valueless_by_exception());
         CHECK(!b.valueless_by_exception());
     }
+    {
+        yk::rvariant<int, MoveThrows> a(std::in_place_type<int>);
+        yk::rvariant<int, MoveThrows> b(std::in_place_type<MoveThrows>);
+        CHECK(!a.valueless_by_exception());
+        CHECK(!b.valueless_by_exception());
+        try {
+            a.swap(b);
+        } catch (...) {
+        }
+        CHECK( a.valueless_by_exception());  // swap-ee          becomes valueless
+        CHECK(!b.valueless_by_exception());  // swap-er does not become  valueless
+    }
 }
 
 TEST_CASE("holds_alternative")
