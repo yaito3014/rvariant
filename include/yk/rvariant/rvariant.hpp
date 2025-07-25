@@ -351,7 +351,7 @@ public:
     // --------------------------------------
 
     // Generic constructor
-    // <https://eel.is/c++draft/variant#lib:variant,constructor___>
+    // <https://eel.is/c++draft/variant.ctor#lib:variant,constructor___>
     template<class T>
         requires
             (sizeof...(Ts) > 0) &&

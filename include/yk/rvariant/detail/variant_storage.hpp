@@ -80,7 +80,7 @@ struct variadic_union<true, T, Ts...>
         requires std::is_constructible_v<T, Args...> // required for not confusing some compilers
     constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant#ctor-3
+        : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant.ctor#3
     {}
 
     template<std::size_t I, class... Args>
@@ -126,7 +126,7 @@ struct variadic_union<false, T, Ts...>
         requires std::is_constructible_v<T, Args...> // required for not confusing some compilers
     constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant#ctor-3
+        : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant.ctor#3
     {}
 
     template<std::size_t I, class... Args>
@@ -186,7 +186,7 @@ struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I>>
     static_assert(
         std::is_invocable_v<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
         "The spec mandates that the Visitor accept all combinations of alternative types "
-        "(https://eel.is/c++draft/variant#visit-5)."
+        "(https://eel.is/c++draft/variant.visit#5)."
     );
 
     using type = std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>;
@@ -202,7 +202,7 @@ struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I, Is...
             std::invoke_result_t<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>
         >...>,
         "The spec mandates that the Visitor return the same type and value category "
-        "for all combinations of alternative types (https://eel.is/c++draft/variant#visit-5)."
+        "for all combinations of alternative types (https://eel.is/c++draft/variant.visit#5)."
     );
 };
 
@@ -574,12 +574,12 @@ visit(Visitor&& vis, Variants&&... vars)
     static_assert(
         Check::accepts_all_alternatives,
         "The spec mandates that the Visitor accept all combinations of alternative types "
-        "(https://eel.is/c++draft/variant#visit-5)."
+        "(https://eel.is/c++draft/variant.visit#5)."
     );
     static_assert(
         Check::same_return_type,
         "The spec mandates that the Visitor return the same type and value category "
-        "for all combinations of alternative types (https://eel.is/c++draft/variant#visit-5)."
+        "for all combinations of alternative types (https://eel.is/c++draft/variant.visit#5)."
     );
     return detail::visit_impl<
         T0R,
@@ -601,7 +601,7 @@ R visit(Visitor&& vis, Variants&&... vars)
     static_assert(
         Check::accepts_all_alternatives,
         "The spec mandates that the Visitor accept all combinations of alternative types "
-        "(https://eel.is/c++draft/variant#visit-5)."
+        "(https://eel.is/c++draft/variant.visit#5)."
     );
     static_assert(
         Check::return_type_convertible_to_R,
