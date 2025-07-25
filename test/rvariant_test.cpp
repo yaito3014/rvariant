@@ -1,3 +1,5 @@
+#include "rvariant_test.hpp"
+
 #include "yk/rvariant/recursive_wrapper.hpp"
 #include "yk/rvariant/rvariant.hpp"
 #include "yk/rvariant/pack.hpp"
@@ -18,6 +20,13 @@
 #include <cstddef>
 
 namespace unit_test {
+
+TEST_CASE("make_valueless", "[detail]")
+{
+    yk::rvariant<int, MoveThrows> valueless = make_valueless<int>(42);
+    CHECK(valueless.valueless_by_exception());
+    STATIC_CHECK(!std::remove_cvref_t<decltype(valueless)>::never_valueless);
+}
 
 TEST_CASE("storage", "[detail]")
 {
@@ -493,7 +502,11 @@ TEST_CASE("copy construction")
     }
     // NOLINTEND(modernize-use-equals-default)
 
-    // TODO: valueless case
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> a(valueless);
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 TEST_CASE("move construction")
@@ -535,7 +548,11 @@ TEST_CASE("move construction")
         REQUIRE_THROWS(yk::rvariant<S>(std::move(a)));
     }
 
-    // TODO: valueless case
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> a(std::move(valueless));
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 TEST_CASE("generic construction")
@@ -627,6 +644,13 @@ TEST_CASE("copy assignment")
         REQUIRE_THROWS(a = b);  // different alternative; move temporary copy
     }
 
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> a;
+        a = valueless;
+        CHECK(a.valueless_by_exception());
+    }
+
     // NOLINTEND(modernize-use-equals-default)
 }
 
@@ -664,6 +688,13 @@ TEST_CASE("move assignment")
             CHECK_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
             CHECK(a.index() == 0);
         }
+    }
+
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> a;
+        a = std::move(valueless);
+        CHECK(a.valueless_by_exception());
     }
 }
 
