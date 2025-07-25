@@ -3,9 +3,13 @@
 
 #include <yk/rvariant.hpp>
 
+#include <exception>
+#include <utility>
+
 namespace unit_test {
 
-struct MoveThrows {
+struct MoveThrows
+{
     MoveThrows() = default;
     MoveThrows(MoveThrows const&) = default;
     MoveThrows(MoveThrows&&) { throw std::exception{}; }
@@ -13,10 +17,12 @@ struct MoveThrows {
     MoveThrows& operator=(MoveThrows&&) = default;
 };
 
-yk::rvariant<int, MoveThrows> get_valueless() {
-    yk::rvariant<int, MoveThrows> a;
+template <class... Ts, class... Args>
+[[nodiscard]] yk::rvariant<Ts..., MoveThrows> make_valueless(Args&&... args)
+{
+    yk::rvariant<Ts..., MoveThrows> a(std::forward<Args>(args)...);
     try {
-        yk::rvariant<int, MoveThrows> b(std::in_place_index<1>);
+        yk::rvariant<Ts..., MoveThrows> b(std::in_place_type<MoveThrows>);
         a = std::move(b);
     } catch(...) {
     }
