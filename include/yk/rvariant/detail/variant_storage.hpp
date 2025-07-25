@@ -325,7 +325,7 @@ forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept 
 template<class Visitor, class... Variants>
 using visit_result_t = decltype(std::invoke( // If you see an error here, your `T0` is not eligible for the `Visitor`.
     std::declval<Visitor>(),
-    detail::raw_get<0>(forward_storage<Variants>(std::declval<Variants>()))...
+    unwrap_recursive(detail::raw_get<0>(forward_storage<Variants>(std::declval<Variants>())))...
 ));
 
 template<class T0R, class Visitor, class ArgsList, class... Variants>
@@ -360,16 +360,16 @@ struct visit_check_impl<T0R, Visitor, core::type_list<Args...>>
 
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Rest...>
-    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts&>, Rest...>...> {};
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>&>, Rest...>...> {};
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Rest...>
-    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts const&>, Rest...>...> {};
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const&>, Rest...>...> {};
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Rest...>
-    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts>, Rest...>...> {};
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>>, Rest...>...> {};
 template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Rest...>
-    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., Ts const>, Rest...>...> {};
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const>, Rest...>...> {};
 
 template<class T0R, class Visitor, class... Variants>
 using visit_check = visit_check_impl<T0R, Visitor, core::type_list<>, Variants...>;
@@ -411,16 +411,16 @@ struct visit_R_check_impl<R, Visitor, core::type_list<Args...>>
 
 template<class R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Rest...>
-    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts&>, Rest...>...> {};
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>&>, Rest...>...> {};
 template<class R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Rest...>
-    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts const&>, Rest...>...> {};
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const&>, Rest...>...> {};
 template<class R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Rest...>
-    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts>, Rest...>...> {};
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>>, Rest...>...> {};
 template<class R, class Visitor, class... Args, class... Ts, class... Rest>
 struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Rest...>
-    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., Ts const>, Rest...>...> {};
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const>, Rest...>...> {};
 
 template<class R, class Visitor, class... Variants>
 using visit_R_check = visit_R_check_impl<R, Visitor, core::type_list<>, Variants...>;
@@ -443,7 +443,11 @@ struct multi_visitor<R, Visitor, std::index_sequence<Is...>, Storage...>
         } else {
             return std::invoke_r<R>(
                 std::forward<Visitor>(vis),
-                raw_get<valueless_unbias<std::remove_cvref_t<Storage>::never_valueless>(Is)>(std::forward<Storage>(storage))...
+                unwrap_recursive(
+                    raw_get<valueless_unbias<std::remove_cvref_t<Storage>::never_valueless>(Is)>(
+                        std::forward<Storage>(storage)
+                    )
+                )...
             );
         }
     }
