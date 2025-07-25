@@ -6,6 +6,16 @@
 
 namespace yk::detail {
 
+template<class W, class T>
+struct is_any_wrapper_of : std::false_type {};
+
+template<class T, class Allocator>
+struct is_any_wrapper_of<recursive_wrapper<T, Allocator>, T> : std::true_type {};
+
+template<class W, class T>
+constexpr bool is_any_wrapper_of_v = is_any_wrapper_of<W, T>::value;
+
+
 template<bool Found, std::size_t I, class U, class... Ts>
 struct select_maybe_wrapped_impl;
 
@@ -19,9 +29,11 @@ struct select_maybe_wrapped_impl<true, I, U>
 template<std::size_t I, class U, class First, class... Rest>
 struct select_maybe_wrapped_impl<false, I, U, First, Rest...>
     : std::conditional_t<
-        std::is_same_v<First, U>, select_maybe_wrapped_impl<true, I, U>,
+        std::is_same_v<First, U>,
+        select_maybe_wrapped_impl<true, I, U>,
         std::conditional_t<
-            std::is_same_v<First, recursive_wrapper<U>>, select_maybe_wrapped_impl<true, I, recursive_wrapper<U>>,
+            is_any_wrapper_of_v<First, U>,
+            select_maybe_wrapped_impl<true, I, First>,
             select_maybe_wrapped_impl<false, I + 1, U, Rest...>
         >
     >

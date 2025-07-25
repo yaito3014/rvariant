@@ -15,7 +15,12 @@ add_executable(
     # Independent Polyfill
     indirect_test.cpp
 
+    # Independent language core / exposition-only utils
+    core_test.cpp
+
+    # Main library
     rvariant_test.cpp
+    get_visit_test.cpp
     flexible_test.cpp
     recursive_wrapper_test.cpp
     truly_recursive_test.cpp

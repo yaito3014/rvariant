@@ -5,6 +5,7 @@
 #include <yk/rvariant/variant_helper.hpp>
 #include <yk/core/seq.hpp>
 
+#include <variant> // std::bad_variant_access
 #include <functional>
 #include <utility>
 
