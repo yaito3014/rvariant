@@ -843,8 +843,17 @@ public:
     template<class Variant, class T>
     friend struct detail::exactly_once_index;
 
-    template<class R, class Visitor, class Variants, class V, class n>
-    friend struct detail::visit_impl;
+    template<class Variant>
+    friend struct detail::forward_storage_t_impl;
+
+    template<class Variant>
+    friend struct detail::forward_storage_t_impl;
+
+    template<class Variant>
+    friend constexpr detail::forward_storage_t<Variant>&& detail::forward_storage(std::remove_reference_t<Variant>& v YK_LIFETIMEBOUND) noexcept;
+
+    template<class Variant>
+    friend constexpr detail::forward_storage_t<Variant>&& detail::forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept;
 
 private:
     // hack: reduce compile error by half on unrelated overloads

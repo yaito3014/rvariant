@@ -184,7 +184,8 @@ struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I>>
 {
     static_assert(
         std::is_invocable_v<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
-        "The spec requires Visitor to accept all alternative types (with the value category being identical)." // https://eel.is/c++draft/variant#visit-5
+        "The spec mandates that the Visitor accept all combinations of alternative types "
+        "(https://eel.is/c++draft/variant#visit-5)."
     );
 
     using type = std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>;
@@ -199,7 +200,8 @@ struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I, Is...
             std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
             std::invoke_result_t<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>
         >...>,
-        "The spec requires the Visitor to return the same type and value category for all alternatives." // https://eel.is/c++draft/variant#visit-5
+        "The spec mandates that the Visitor return the same type and value category "
+        "for all combinations of alternative types (https://eel.is/c++draft/variant#visit-5)."
     );
 };
 
@@ -259,6 +261,8 @@ struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
 
 // https://eel.is/c++draft/variant.visit
 
+namespace as_variant_impl {
+
 template<class... Ts>
 constexpr auto&& as_variant(rvariant<Ts...>& var) { return var; }
 
@@ -270,6 +274,103 @@ constexpr auto&& as_variant(rvariant<Ts...>&& var) { return std::move(var); }
 
 template<class... Ts>
 constexpr auto&& as_variant(rvariant<Ts...> const&& var) { return std::move(var); }
+
+} // as_variant_impl
+
+template<class T>
+using as_variant_t = decltype(as_variant_impl::as_variant(std::declval<T>()));
+
+// --------------------------------------------------
+
+template<class Variant>
+struct forward_storage_t_impl
+{
+    static_assert(
+        core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, rvariant>,
+        "`forward_storage` will only accept types which are exactly `rvariant`. Maybe you forgot `as_rvariant_t`?"
+    );
+    using type = decltype(std::declval<Variant>().storage());
+};
+
+template<class Variant>
+using forward_storage_t = typename forward_storage_t_impl<Variant>::type;
+
+template<class Variant>
+[[nodiscard]] constexpr forward_storage_t<Variant>&&
+forward_storage(std::remove_reference_t<Variant>& v YK_LIFETIMEBOUND) noexcept
+{
+    return std::forward<Variant>(v).storage();
+}
+
+template<class Variant>
+[[nodiscard]] constexpr forward_storage_t<Variant>&&
+forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+{
+    return std::forward<Variant>(v).storage();
+}
+
+
+template<class Visitor, class... Variants>
+struct mandated_visit_result
+{
+    static_assert(
+        std::is_invocable_v<Visitor, raw_get_t<0, forward_storage_t<Variants>>...>,
+        "The spec mandates that the Visitor accept all combinations of alternative types "
+        "(https://eel.is/c++draft/variant#visit-5)."
+    );
+    using type = std::invoke_result_t<Visitor, raw_get_t<0, forward_storage_t<Variants>>...>;
+};
+
+template<class Visitor, class... Variants>
+using visit_result_t = typename mandated_visit_result<Visitor, Variants...>::type;
+
+
+template<class T0R, class Visitor, class ArgsList, class... Variants>
+struct visit_invoke_check_impl;
+
+template<class T0R, class Visitor, class... Args>
+struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>>
+{
+    template<class T> struct INVOKE_is_ill_formed { using type = INVOKE_is_ill_formed<T>; };
+
+    static constexpr bool accepts_all_alternatives = std::is_invocable_v<Visitor, Args...>;
+    static constexpr bool same_return_type = std::is_same_v<
+        T0R,
+        typename std::conditional_t<
+            accepts_all_alternatives,
+            std::invoke_result<Visitor, Args...>,
+            INVOKE_is_ill_formed<T0R>
+        >::type
+    >;
+
+    static constexpr bool value = same_return_type; // for short-circuiting
+};
+
+template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Rest...>
+    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts&>, Rest...>...>
+{};
+
+template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Rest...>
+    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts const&>, Rest...>...>
+{};
+
+template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Rest...>
+    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts>, Rest...>...>
+{};
+
+template<class T0R, class Visitor, class... Args, class... Ts, class... Rest>
+struct visit_invoke_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Rest...>
+    : std::conjunction<visit_invoke_check_impl<T0R, Visitor, core::type_list<Args..., Ts const>, Rest...>...>
+{};
+
+template<class Visitor, class... Variants>
+using visit_invoke_check = visit_invoke_check_impl<
+    visit_result_t<Visitor, Variants...>, Visitor, core::type_list<>, Variants...
+>;
+
 
 // --------------------------------------------------
 
@@ -323,7 +424,8 @@ template<std::size_t... Ns, bool... NeverValueless>
 struct flat_index<std::index_sequence<Ns...>, std::integer_sequence<bool, NeverValueless...>>
 {
     template<class... RuntimeIndex>
-    [[nodiscard]] static constexpr std::size_t get(RuntimeIndex... index) noexcept
+    [[nodiscard]] static constexpr std::size_t
+    get(RuntimeIndex... index) noexcept
     {
         static_assert(sizeof...(RuntimeIndex) == sizeof...(Ns));
         return flat_index::get_impl(strides, index...);
@@ -331,13 +433,18 @@ struct flat_index<std::index_sequence<Ns...>, std::integer_sequence<bool, NeverV
 
 private:
     template<std::size_t... Stride, class... RuntimeIndex>
-    [[nodiscard]] static constexpr std::size_t get_impl(std::index_sequence<Stride...>, RuntimeIndex... index) noexcept
+    [[nodiscard]] static constexpr std::size_t
+    get_impl(std::index_sequence<Stride...>, RuntimeIndex... index) noexcept
     {
         return ((Stride * valueless_bias<NeverValueless>(index)) + ... + 0);
     }
 
     template<std::size_t TheI, std::size_t i, std::size_t... i_rest>
-    [[nodiscard]] static consteval std::size_t calc_single_stride(std::index_sequence<i, i_rest...>, std::size_t const ofs = 1) noexcept
+    [[nodiscard]] static consteval std::size_t
+    calc_single_stride(
+        std::index_sequence<i, i_rest...>,
+        std::size_t const ofs = 1
+    ) noexcept
     {
         static constexpr std::size_t Max = sizeof...(Ns) - 1;
         constexpr std::size_t factor = (Max - i) == TheI ? 1 : 0;
@@ -359,58 +466,45 @@ private:
 
 // --------------------------------------------------
 
-template<class R, class Visitor, class Variants, class V, class n>
+template<class R, class V, class n>
 struct visit_impl;
 
-template<class R, class Visitor, class... Variants, class... V, std::size_t... n>
+template<class R, class... V, std::size_t... n>
 struct visit_impl<
     R,
-    Visitor,
-    core::type_list<Variants...>,
     core::type_list<V...>,
     std::index_sequence<n...>
 >
 {
-    static_assert(sizeof...(Variants) == sizeof...(V));
-    static_assert(sizeof...(Variants) == sizeof...(n));
+    static_assert(sizeof...(V) == sizeof...(n));
 
-    static constexpr R apply(Visitor&& vis, Variants&&... vars)
+    template<class Visitor, class... Variants>
+    static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
     {
         using VisitTable = visit_table<
             R,
             Visitor,
-            core::type_list<decltype(std::forward<Variants>(vars).storage())...>, // Storage...
+            core::type_list<forward_storage_t<as_variant_t<Variants>>...>, // Storage...
             core::seq_cartesian_product< // OverloadSeq
                 std::index_sequence,
-                std::make_index_sequence<valueless_bias<std::remove_cvref_t<Variants>::never_valueless>(n)>...
+                std::make_index_sequence<
+                    valueless_bias<std::remove_cvref_t<as_variant_t<Variants>>::never_valueless>(n)
+                >...
             >
         >;
 
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
-            std::integer_sequence<bool, std::remove_cvref_t<Variants>::never_valueless...>
+            std::integer_sequence<bool, std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...>
         >::get(vars.index()...);
 
         constexpr auto const& table = VisitTable::table;
         auto const& f = table[flat_i];
-        return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Variants>(vars).storage()...);
+        return std::invoke_r<R>(f, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...);
     }
 };
 
-template<class R, class Visitor, class... Variants>
-struct visit_entry
-{
-    using type = visit_impl<
-        R,
-        Visitor,
-        core::type_list<Variants...>,
-        core::type_list<decltype(as_variant(std::forward<Variants>(std::declval<Variants&&>())))...>,
-        std::index_sequence<variant_size_v<std::remove_cvref_t<Variants>>...>
-    >;
-};
-
 } // yk::detail
-
 
 namespace yk {
 
@@ -419,12 +513,26 @@ template<
     class Visitor,
     class... Variants,
     // https://eel.is/c++draft/variant.visit#2
-    class = std::void_t<decltype(detail::as_variant(std::forward<Variants>(std::declval<Variants&&>())))...>
+    class = std::void_t<detail::as_variant_t<Variants>...>
 >
 R visit(Visitor&& vis, Variants&&... vars)
 {
-    using impl_type = typename detail::visit_entry<R, Visitor, Variants...>::type;
-    return impl_type::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
+    static_assert(
+        detail::visit_invoke_check<Visitor, detail::as_variant_t<Variants>...>::accepts_all_alternatives,
+        "The spec mandates that the Visitor accept all combinations of alternative types "
+        "(https://eel.is/c++draft/variant#visit-5)."
+    );
+    static_assert(
+        detail::visit_invoke_check<Visitor, detail::as_variant_t<Variants>...>::same_return_type,
+        "The spec mandates that the Visitor return the same type and value category "
+        "for all combinations of alternative types (https://eel.is/c++draft/variant#visit-5)."
+    );
+
+    return detail::visit_impl<
+        R,
+        core::type_list<detail::as_variant_t<Variants>...>,
+        std::index_sequence<variant_size_v<std::remove_cvref_t<detail::as_variant_t<Variants>>>...>
+    >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
 }
 
 } // yk

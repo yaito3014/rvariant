@@ -2,8 +2,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+namespace {
+
 template<class A, class B, class Expected>
 constexpr bool is_same_alt = std::is_same_v<yk::compact_alternative_t<yk::rvariant, A, B>, Expected>;
+
+} // anonymous
 
 TEST_CASE("alternative", "[flexible]")
 {

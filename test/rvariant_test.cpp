@@ -286,17 +286,88 @@ TEST_CASE("storage", "[detail]")
     // NOLINTEND(modernize-use-equals-default)
 }
 
-struct S
+namespace {
+
+template<class Variant>
+[[nodiscard]] int test_forward_storage(Variant&& v)  // NOLINT(cppcoreguidelines-missing-std-forward)
 {
-    S() { throw std::exception{}; }
-    S(S const&) = default;
-    S(S&&) = default;
-    S& operator=(S const&) = default;
-    S& operator=(S&&) = default;
-    ~S() = default;
+    using yk::detail::forward_storage_t;
+    using yk::detail::forward_storage;
+    using yk::detail::as_variant_t;
+    using V = std::remove_cvref_t<Variant>;
+    using VU = yk::detail::make_variadic_union_t<int>;
+
+    constexpr bool IsExact = yk::core::is_ttp_specialization_of_v<V, yk::rvariant>;
+
+    if constexpr (std::is_same_v<Variant&&, V&>) {
+        if constexpr (IsExact) {
+            STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU&>);
+            STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU&>);
+        }
+        STATIC_REQUIRE(std::is_same_v<forward_storage_t<as_variant_t<Variant>>, VU&>);
+        STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<as_variant_t<Variant>>(v)), VU&>);
+        return 0;
+
+    } else if constexpr (std::is_same_v<Variant&&, V const&>) {
+        if constexpr (IsExact) {
+            STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU const&>);
+            STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU const&>);
+        }
+        STATIC_REQUIRE(std::is_same_v<forward_storage_t<as_variant_t<Variant>>, VU const&>);
+        STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<as_variant_t<Variant>>(v)), VU const&>);
+        return 1;
+
+    } else if constexpr (std::is_same_v<Variant&&, V&&>) {
+        if constexpr (IsExact) {
+            STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU&&>);
+            STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU&&>);
+        }
+        STATIC_REQUIRE(std::is_same_v<forward_storage_t<as_variant_t<Variant>>, VU&&>);
+        STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<as_variant_t<Variant>>(v)), VU&&>);
+        return 2;
+
+    } else if constexpr (std::is_same_v<Variant&&, V const&&>) {
+        if constexpr (IsExact) {
+            STATIC_REQUIRE(std::is_same_v<forward_storage_t<Variant>, VU const&&>);
+            STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<Variant>(v)), VU const&&>);
+        }
+        STATIC_REQUIRE(std::is_same_v<forward_storage_t<as_variant_t<Variant>>, VU const&&>);
+        STATIC_REQUIRE(std::is_same_v<decltype(forward_storage<as_variant_t<Variant>>(v)), VU const&&>);
+        return 3;
+
+    } else {
+        static_assert(false);
+        return -1;
+    }
+}
+
+template<class... Ts>
+struct DerivedVariant : yk::rvariant<Ts...>
+{
+    using DerivedVariant::rvariant::rvariant;
 };
-static_assert(!std::is_nothrow_default_constructible_v<S>);
-static_assert(!std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
+
+} // anonymous
+
+TEST_CASE("forward_storage", "[detail]")
+{
+    // NOLINTBEGIN(performance-move-const-arg)
+    {
+        yk::rvariant<int> v;
+        CHECK(test_forward_storage(v) == 0);
+        CHECK(test_forward_storage(std::as_const(v)) == 1);
+        CHECK(test_forward_storage(std::move(std::as_const(v))) == 3);
+        CHECK(test_forward_storage(std::move(v)) == 2);
+    }
+    {
+        DerivedVariant<int> v;
+        CHECK(test_forward_storage(v) == 0);
+        CHECK(test_forward_storage(std::as_const(v)) == 1);
+        CHECK(test_forward_storage(std::move(std::as_const(v))) == 3);
+        CHECK(test_forward_storage(std::move(v)) == 2);
+    }
+    // NOLINTEND(performance-move-const-arg)
+}
 
 TEST_CASE("default construction")
 {
@@ -628,8 +699,12 @@ TEST_CASE("emplace")
     }
 }
 
+namespace {
+
 template<std::size_t I>
 struct just_index {};
+
+} // anonymous
 
 TEST_CASE("swap")
 {

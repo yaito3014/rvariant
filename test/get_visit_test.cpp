@@ -105,12 +105,16 @@ TEST_CASE("get_if")
     }
 }
 
+namespace {
+
 template<bool IsNoexcept, class R, class F, class Visitor, class Storage>
 constexpr bool is_noexcept_invocable_r_v = std::conditional_t<
     IsNoexcept,
     std::conjunction<std::is_invocable_r<R, F, Visitor, Storage>, std::is_nothrow_invocable_r<R, F, Visitor, Storage>>,
     std::conjunction<std::is_invocable_r<R, F, Visitor, Storage>, std::negation<std::is_nothrow_invocable_r<R, F, Visitor, Storage>>>
 >::value;
+
+} // anonymous
 
 TEST_CASE("raw_visit", "[detail]")
 {
@@ -250,6 +254,7 @@ TEST_CASE("raw_visit", "[detail]")
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 }
 
+namespace {
 
 namespace detail {
 
@@ -275,6 +280,8 @@ using never_valueless_seq = typename detail::never_valueless_seq_impl<AllNeverVa
 
 template<auto... n>
 using nv_true_flat_index = yk::detail::flat_index<std::index_sequence<n...>, never_valueless_seq<true, n...>>;
+
+} // anonymous
 
 TEST_CASE("flat_index", "[detail]")
 {
@@ -335,6 +342,8 @@ TEST_CASE("flat_index", "[detail]")
     STATIC_REQUIRE(nv_true_flat_index<2, 3, 4>::get(1, 2, 3) == bias(23));
 }
 
+namespace {
+
 template<class T>
 struct strong
 {
@@ -344,9 +353,16 @@ struct strong
 namespace not_a_variant_ADL {
 
 template<class... Ts>
+struct DerivedVariant : yk::rvariant<Ts...>
+{
+    using DerivedVariant::rvariant::rvariant;
+};
+
+template<class... Ts>
 struct not_a_variant {};
 
 template<class R, class Foo, class... Bar>
+    requires (!std::disjunction_v<yk::core::is_ttp_specialization_of<std::remove_cvref_t<Bar>, DerivedVariant>...>)
 R visit(Foo&&, Bar&&...)
 {
     return R{"not_a_variant"};
@@ -363,29 +379,75 @@ template<class Visitor, class Variant, class Enabled = void>
 struct overload_resolvable : std::false_type {};
 
 template<class Visitor, class Variant>
-struct overload_resolvable<Visitor, Variant, std::void_t<decltype(visit<std::string_view>( std::declval<Visitor>(), std::declval<Variant>() ))>>
-    : std::true_type
-{};
+struct overload_resolvable<
+    Visitor,
+    Variant,
+    std::void_t<decltype(
+        visit<std::string_view>(std::declval<Visitor>(), std::declval<Variant>()
+    ))>
+> : std::true_type {};
 
 } // SFINAE_context_ns
 
+} // anonymous
 
 TEST_CASE("visit (Constraints)")
 {
-    using namespace std::string_view_literals;
-    using ::yk::visit;
-
-    auto const vis = yk::overloaded{[](int const&) { return "variant"; }};
+    auto const vis = yk::overloaded{
+        [](int const&) -> std::string_view { return "variant"; },
+        [](float const&) -> std::string_view { return "variant"; },
+    };
     using Visitor = decltype(vis);
 
-    // Asserts the "Constraints:" is implemented correctly
-    // https://eel.is/c++draft/variant.visit#2
-    STATIC_REQUIRE(requires {
-        requires std::same_as<std::true_type, SFINAE_context::overload_resolvable<Visitor, not_a_variant_ADL::not_a_variant<int>>::type>;
-    });
+    STATIC_REQUIRE(std::is_invocable_v<Visitor, int>);
+    STATIC_REQUIRE(std::is_invocable_v<Visitor, float>);
+    STATIC_REQUIRE(!std::is_invocable_v<Visitor, double>); // ambiguous
 
-    CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int>{}) == "not_a_variant");
-    CHECK(visit<std::string_view>(vis, yk::rvariant<int>{}) == "variant");
+    {
+        using IntChecker = yk::detail::visit_invoke_check_impl<std::string_view, Visitor, yk::core::type_list<int>>;
+        using DoubleChecker = yk::detail::visit_invoke_check_impl<std::string_view, Visitor, yk::core::type_list<double>>;
+
+        static_assert(IntChecker::accepts_all_alternatives);
+        static_assert(IntChecker::same_return_type);
+        static_assert(IntChecker::value);
+        static_assert(!DoubleChecker::accepts_all_alternatives);
+        static_assert(!DoubleChecker::same_return_type);
+        static_assert(!DoubleChecker::value);
+
+        using Check = yk::detail::visit_invoke_check<Visitor, yk::rvariant<int, double>&&>;
+        static_assert(!Check::accepts_all_alternatives);
+        static_assert(!Check::same_return_type);
+    }
+    {
+        using ::yk::visit;
+
+        // Asserts the "Constraints:" is implemented correctly
+        // https://eel.is/c++draft/variant.visit#2
+        STATIC_REQUIRE(requires {
+            requires std::same_as<std::true_type, SFINAE_context::overload_resolvable<Visitor, not_a_variant_ADL::not_a_variant<int, float>>::type>;
+        });
+
+        CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
+        CHECK(visit<std::string_view>(vis, yk::rvariant<int, float>{}) == "variant");
+
+        // Asserts as-variant is working
+        CHECK(visit<std::string_view>(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
+    }
+    {
+        // Case for T0 leading to ill-formed invocation.
+        // In such case, a naive call to `std::invoke_result_t` will result in
+        // a hard error. We try to avoid that situation, correctly engaging
+        // `static_assert` error instead of numerous hard errors.
+
+        // ill-formed (not even a `static_assert` error on MSVC)
+         //std::visit<std::string_view>(vis, std::variant<double>{});
+
+        // expected static_assert error
+        //yk::visit<std::string_view>(vis, yk::rvariant<double>{});
+    }
+
+    // TODO: add test for this
+    //std::visit(vis, std::variant<double>{}); // no matching overload
 }
 
 TEST_CASE("visit")
