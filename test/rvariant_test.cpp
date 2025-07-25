@@ -760,6 +760,31 @@ TEST_CASE("emplace")
         a.emplace<1>(3.14f);
         REQUIRE(a.index() == 1);
     }
+
+    {
+        yk::rvariant<MoveThrows> a;
+        try {
+            a.emplace<0>(MoveThrows::non_throwing);
+        } catch(...) {
+        }
+        CHECK(!a.valueless_by_exception());
+    }
+    {
+        yk::rvariant<MoveThrows> a;
+        try {
+            a.emplace<0>(MoveThrows::throwing);
+        } catch(...) {
+        }
+        CHECK(!a.valueless_by_exception());
+    }
+    {
+        yk::rvariant<MoveThrows> a;
+        try {
+            a.emplace<0>(MoveThrows::potentially_throwing);
+        } catch(...) {
+        }
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 namespace {
@@ -815,7 +840,51 @@ TEST_CASE("swap")
         CHECK(yk::holds_alternative<just_index<10>>(b));
     }
 
-    // TODO: valueless case
+    {
+        yk::rvariant<int, MoveThrows> a = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> b;
+        CHECK( a.valueless_by_exception());
+        CHECK(!b.valueless_by_exception());
+        try {
+            a.swap(b);
+        } catch (...) {
+        }
+        CHECK(!a.valueless_by_exception());
+        CHECK( b.valueless_by_exception());
+    }
+    {
+        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MoveThrows> b = make_valueless<int>();
+        CHECK(!a.valueless_by_exception());
+        CHECK( b.valueless_by_exception());
+        try {
+            a.swap(b);
+        } catch (...) {
+        }
+        CHECK( a.valueless_by_exception());
+        CHECK(!b.valueless_by_exception());
+    }
+    {
+        yk::rvariant<int, MoveThrows> a = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> b = make_valueless<int>();
+        CHECK(a.valueless_by_exception());
+        CHECK(b.valueless_by_exception());
+        CHECK_NOTHROW(a.swap(b));
+        CHECK(a.valueless_by_exception());
+        CHECK(b.valueless_by_exception());
+    }
+    {
+        yk::rvariant<int, MoveThrows> a = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> b(std::in_place_type<MoveThrows>);
+        CHECK( a.valueless_by_exception());
+        CHECK(!b.valueless_by_exception());
+        try {
+            a.swap(b);
+        } catch (...) {
+        }
+        CHECK( a.valueless_by_exception());
+        CHECK(!b.valueless_by_exception());
+    }
 }
 
 TEST_CASE("holds_alternative")
