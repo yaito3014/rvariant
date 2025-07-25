@@ -40,7 +40,7 @@ template<bool NeverValueless>
 }
 
 template<class... Ts>
-struct is_never_valueless : std::false_type {}; // TODO
+struct is_never_valueless : std::conjunction<std::is_nothrow_move_constructible<Ts>...> {};
 
 template<class... Ts>
 constexpr bool is_never_valueless_v = is_never_valueless<Ts...>::value;

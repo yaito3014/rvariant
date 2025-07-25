@@ -113,10 +113,10 @@ public:
                 if (index_ == j) {
                     raw_get<j>(storage()) = rhs_alt;
                 } else {
-                    // copy(noexcept) && move(throw)    => A
-                    // copy(noexcept) && move(noexcept) => A
-                    // copy(throw)    && move(throw)    => A
-                    // copy(throw)    && move(noexcept) => B
+                    // CC(noexcept) && MC(throw)    => A
+                    // CC(noexcept) && MC(noexcept) => A
+                    // CC(throw)    && MC(throw)    => A
+                    // CC(throw)    && MC(noexcept) => B
                     if constexpr (std::is_nothrow_copy_constructible_v<T> || !std::is_nothrow_move_constructible_v<T>) {
                         reset_construct<j>(rhs_alt);  // A
                     } else {
@@ -390,11 +390,25 @@ public:
             if constexpr (i == j) {
                 this_alt = std::forward<T>(t);
             } else {
+                // TC(noexcept) && MC(throw)    => A maybe valueless if | never |
+                // TC(noexcept) && MC(noexcept) => A maybe valueless if | never |
+                // TC(throw)    && MC(throw)    => A maybe valueless if | TC throws => yes | MC throws => yes |
+                // TC(throw)    && MC(noexcept) => B maybe valueless if | never |
                 if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
-                    base_type::template reset_construct<j>(std::forward<T>(t));
+                    //base_type::template reset_construct<j>(std::forward<T>(t)); // A
+
+                    // strengthen this branch to provide never-valueless guarantee on certain conditions
+                    if constexpr (std::is_nothrow_constructible_v<Tj, T>) {
+                        // TC(noexcept); never valueless
+                        base_type::template reset_construct<j>(std::forward<T>(t));
+                    } else {
+                        // TC(throw) && MC(throw)
+                        Tj tmp(std::forward<T>(t));
+                        base_type::template reset_construct<j>(std::move(tmp)); // valueless IFF MC throws
+                    }
                 } else {
                     Tj tmp(std::forward<T>(t));
-                    base_type::template reset_construct<j>(std::move(tmp));
+                    base_type::template reset_construct<j>(std::move(tmp)); // B
                 }
             }
         });
@@ -604,10 +618,16 @@ public:
             std::is_constructible_v<T, Args...> &&
             detail::non_wrapped_exactly_once_v<T, unwrapped_types>
     constexpr T& emplace(Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<T, Args...>) YK_LIFETIMEBOUND
+        noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = core::find_index_v<T, unwrapped_types>;
-        base_type::template reset_construct<I>(std::forward<Args>(args)...);
+        using VT = detail::select_maybe_wrapped_t<T, Ts...>;
+        if constexpr (std::is_nothrow_constructible_v<VT, Args...>) {
+            base_type::template reset_construct<I>(std::forward<Args>(args)...);
+        } else {
+            VT tmp(std::forward<Args>(args)...);
+            base_type::template reset_construct<I>(std::move(tmp));
+        }
         return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
@@ -616,10 +636,16 @@ public:
             std::is_constructible_v<T, std::initializer_list<U>&, Args...> &&
             detail::non_wrapped_exactly_once_v<T, unwrapped_types>
     constexpr T& emplace(std::initializer_list<U> il, Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
+        noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         constexpr std::size_t I = core::find_index_v<T, unwrapped_types>;
-        base_type::template reset_construct<I>(il, std::forward<Args>(args)...);
+        using VT = detail::select_maybe_wrapped_t<T, Ts...>;
+        if constexpr (std::is_nothrow_constructible_v<VT, std::initializer_list<U>&, Args...>) {
+            base_type::template reset_construct<I>(il, std::forward<Args>(args)...);
+        } else {
+            VT tmp(il, std::forward<Args>(args)...);
+            base_type::template reset_construct<I>(std::move(tmp));
+        }
         return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
@@ -630,7 +656,13 @@ public:
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        base_type::template reset_construct<I>(std::forward<Args>(args)...);
+        using T = core::pack_indexing_t<I, Ts...>;
+        if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
+            base_type::template reset_construct<I>(std::forward<Args>(args)...);
+        } else {
+            T tmp(std::forward<Args>(args)...);
+            base_type::template reset_construct<I>(std::move(tmp));
+        }
         return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
@@ -641,7 +673,13 @@ public:
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        base_type::template reset_construct<I>(il, std::forward<Args>(args)...);
+        using T = core::pack_indexing_t<I, Ts...>;
+        if constexpr (std::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>) {
+            base_type::template reset_construct<I>(il, std::forward<Args>(args)...);
+        } else {
+            T tmp(il, std::forward<Args>(args)...);
+            base_type::template reset_construct<I>(std::move(tmp));
+        }
         return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }
 
