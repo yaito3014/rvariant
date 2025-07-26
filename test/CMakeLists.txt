@@ -55,7 +55,7 @@ if(MSVC)
                 /MP /utf-8 /W3 /analyze /analyze:external-
     )
 else()
-    target_compile_options(yk_rvariant_test PUBLIC -Wall -Wextra)
+    target_compile_options(yk_rvariant_test PUBLIC -Wall -Wextra -pedantic)
 endif()
 
 target_link_libraries(
