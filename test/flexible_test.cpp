@@ -412,8 +412,11 @@ TEST_CASE("subset", "[flexible]")
         yk::rvariant<int, float> a{42};
         REQUIRE_THROWS(a.subset<float>());
     }
-
-    // TODO: valueless case
+    {
+        yk::rvariant<int, float, MoveThrows> valueless = make_valueless<int, float>();
+        yk::rvariant<int, MoveThrows> a = valueless.subset<int, MoveThrows>();
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 #ifdef _MSC_VER
