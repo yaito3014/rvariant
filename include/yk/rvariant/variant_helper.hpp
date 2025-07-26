@@ -6,8 +6,10 @@
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/core/type_traits.hpp>
 
+#include <limits>
 #include <utility>
 #include <type_traits>
+#include <cstdint>
 #include <cstddef>
 
 namespace yk {
@@ -17,6 +19,18 @@ namespace detail {
 template <std::size_t VariantSize>
 struct variant_index_selector {
     using type = std::size_t;
+};
+
+template <std::size_t VariantSize>
+    requires ((0 < VariantSize) && (VariantSize <= std::numeric_limits<std::int8_t>::max()))
+struct variant_index_selector<VariantSize> {
+    using type = std::int8_t;
+};
+
+template <std::size_t VariantSize>
+    requires ((std::numeric_limits<std::int8_t>::max() < VariantSize) && (VariantSize <= std::numeric_limits<std::int16_t>::max()))
+struct variant_index_selector<VariantSize> {
+    using type = std::int16_t;
 };
 
 template <std::size_t VariantSize>
