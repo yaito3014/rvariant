@@ -158,7 +158,7 @@ public:
         , ptr_(make_obj(il, std::forward<Us>(us)...))
     {}
 
-    constexpr ~indirect() { reset(nullptr); }
+    constexpr ~indirect() noexcept(std::is_nothrow_destructible_v<T>) { reset(nullptr); }
 
     constexpr indirect& operator=(indirect const& other)
     {
@@ -283,7 +283,7 @@ public:
     }
 
 private:
-    constexpr pointer reset(pointer p)
+    constexpr pointer reset(pointer p) noexcept(std::is_nothrow_destructible_v<T>)
     {
         if (ptr_) {
             std::allocator_traits<Allocator>::destroy(alloc_, ptr_);
