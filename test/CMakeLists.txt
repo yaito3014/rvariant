@@ -52,7 +52,7 @@ if(MSVC)
     target_compile_options(
         yk_rvariant_test
             PUBLIC
-                /MP /utf-8 /W3 /analyze /analyze:external- /external:anglebrackets
+                /MP /utf-8 /W3 /analyze /analyze:external-
     )
 endif()
 
