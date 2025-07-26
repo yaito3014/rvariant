@@ -3,6 +3,7 @@
 
 #include <yk/rvariant.hpp>
 
+#include <compare>
 #include <exception>
 #include <utility>
 
@@ -27,6 +28,9 @@ struct MoveThrows
     MoveThrows(non_throwing_t) noexcept {}
     MoveThrows(throwing_t) noexcept(false) { throw std::exception{}; }
     MoveThrows(potentially_throwing_t) noexcept(false) {}
+
+    friend bool operator==(MoveThrows const&, MoveThrows const&) noexcept { return true; }
+    friend auto operator<=>(MoveThrows const&, MoveThrows const&) noexcept { return std::strong_ordering::equal; }
 };
 
 template <class... Ts, class... Args>

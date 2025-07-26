@@ -1137,6 +1137,31 @@ TEST_CASE("relational operators")
         CHECK((b <=> a) == std::partial_ordering::greater);
     }
     {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MoveThrows> a;
+
+        CHECK(valueless == valueless);
+        CHECK(!(a == valueless));
+
+        CHECK(!(valueless != valueless));
+
+        CHECK(valueless < a);
+        CHECK(!(a < valueless));
+
+        CHECK(a > valueless);
+        CHECK(!(valueless > a));
+
+        CHECK(valueless <= a);
+        CHECK(!(a <= valueless));
+
+        CHECK(a >= valueless);
+        CHECK(!(valueless >= a));
+
+        CHECK((valueless <=> valueless) == std::strong_ordering::equal);
+        CHECK((valueless <=> a) == std::strong_ordering::less);
+        CHECK((a <=> valueless) == std::strong_ordering::greater);
+    }
+    {
         std::vector<yk::rvariant<int, double>> vec {
             42,
             33,
@@ -1157,7 +1182,6 @@ TEST_CASE("relational operators")
             3.141,
         });
     }
-    // TODO: valueless case
 }
 
 TEST_CASE("helper class")
