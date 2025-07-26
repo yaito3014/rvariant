@@ -1,4 +1,6 @@
-﻿#include "yk/rvariant/rvariant.hpp"
+﻿#include "rvariant_test.hpp"
+
+#include "yk/rvariant/rvariant.hpp"
 #include "yk/rvariant/recursive_wrapper.hpp"
 #include "yk/rvariant/variant_helper.hpp"
 
@@ -42,6 +44,11 @@ TEST_CASE("get")
         REQUIRE(yk::get<int>(std::move(var)) == 42);
         REQUIRE_THROWS(yk::get<float>(var));
     }
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        REQUIRE_THROWS(yk::get<int>(valueless));
+        REQUIRE_THROWS(yk::get<MoveThrows>(valueless));
+    }
 }
 
 TEST_CASE("get", "[wrapper]")
@@ -69,21 +76,36 @@ TEST_CASE("get_if")
         yk::rvariant<int, float> var = 42;
         REQUIRE(*yk::get_if<0>(&var) == 42);
         REQUIRE(*yk::get_if<0>(&std::as_const(var)) == 42);
+        REQUIRE(yk::get_if<1>(&var) == nullptr);
+        REQUIRE(yk::get_if<1>(&std::as_const(var)) == nullptr);
     }
     {
         yk::rvariant<int, float> var = 42;
         REQUIRE(*yk::get<0>(&var) == 42);
         REQUIRE(*yk::get<0>(&std::as_const(var)) == 42);
+        REQUIRE(yk::get<1>(&var) == nullptr);
+        REQUIRE(yk::get<1>(&std::as_const(var)) == nullptr);
     }
     {
         yk::rvariant<int, float> var = 42;
         REQUIRE(*yk::get_if<int>(&var) == 42);
         REQUIRE(*yk::get_if<int>(&std::as_const(var)) == 42);
+        REQUIRE(yk::get_if<float>(&var) == nullptr);
+        REQUIRE(yk::get_if<float>(&std::as_const(var)) == nullptr);
     }
     {
         yk::rvariant<int, float> var = 42;
         REQUIRE(*yk::get<int>(&var) == 42);
         REQUIRE(*yk::get<int>(&std::as_const(var)) == 42);
+        REQUIRE(yk::get<float>(&var) == nullptr);
+        REQUIRE(yk::get<float>(&std::as_const(var)) == nullptr);
+    }
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        REQUIRE(yk::get_if<0>(&valueless) == nullptr);
+        REQUIRE(yk::get_if<1>(&valueless) == nullptr);
+        REQUIRE(yk::get_if<int>(&valueless) == nullptr);
+        REQUIRE(yk::get_if<MoveThrows>(&valueless) == nullptr);
     }
 }
 
