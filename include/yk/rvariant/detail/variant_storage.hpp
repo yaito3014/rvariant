@@ -150,7 +150,7 @@ inline constexpr std::size_t visit_instantiation_limit = 1024;
 template<std::size_t I>
 struct get_alternative
 {
-    static_assert(I != variant_npos);
+    static_assert(I != std::variant_npos);
 
     template<class Union>
     static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
@@ -215,10 +215,10 @@ using raw_visit_return_type = typename raw_visit_return_type_impl<Visitor, Stora
 template<class Visitor, class Storage>
 constexpr raw_visit_return_type<Visitor, Storage>
 raw_visit_valueless(Visitor&& vis, Storage&&)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-    noexcept(std::is_nothrow_invocable_v<Visitor, std::in_place_index_t<variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>)
+    noexcept(std::is_nothrow_invocable_v<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>)
 {
     valueless_t valueless_;
-    return std::invoke(std::forward<Visitor>(vis), std::in_place_index<variant_npos>, std::forward_like<Storage>(valueless_));
+    return std::invoke(std::forward<Visitor>(vis), std::in_place_index<std::variant_npos>, std::forward_like<Storage>(valueless_));
 }
 
 template<std::size_t I, class Visitor, class Storage>
@@ -234,7 +234,7 @@ constexpr bool raw_visit_noexcept = false;
 
 template<class Visitor, class Storage, std::size_t... Is>
 constexpr bool raw_visit_noexcept<Visitor, Storage, std::index_sequence<Is...>> = std::conjunction_v<
-    std::is_nothrow_invocable<Visitor, std::in_place_index_t<variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>,
+    std::is_nothrow_invocable<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>,
     std::is_nothrow_invocable<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>...
 >;
 

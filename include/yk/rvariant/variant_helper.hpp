@@ -14,11 +14,18 @@ namespace yk {
 
 namespace detail {
 
-using variant_index_t = std::size_t; // TODO: make this select the cheap type
+template <std::size_t VariantSize>
+struct variant_index_selector {
+    using type = std::size_t;
+};
+
+template <std::size_t VariantSize>
+using variant_index_t = typename variant_index_selector<VariantSize>::type; // TODO: make this select the cheap type
 
 // Intentionally defined in the `detail` to avoid confusion with `std::variant_npos`.
 // Equals to std::variant_npos by definition
-inline constexpr variant_index_t variant_npos = static_cast<variant_index_t>(-1);
+template <std::size_t VariantSize>
+inline constexpr variant_index_t<VariantSize> variant_npos = static_cast<variant_index_t<VariantSize>>(-1);
 
 template<std::size_t I, class T>
 struct alternative;

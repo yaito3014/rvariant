@@ -70,7 +70,6 @@ public:
     // internal constructor; this is not the same as the most derived class' default constructor (which uses T0)
     constexpr rvariant_base() noexcept
         : storage_{} // value-initialize
-        , index_{variant_npos}
     {}
 
     // Copy constructor
@@ -157,13 +156,12 @@ public:
     constexpr explicit rvariant_base(std::in_place_index_t<I>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>)
         : storage_(std::in_place_index<I>, std::forward<Args>(args)...)
-        , index_{static_cast<variant_index_t>(I)}
+        , index_{static_cast<variant_index_t<sizeof...(Ts)>>(I)}
     {}
 
     // Primary constructor called from derived class
     constexpr explicit rvariant_base(valueless_t) noexcept
         : storage_{} // valueless
-        , index_{variant_npos}
     {}
 
     [[nodiscard]] constexpr bool valueless_by_exception() const noexcept { return index_ == std::variant_npos; }
@@ -174,7 +172,7 @@ public:
     {
         if constexpr (need_destructor_call) {
             this->raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T& alt) noexcept {
-                if constexpr (i != variant_npos) {
+                if constexpr (i != std::variant_npos) {
                     alt.~T();
                 }
             });
@@ -186,13 +184,13 @@ public:
     {
         if constexpr (need_destructor_call) {
             this->raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T& alt) noexcept {
-                if constexpr (i != variant_npos) {
+                if constexpr (i != std::variant_npos) {
                     alt.~T();
-                    index_ = variant_npos;
+                    index_ = variant_npos<sizeof...(Ts)>;
                 }
             });
         } else {
-            index_ = variant_npos;
+            index_ = variant_npos<sizeof...(Ts)>;
         }
     }
 
@@ -206,7 +204,7 @@ public:
             using T = core::pack_indexing_t<I, Ts...>;
             auto&& alt = raw_get<I>(storage_);
             alt.~T();
-            index_ = variant_npos;
+            index_ = variant_npos<sizeof...(Ts)>;
         }
     }
 
@@ -214,20 +212,20 @@ public:
     constexpr void construct_on_valueless(Args&&... args)
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>)
     {
-        static_assert(I != variant_npos);
-        assert(index_ == variant_npos);
+        static_assert(I != std::variant_npos);
+        assert(index_ == variant_npos<sizeof...(Ts)>);
         std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
-        index_ = I;
+        index_ = static_cast<variant_index_t<sizeof...(Ts)>>(I);
     }
 
     template<std::size_t I, class... Args>
     constexpr void reset_construct(Args&&... args)
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>)
     {
-        static_assert(I != variant_npos);
+        static_assert(I != std::variant_npos);
         visit_reset();
         std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
-        index_ = I;
+        index_ = static_cast<variant_index_t<sizeof...(Ts)>>(I);
     }
 
     // used in swap operation
@@ -239,7 +237,7 @@ public:
         std::move(rhs).raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T&& alt)
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>...>)
         {
-            if constexpr (i != variant_npos) {
+            if constexpr (i != std::variant_npos) {
                 static_assert(std::is_rvalue_reference_v<T&&>);
                 this->template construct_on_valueless<i>(std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
             }
@@ -263,7 +261,7 @@ public:
     }
 
     storage_type storage_{}; // value-initialize
-    variant_index_t index_ = variant_npos;
+    variant_index_t<sizeof...(Ts)> index_ = variant_npos<sizeof...(Ts)>;
 };
 
 
@@ -299,7 +297,7 @@ template<class Compare, class... Ts>
     return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& alt)
         noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
     {
-        if constexpr (i != variant_npos) {
+        if constexpr (i != std::variant_npos) {
             return Compare{}(alt, detail::raw_get<i>(w.storage()));
         } else {
             return Compare{}(0, 0);
@@ -703,16 +701,16 @@ public:
                     noexcept(all_nothrow_swappable)
                 {
                     if constexpr (i == j) {
-                        if constexpr (i != detail::variant_npos) {
+                        if constexpr (i != std::variant_npos) {
                             using std::swap;
                             swap(this_alt, rhs_alt);
                         }
 
-                    } else if constexpr (i == detail::variant_npos) {
+                    } else if constexpr (i == std::variant_npos) {
                         this->template construct_on_valueless<j>(std::move(rhs_alt));
                         rhs.template reset<j>();
 
-                    } else if constexpr (j == detail::variant_npos) {
+                    } else if constexpr (j == std::variant_npos) {
                         rhs.template construct_on_valueless<i>(std::move(this_alt));
                         this->template reset<i>();
 
@@ -730,7 +728,7 @@ public:
                 rhs.raw_visit([this]<std::size_t i, class RhsAlt>(std::in_place_index_t<i>, [[maybe_unused]] RhsAlt& rhs_alt)
                     noexcept(std::conjunction_v<std::is_nothrow_swappable<Ts>...>)
                 {
-                    if constexpr (i != detail::variant_npos) {
+                    if constexpr (i != std::variant_npos) {
                         using std::swap;
                         swap(detail::raw_get<i>(this->storage()), rhs_alt);
                     }
@@ -778,7 +776,7 @@ public:
             return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt)
                 noexcept(std::is_nothrow_constructible_v<rvariant<Us...>, rvariant const&>) -> rvariant<Us...>
             {
-                if constexpr (i == detail::variant_npos) {
+                if constexpr (i == std::variant_npos) {
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
@@ -790,7 +788,7 @@ public:
             return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt)
                 /* not noexcept */ -> rvariant<Us...>
             {
-                if constexpr (i == detail::variant_npos) {
+                if constexpr (i == std::variant_npos) {
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
@@ -818,7 +816,7 @@ public:
             return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt)
                 noexcept(std::is_nothrow_constructible_v<rvariant<Us...>, rvariant&&>) -> rvariant<Us...>
             {
-                if constexpr (i == detail::variant_npos) {
+                if constexpr (i == std::variant_npos) {
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
@@ -831,7 +829,7 @@ public:
             return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt)
                 /* not noexcept */ -> rvariant<Us...>
             {
-                if constexpr (i == detail::variant_npos) {
+                if constexpr (i == std::variant_npos) {
                     return rvariant<Us...>(detail::valueless);
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
@@ -1183,7 +1181,7 @@ template<class... Ts>
         noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
         -> std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
     {
-        if constexpr (i != detail::variant_npos) {
+        if constexpr (i != std::variant_npos) {
             return alt <=> detail::raw_get<i>(w.storage());
         } else {
             return std::strong_ordering::equivalent;
