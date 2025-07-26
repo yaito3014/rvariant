@@ -903,7 +903,13 @@ TEST_CASE("holds_alternative")
 {
     {
         yk::rvariant<int, float> var = 42;
-        REQUIRE(yk::holds_alternative<int>(var));
+        CHECK(yk::holds_alternative<int>(var));
+    }
+
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        CHECK(!yk::holds_alternative<int>(valueless));
+        CHECK(!yk::holds_alternative<MoveThrows>(valueless));
     }
 }
 
