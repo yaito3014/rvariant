@@ -34,7 +34,7 @@ struct variant_index_selector<VariantSize> {
 };
 
 template <std::size_t VariantSize>
-using variant_index_t = typename variant_index_selector<VariantSize>::type; // TODO: make this select the cheap type
+using variant_index_t = typename variant_index_selector<VariantSize>::type;
 
 // Intentionally defined in the `detail` to avoid confusion with `std::variant_npos`.
 // Equals to std::variant_npos by definition
