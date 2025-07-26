@@ -81,6 +81,8 @@ public:
         {
             if constexpr (j != std::variant_npos) {
                 construct_on_valueless<j>(alt);
+            } else {
+                (void)this;
             }
         });
     }
@@ -95,6 +97,8 @@ public:
             if constexpr (j != std::variant_npos) {
                 static_assert(std::is_rvalue_reference_v<T&&>);
                 construct_on_valueless<j>(std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
+            } else {
+                (void)this;
             }
         });
     }
@@ -473,7 +477,7 @@ public:
             rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...> const&, std::is_nothrow_assignable>
         )
     {
-        rhs.raw_visit([this, &rhs]<std::size_t j, class Uj>(std::in_place_index_t<j>, [[maybe_unused]] Uj const& rhs_alt)
+        rhs.raw_visit([this]<std::size_t j, class Uj>(std::in_place_index_t<j>, [[maybe_unused]] Uj const& rhs_alt)
             noexcept(
                 rvariant_set::conjunction_for_v<rvariant, rvariant<Us...> const&, std::is_nothrow_constructible> &&
                 rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...> const&, std::is_nothrow_assignable>
@@ -487,7 +491,7 @@ public:
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<Uj>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<Uj>>);
 
-                this->raw_visit([this, &rhs, &rhs_alt]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
+                this->raw_visit([this, &rhs_alt]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                     noexcept(
                         rvariant_set::conjunction_for_v<rvariant, rvariant<Us...> const&, std::is_nothrow_constructible> &&
                         rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...> const&, std::is_nothrow_assignable>
@@ -531,7 +535,7 @@ public:
             rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
         )
     {
-        std::move(rhs).raw_visit([this, &rhs]<std::size_t j, class Uj>(std::in_place_index_t<j>, [[maybe_unused]] Uj&& rhs_alt)
+        std::move(rhs).raw_visit([this]<std::size_t j, class Uj>(std::in_place_index_t<j>, [[maybe_unused]] Uj&& rhs_alt)
             noexcept(
                 rvariant_set::conjunction_for_v<rvariant, rvariant<Us...>&&, std::is_nothrow_constructible> &&
                 rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
@@ -545,7 +549,7 @@ public:
                 using VT = detail::select_maybe_wrapped_t<unwrap_recursive_t<Uj>, Ts...>;
                 static_assert(std::is_same_v<unwrap_recursive_t<VT>, unwrap_recursive_t<Uj>>);
 
-                this->raw_visit([this, &rhs, &rhs_alt]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
+                this->raw_visit([this, &rhs_alt]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                     noexcept(
                         rvariant_set::conjunction_for_v<rvariant, rvariant<Us...>&&, std::is_nothrow_constructible> &&
                         rvariant_set::conjunction_for_v<rvariant&, rvariant<Us...>&&, std::is_nothrow_assignable>
@@ -709,6 +713,7 @@ public:
                     } else if constexpr (i == std::variant_npos) {
                         this->template construct_on_valueless<j>(std::move(rhs_alt));
                         rhs.template reset<j>();
+                        (void)this_alt;
 
                     } else if constexpr (j == std::variant_npos) {
                         rhs.template construct_on_valueless<i>(std::move(this_alt));
