@@ -1132,8 +1132,10 @@ template<class... Ts, class Compare = std::less<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
 [[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    if (v.index() < w.index()) return true;
-    if (v.index() > w.index()) return false;
+    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    if (vi < wi) return true;
+    if (vi > wi) return false;
     return detail::compare_relops<Compare>(v, w);
 }
 
@@ -1141,8 +1143,10 @@ template<class... Ts, class Compare = std::greater<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
 [[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    if (v.index() > w.index()) return true;
-    if (v.index() < w.index()) return false;
+    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    if (vi > wi) return true;
+    if (vi < wi) return false;
     return detail::compare_relops<Compare>(v, w);
 }
 
@@ -1150,8 +1154,10 @@ template<class... Ts, class Compare = std::less_equal<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
 [[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    if (v.index() < w.index()) return true;
-    if (v.index() > w.index()) return false;
+    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    if (vi < wi) return true;
+    if (vi > wi) return false;
     return detail::compare_relops<Compare>(v, w);
 }
 
@@ -1159,8 +1165,10 @@ template<class... Ts, class Compare = std::greater_equal<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
 [[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    if (v.index() > w.index()) return true;
-    if (v.index() < w.index()) return false;
+    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    if (vi > wi) return true;
+    if (vi < wi) return false;
     return detail::compare_relops<Compare>(v, w);
 }
 
