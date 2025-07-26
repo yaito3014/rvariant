@@ -993,7 +993,7 @@ TEST_CASE("recursive_wrapper") // not [recursive]
     {
         struct S
         {
-            S(int i, double d) {}
+            S(int, double) {}
         };
 
         yk::rvariant<S> var(std::in_place_index<0>, 42, 3.14);
