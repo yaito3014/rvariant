@@ -171,7 +171,7 @@ public:
     constexpr void destroy_final() noexcept
     {
         if constexpr (need_destructor_call) {
-            this->raw_visit([this]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T& alt) noexcept {
+            this->raw_visit([]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T& alt) static noexcept {
                 if constexpr (i != std::variant_npos) {
                     alt.~T();
                 }
@@ -773,7 +773,7 @@ public:
         )
     {
         if constexpr (rvariant_set::equivalent_to<rvariant<Us...>, rvariant>) {
-            return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt)
+            return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt) static
                 noexcept(std::is_nothrow_constructible_v<rvariant<Us...>, rvariant const&>) -> rvariant<Us...>
             {
                 if constexpr (i == std::variant_npos) {
@@ -785,7 +785,7 @@ public:
                 }
             });
         } else {
-            return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt)
+            return this->raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt) static
                 /* not noexcept */ -> rvariant<Us...>
             {
                 if constexpr (i == std::variant_npos) {
@@ -813,7 +813,7 @@ public:
         )
     {
         if constexpr (rvariant_set::equivalent_to<rvariant<Us...>, rvariant>) {
-            return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt)
+            return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt) static
                 noexcept(std::is_nothrow_constructible_v<rvariant<Us...>, rvariant&&>) -> rvariant<Us...>
             {
                 if constexpr (i == std::variant_npos) {
@@ -826,7 +826,7 @@ public:
                 }
             });
         } else {
-            return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt)
+            return std::move(*this).raw_visit([]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt&& alt) static
                 /* not noexcept */ -> rvariant<Us...>
             {
                 if constexpr (i == std::variant_npos) {
