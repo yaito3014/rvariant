@@ -25,6 +25,7 @@ TEST_CASE("make_valueless", "[detail]")
 {
     yk::rvariant<int, MoveThrows> valueless = make_valueless<int>(42);
     CHECK(valueless.valueless_by_exception());
+    CHECK(valueless.index() == std::variant_npos);
     STATIC_CHECK(!std::remove_cvref_t<decltype(valueless)>::never_valueless);
 }
 
