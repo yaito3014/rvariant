@@ -171,7 +171,16 @@ public:
 
         pointer p = nullptr;
         if (other.ptr_) {
-            if (std::allocator_traits<Allocator>::is_always_equal::value || alloc_ == other.alloc_) {
+            if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {
+                if (ptr_) {
+                    // both contain value and allocator is equal; copy assign
+                    **this = *other;
+                    if constexpr (pocca) {
+                        alloc_ = other.alloc_;
+                    }
+                    return *this;
+                }
+            } else if (alloc_ == other.alloc_) {
                 if (ptr_) {
                     // both contain value and allocator is equal; copy assign
                     **this = *other;
@@ -208,9 +217,10 @@ public:
 
         pointer p = nullptr;
         if (other.ptr_) {
-            if (std::allocator_traits<Allocator>::is_always_equal::value || alloc_ == other.alloc_) {
+            if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {
                 p = std::exchange(other.ptr_, nullptr);
-
+            } else if (alloc_ == other.alloc_) {
+                p = std::exchange(other.ptr_, nullptr);
             } else {
                 indirect& x = pocma ? other : *this;
                 p = x.make_obj(std::move(*other));
