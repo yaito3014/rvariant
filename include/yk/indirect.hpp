@@ -224,6 +224,7 @@ public:
             } else {
                 indirect& x = pocma ? other : *this;
                 p = x.make_obj(std::move(*other));
+                other.reset(nullptr);
             }
         }
 
@@ -231,7 +232,6 @@ public:
         if constexpr (pocma) {
             alloc_ = other.alloc_;
         }
-        other.reset(nullptr);  // TODO: investigate whether this is needed
         return *this;
     }
 
