@@ -1,3 +1,5 @@
+#include "rvariant_test.hpp"
+
 #include "yk/rvariant.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -267,8 +269,11 @@ TEST_CASE("flexible copy construction", "[flexible]")
         yk::rvariant<double, float, int> c = b;
         CHECK(c.index() == 2);
     }
-
-    // TODO: valueless case
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MoveThrows> a(valueless);
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 TEST_CASE("flexible move construction", "[flexible]")
@@ -289,8 +294,11 @@ TEST_CASE("flexible move construction", "[flexible]")
         yk::rvariant<double, float, int> c = std::move(b);
         CHECK(c.index() == 2);
     }
-
-    // TODO: valueless case
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MoveThrows> a(std::move(valueless));
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 TEST_CASE("flexible copy assignment", "[flexible]")
@@ -322,6 +330,12 @@ TEST_CASE("flexible copy assignment", "[flexible]")
         CHECK_NOTHROW(b = a);
         CHECK(b.index() == 0);  // b's contained value is directly assigned from a's contained value, no alternative changed
     }
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MoveThrows> a;
+        a = valueless;
+        CHECK(a.valueless_by_exception());
+    }
 }
 
 TEST_CASE("flexible move assignment", "[flexible]")
@@ -352,6 +366,12 @@ TEST_CASE("flexible move assignment", "[flexible]")
         CHECK(b.index() == 0);
         CHECK_NOTHROW(b = std::move(a));
         CHECK(b.index() == 0);  // b's contained value is directly assigned from a's contained value, no alternative changed
+    }
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MoveThrows> a;
+        a = std::move(valueless);
+        CHECK(a.valueless_by_exception());
     }
 }
 
