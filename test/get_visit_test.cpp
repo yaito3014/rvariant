@@ -648,7 +648,23 @@ TEST_CASE("visit")
         CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
     }
 
-    // TODO: valueless case
+    {
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        auto const vis = [](auto&&) {};
+        CHECK_THROWS(yk::visit<void>(vis, valueless));
+        CHECK_THROWS(yk::visit(vis, valueless));
+        CHECK_THROWS(valueless.visit<void>(vis));
+        CHECK_THROWS(valueless.visit(vis));
+    }
+    {
+        yk::rvariant<int> never_valueless;
+        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        auto const vis = [](auto&&, auto&&, auto&&) {};
+        CHECK_THROWS(yk::visit<void>(vis, never_valueless, valueless, never_valueless));
+        CHECK_THROWS(yk::visit(vis, never_valueless, valueless, never_valueless));
+        CHECK_THROWS(yk::visit<void>(vis, valueless, never_valueless, valueless));
+        CHECK_THROWS(yk::visit(vis, valueless, never_valueless, valueless));
+    }
 }
 
 // Equivalent to the "visit" test case, except that `SI` is wrapped
@@ -690,8 +706,6 @@ TEST_CASE("visit", "[wrapper]")
         CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
         CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
     }
-
-    // TODO: valueless case
 }
 
 }
