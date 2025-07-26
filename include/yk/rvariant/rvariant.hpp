@@ -164,7 +164,7 @@ public:
         : storage_{} // valueless
     {}
 
-    [[nodiscard]] constexpr bool valueless_by_exception() const noexcept { return index_ == std::variant_npos; }
+    [[nodiscard]] constexpr bool valueless_by_exception() const noexcept { return index_ == detail::variant_npos<sizeof...(Ts)>; }
     [[nodiscard]] constexpr std::size_t index() const noexcept { return static_cast<std::size_t>(index_); }
 
     // internal; must be called only from the destructor of variant itself
@@ -686,7 +686,7 @@ public:
     {
         static_assert(std::conjunction_v<std::is_move_constructible<Ts>...>);
         static_assert(std::conjunction_v<std::is_swappable<Ts>...>);
-        constexpr bool all_nothrow_swappable = std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_swappable<Ts>...>;
+        [[maybe_unused]] static constexpr bool all_nothrow_swappable = std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_swappable<Ts>...>;
 
         if constexpr (std::conjunction_v<core::is_trivially_swappable<Ts>...>) {
             static_assert(core::is_trivially_swappable_v<decltype(storage())>);

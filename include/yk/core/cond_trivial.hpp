@@ -23,6 +23,7 @@ struct non_trivial_CC : Base
 
     constexpr non_trivial_CC(non_trivial_CC const& other)
         noexcept(noexcept(Base::_copy_construct(static_cast<Base const&>(other))))
+        : Base()
     {
         Base::_copy_construct(static_cast<Base const&>(other));
     }
