@@ -59,7 +59,7 @@ template<std::size_t I, auto... Ns>
 constexpr auto npack_indexing_v = npack_indexing<I, Ns...>::value;
 
 
-inline constexpr std::size_t find_npos = -1;
+inline constexpr std::size_t find_npos = static_cast<std::size_t>(-1);
 
 template<std::size_t I, class T, class... Ts>
 struct find_index_impl
