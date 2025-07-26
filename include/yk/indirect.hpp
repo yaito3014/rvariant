@@ -283,7 +283,7 @@ private:
     constexpr pointer reset(pointer p)
     {
         if (ptr_) {
-            std::allocator_traits<Allocator>::destroy(alloc_, ptr_);
+            std::allocator_traits<Allocator>::destroy(alloc_, std::to_address(ptr_));
             std::allocator_traits<Allocator>::deallocate(alloc_, ptr_, 1);
         }
         return ptr_ = p;
