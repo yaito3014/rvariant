@@ -22,7 +22,8 @@ public:
 
     template<class... Args>
     constexpr explicit scoped_allocation(Alloc const& a, std::in_place_t, Args&&... args)
-        : scoped_allocation(a)
+        : alloc_(a)
+        , ptr_(std::allocator_traits<Alloc>::allocate(alloc_, 1))
     {
         std::allocator_traits<Alloc>::construct(alloc_, get(), std::forward<Args>(args)...);
     }
@@ -38,11 +39,6 @@ public:
     [[nodiscard]] constexpr pointer release() noexcept { return std::exchange(ptr_, nullptr); }
 
 private:
-    constexpr explicit scoped_allocation(Alloc const& a)
-        : alloc_(a)
-        , ptr_(std::allocator_traits<Alloc>::allocate(alloc_, 1))
-    {}
-
     YK_NO_UNIQUE_ADDRESS Alloc alloc_;
     pointer ptr_;
 };
