@@ -486,8 +486,8 @@ struct flat_index<std::index_sequence<Ns...>, std::integer_sequence<bool, NeverV
     get(RuntimeIndex... index) noexcept
     {
         static_assert(sizeof...(RuntimeIndex) == sizeof...(Ns));
-        assert(((valueless_bias<NeverValueless>(index) < valueless_bias<NeverValueless>(Ns)) && ...));
-        return flat_index::get_impl(strides, index...);
+        assert(((detail::valueless_bias<NeverValueless>(index) < detail::valueless_bias<NeverValueless>(Ns)) && ...));
+        return flat_index::get_impl(flat_index::strides, index...);
     }
 
 private:
@@ -495,31 +495,31 @@ private:
     [[nodiscard]] static constexpr std::size_t
     get_impl(std::index_sequence<Stride...>, RuntimeIndex... index) noexcept
     {
-        return ((Stride * valueless_bias<NeverValueless>(index)) + ... + 0);
+        return ((Stride * detail::valueless_bias<NeverValueless>(index)) + ... + 0);
     }
 
-    template<std::size_t TheI, std::size_t i, std::size_t... i_rest>
-    [[nodiscard]] static consteval std::size_t
-    calc_single_stride(
-        std::index_sequence<i, i_rest...>,
-        std::size_t const ofs = 1
-    ) noexcept
-    {
-        static constexpr std::size_t Max = sizeof...(Ns) - 1;
-        constexpr std::size_t factor = (Max - i) == TheI ? 1 : 0;
+    static constexpr std::size_t Ns_i_max = sizeof...(Ns) - 1;
 
-        if constexpr (sizeof...(i_rest) > 0) {
-            return ofs * factor + calc_single_stride<TheI>(
-                std::index_sequence<i_rest...>{},
-                ofs * core::npack_indexing_v<Max - i, valueless_bias<NeverValueless>(Ns)...>
-            );
+    template<std::size_t Ns_i, std::size_t i, std::size_t... i_rest, std::size_t... biased_Ns>
+    [[nodiscard]] static consteval std::size_t
+    calc_single_stride(std::index_sequence<i, i_rest...>, std::index_sequence<biased_Ns...>, std::size_t stride = 1) noexcept
+    {
+        if constexpr (sizeof...(i_rest) == 0 || (Ns_i_max - i) == Ns_i) {
+            return stride;
         } else {
-            return ofs * factor;
+            return flat_index::calc_single_stride<Ns_i>(
+                std::index_sequence<i_rest...>{},
+                std::index_sequence<biased_Ns...>{},
+                stride * core::npack_indexing_v<Ns_i_max - i, biased_Ns...>
+            );
         }
     }
 
-    static constexpr auto strides = []<std::size_t... Is>(std::index_sequence<Is...>) static consteval {
-        return std::index_sequence<calc_single_stride<Is>(std::make_index_sequence<sizeof...(Ns)>{})...>{};
+    static constexpr auto strides = []<std::size_t... Ns_i>(std::index_sequence<Ns_i...>) static consteval {
+        return std::index_sequence<flat_index::calc_single_stride<Ns_i>(
+            std::make_index_sequence<sizeof...(Ns)>{},
+            std::index_sequence<detail::valueless_bias<NeverValueless>(Ns)...>{}
+        )...>{};
     }(std::make_index_sequence<sizeof...(Ns)>{});
 };
 
