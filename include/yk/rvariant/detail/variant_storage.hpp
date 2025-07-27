@@ -436,7 +436,7 @@ struct multi_visitor<R, Visitor, std::index_sequence<Is...>, Storage...>
 {
     static_assert(sizeof...(Is) == sizeof...(Storage));
 
-    static constexpr R apply([[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
+    static constexpr R apply([[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     {
         if constexpr (((!std::remove_cvref_t<Storage>::never_valueless && Is == 0) || ...)) {
             throw std::bad_variant_access{};
@@ -455,15 +455,15 @@ struct multi_visitor<R, Visitor, std::index_sequence<Is...>, Storage...>
 
 // --------------------------------------------------
 
-template<class R, class Visitor, class Storage, class OverloadSeq>
+template<class R, class Visitor, class OverloadSeq, class... Storage>
 struct visit_table;
 
-template<class R, class Visitor, class... Storage, class... OverloadSeq>
+template<class R, class Visitor, class... OverloadSeq, class... Storage>
 struct visit_table<
     R,
     Visitor,
-    core::type_list<Storage...>,
-    core::type_list<OverloadSeq...>
+    core::type_list<OverloadSeq...>,
+    Storage...
 >
 {
     using function_type = R(*)(Visitor&&, Storage&&...);
@@ -475,11 +475,11 @@ struct visit_table<
 
 // --------------------------------------------------
 
-template<class Ns, class NeverValuelessMap>
+template<class Ns, bool... NeverValueless>
 struct flat_index;
 
 template<std::size_t... Ns, bool... NeverValueless>
-struct flat_index<std::index_sequence<Ns...>, std::integer_sequence<bool, NeverValueless...>>
+struct flat_index<std::index_sequence<Ns...>, NeverValueless...>
 {
     template<class... RuntimeIndex>
     [[nodiscard]] static constexpr std::size_t
@@ -525,14 +525,14 @@ private:
 
 // --------------------------------------------------
 
-template<class R, class V, class n>
+template<class R, class V, std::size_t... n>
 struct visit_impl;
 
 template<class R, class... V, std::size_t... n>
 struct visit_impl<
     R,
     core::type_list<V...>,
-    std::index_sequence<n...>
+    n...
 >
 {
     static_assert(sizeof...(V) == sizeof...(n));
@@ -543,18 +543,18 @@ struct visit_impl<
         using VisitTable = visit_table<
             R,
             Visitor,
-            core::type_list<forward_storage_t<as_variant_t<Variants>>...>, // Storage...
             core::seq_cartesian_product< // OverloadSeq
                 std::index_sequence,
                 std::make_index_sequence<
                     valueless_bias<std::remove_cvref_t<as_variant_t<Variants>>::never_valueless>(n)
                 >...
-            >
+            >,
+            forward_storage_t<as_variant_t<Variants>>... // Storage...
         >;
 
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
-            std::integer_sequence<bool, std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...>
+            std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...
         >::get(vars.index()...);
 
         constexpr auto const& table = VisitTable::table;
@@ -591,7 +591,7 @@ visit(Visitor&& vis, Variants&&... vars)
     return detail::visit_impl<
         T0R,
         core::type_list<detail::as_variant_t<Variants>...>,
-        std::index_sequence<variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...>
+        variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...
     >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
 }
 
@@ -619,7 +619,7 @@ R visit(Visitor&& vis, Variants&&... vars)
     return detail::visit_impl<
         R,
         core::type_list<detail::as_variant_t<Variants>...>,
-        std::index_sequence<variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...>
+        variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...
     >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...);
 }
 

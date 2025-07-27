@@ -293,117 +293,117 @@ TEST_CASE("flat_index", "[detail]")
     using yk::detail::flat_index;
     using std::index_sequence;
     {
-        STATIC_REQUIRE(flat_index<index_sequence<1>, never_valueless_seq<true>>::get(0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<1>, true>::get(0) == 0);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2>, never_valueless_seq<true>>::get(0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2>, never_valueless_seq<true>>::get(1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2>, true>::get(0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2>, true>::get(1) == 1);
 
-        STATIC_REQUIRE(flat_index<index_sequence<1, 1>, never_valueless_seq<true, true>>::get(0, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 1>, true, true>::get(0, 0) == 0);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, never_valueless_seq<true, true>>::get(0, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, never_valueless_seq<true, true>>::get(1, 0) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, true, true>::get(0, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, true, true>::get(1, 0) == 1);
 
-        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, never_valueless_seq<true, true>>::get(0, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, never_valueless_seq<true, true>>::get(0, 1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, true, true>::get(0, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, true, true>::get(0, 1) == 1);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<true, true>>::get(0, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<true, true>>::get(0, 1) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<true, true>>::get(1, 0) == 2);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<true, true>>::get(1, 1) == 3);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, true, true>::get(0, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, true, true>::get(0, 1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, true, true>::get(1, 0) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, true, true>::get(1, 1) == 3);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<true, true>>::get(0, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<true, true>>::get(0, 1) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<true, true>>::get(0, 2) == 2);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<true, true>>::get(1, 0) == 3);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<true, true>>::get(1, 1) == 4);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<true, true>>::get(1, 2) == 5);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, true, true>::get(0, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, true, true>::get(0, 1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, true, true>::get(0, 2) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, true, true>::get(1, 0) == 3);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, true, true>::get(1, 1) == 4);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, true, true>::get(1, 2) == 5);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 0, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 0, 1) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 0, 2) == 2);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 0, 3) == 3);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 1, 0) == 4);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 1, 1) == 5);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 1, 2) == 6);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 1, 3) == 7);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 2, 0) == 8);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 2, 1) == 9);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 2, 2) == 10);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(0, 2, 3) == 11);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 0, 0) == 12);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 0, 1) == 13);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 0, 2) == 14);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 0, 3) == 15);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 1, 0) == 16);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 1, 1) == 17);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 1, 2) == 18);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 1, 3) == 19);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 2, 0) == 20);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 2, 1) == 21);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 2, 2) == 22);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, never_valueless_seq<true, true, true>>::get(1, 2, 3) == 23);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 0, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 0, 1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 0, 2) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 0, 3) == 3);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 1, 0) == 4);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 1, 1) == 5);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 1, 2) == 6);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 1, 3) == 7);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 2, 0) == 8);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 2, 1) == 9);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 2, 2) == 10);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(0, 2, 3) == 11);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 0, 0) == 12);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 0, 1) == 13);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 0, 2) == 14);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 0, 3) == 15);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 1, 0) == 16);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 1, 1) == 17);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 1, 2) == 18);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 1, 3) == 19);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 2, 0) == 20);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 2, 1) == 21);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 2, 2) == 22);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3, 4>, true, true, true>::get(1, 2, 3) == 23);
     }
     {
-        STATIC_REQUIRE(flat_index<index_sequence<1>, never_valueless_seq<false>>::get(-1) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<1>, never_valueless_seq<false>>::get( 0) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<1>, false>::get(-1) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<1>, false>::get( 0) == 1);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2>, never_valueless_seq<false>>::get(-1) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2>, never_valueless_seq<false>>::get( 0) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2>, never_valueless_seq<false>>::get( 1) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2>, false>::get(-1) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2>, false>::get( 0) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2>, false>::get( 1) == 2);
 
-        STATIC_REQUIRE(flat_index<index_sequence<1, 1>, never_valueless_seq<false, true>>::get(-1, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<1, 1>, never_valueless_seq<false, true>>::get( 0, 0) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 1>, false, true>::get(-1, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 1>, false, true>::get( 0, 0) == 1);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, never_valueless_seq<false, true>>::get(-1, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, never_valueless_seq<false, true>>::get( 0, 0) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, never_valueless_seq<false, true>>::get( 1, 0) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, false, true>::get(-1, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, false, true>::get( 0, 0) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 1>, false, true>::get( 1, 0) == 2);
 
-        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, never_valueless_seq<false, true>>::get(-1, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, never_valueless_seq<false, true>>::get(-1, 1) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, never_valueless_seq<false, true>>::get( 0, 0) == 2);
-        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, never_valueless_seq<false, true>>::get( 0, 1) == 3);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, false, true>::get(-1, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, false, true>::get(-1, 1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, false, true>::get( 0, 0) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<1, 2>, false, true>::get( 0, 1) == 3);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<false, true>>::get(-1,  0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<false, true>>::get(-1,  1) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<false, true>>::get( 0,  0) == 2);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<false, true>>::get( 0,  1) == 3);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<false, true>>::get( 1,  0) == 4);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, never_valueless_seq<false, true>>::get( 1,  1) == 5);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, false, true>::get(-1,  0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, false, true>::get(-1,  1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, false, true>::get( 0,  0) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, false, true>::get( 0,  1) == 3);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, false, true>::get( 1,  0) == 4);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 2>, false, true>::get( 1,  1) == 5);
 
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get(-1, 0) == 0);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get(-1, 1) == 1);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get(-1, 2) == 2);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get( 0, 0) == 3);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get( 0, 1) == 4);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get( 0, 2) == 5);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get( 1, 0) == 6);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get( 1, 1) == 7);
-        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, never_valueless_seq<false, true>>::get( 1, 2) == 8);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get(-1, 0) == 0);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get(-1, 1) == 1);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get(-1, 2) == 2);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get( 0, 0) == 3);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get( 0, 1) == 4);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get( 0, 2) == 5);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get( 1, 0) == 6);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get( 1, 1) == 7);
+        STATIC_REQUIRE(flat_index<index_sequence<2, 3>, false, true>::get( 1, 2) == 8);
 
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get(-1, 0, -1) ==  0);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get(-1, 0,  0) ==  1);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get(-1, 0,  1) ==  2);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get(-1, 1, -1) ==  3);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get(-1, 1,  0) ==  4);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get(-1, 1,  1) ==  5);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 0, 0, -1) ==  6);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 0, 0,  0) ==  7);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 0, 0,  1) ==  8);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 0, 1, -1) ==  9);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 0, 1,  0) == 10);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 0, 1,  1) == 11);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 1, 0, -1) == 12);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 1, 0,  0) == 13);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 1, 0,  1) == 14);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 1, 1, -1) == 15);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 1, 1,  0) == 16);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 1, 1,  1) == 17);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 2, 0, -1) == 18);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 2, 0,  0) == 19);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 2, 0,  1) == 20);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 2, 1, -1) == 21);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 2, 1,  0) == 22);
-        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, never_valueless_seq<false, true, false>>::get( 2, 1,  1) == 23);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get(-1, 0, -1) ==  0);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get(-1, 0,  0) ==  1);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get(-1, 0,  1) ==  2);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get(-1, 1, -1) ==  3);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get(-1, 1,  0) ==  4);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get(-1, 1,  1) ==  5);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 0, 0, -1) ==  6);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 0, 0,  0) ==  7);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 0, 0,  1) ==  8);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 0, 1, -1) ==  9);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 0, 1,  0) == 10);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 0, 1,  1) == 11);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 1, 0, -1) == 12);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 1, 0,  0) == 13);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 1, 0,  1) == 14);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 1, 1, -1) == 15);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 1, 1,  0) == 16);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 1, 1,  1) == 17);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 2, 0, -1) == 18);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 2, 0,  0) == 19);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 2, 0,  1) == 20);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 2, 1, -1) == 21);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 2, 1,  0) == 22);
+        STATIC_REQUIRE(flat_index<index_sequence<3, 2, 2>, false, true, false>::get( 2, 1,  1) == 23);
     }
 }
 
