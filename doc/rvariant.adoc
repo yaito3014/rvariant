@@ -554,13 +554,9 @@ constexpr rvariant::rvariant() noexcept({see-below});pass:quotes[[.candidate\]#/
 constexpr rvariant::rvariant(rvariant const& w);pass:quotes[[.candidate\]#// 2#]
 constexpr rvariant::rvariant(rvariant&& w) noexcept({see-below});pass:quotes[[.candidate\]#// 3#]
 
-// Generic constructor (non-wrapped pass:quotes[`T`])
+// Generic constructor
 template<class T>
 constexpr rvariant(T&& t) noexcept({see-below});pass:quotes[[.candidate\]#// 4#]
-
-// Generic constructor (pass:quotes,attributes[`{recursive_wrapper}&lt;T, A&gt;`])
-template<class T>
-constexpr rvariant(T&& t) noexcept({see-below}); // TODO pass:quotes[[.candidate\]#// 4#]
 
 
 template<class T, class... Args>
@@ -591,12 +587,6 @@ constexpr rvariant(rvariant<Us...>&& w) noexcept({see-below});pass:quotes[[.cand
 include::_std-variant-proxy.adoc[]
 
 * [.candidate]#4)# _Generic constructor_. Equivalent to the `std::variant` counterpart, ^https://eel.is/c++draft/variant.ctor[[spec\]]^ except:
-+
-*_Constraints:_* In addition to the original specification,
-+
-[none]
-** -- [.underline]#`std::remove_cvref_t<T>` is not a specialization of `{recursive_wrapper}`.#
-
 +
 *_Postconditions:_* `holds_alternative[.underline]##<{unwrap_recursive_t}<T~_j_~>>##(*this)` is `true`.
 
@@ -700,13 +690,9 @@ include::_std-variant-proxy.adoc[]
 constexpr rvariant& operator=(rvariant const& rhs);pass:quotes[[.candidate\]#// 1#]
 constexpr rvariant& operator=(rvariant&& rhs) noexcept({see-below});pass:quotes[[.candidate\]#// 2#]
 
-// Generic assignment operator (non-wrapped pass:quotes[`T`])
+// Generic assignment operator
 template<class T>
 constexpr rvariant& operator=(T&& t) noexcept({see-below});pass:quotes[[.candidate\]#// 3#]
-
-// Generic assignment operator (pass:quotes,attributes[`{recursive_wrapper}&lt;T, A&gt;`])
-template<class T>
-constexpr rvariant& operator=(T&& t) noexcept({see-below}); // TODO pass:quotes[[.candidate\]#// 3#]
 
 // Flexible copy assignment operator
 template<class... Us>
@@ -723,12 +709,6 @@ constexpr rvariant& operator=(rvariant<Us...>&& rhs) noexcept({see-below});pass:
 include::_std-variant-proxy.adoc[]
 
 * [.candidate]#3)# _Generic assignment operator_. Equivalent to the `std::variant` counterpart, ^https://eel.is/c++draft/variant.assign[[spec\]]^ except:
-+
-*_Constraints:_* In addition to the original specification,
-+
-[none]
-** -- [.underline]#`std::remove_cvref_t<T>` is not a specialization of `{recursive_wrapper}`.#
-
 +
 *_Postconditions:_* `holds_alternative[.underline]##<{unwrap_recursive_t}<T~_j_~>>##(*this)` is `true`, with `T~_j_~` selected by the imaginary function overload resolution described above.
 

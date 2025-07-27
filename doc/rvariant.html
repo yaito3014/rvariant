@@ -908,13 +908,9 @@ See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</
 constexpr rvariant::rvariant(rvariant const&amp; w);<span class="candidate">// 2</span>
 constexpr rvariant::rvariant(rvariant&amp;&amp; w) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 3</span>
 
-// Generic constructor (non-wrapped <code>T</code>)
+// Generic constructor
 template&lt;class T&gt;
 constexpr rvariant(T&amp;&amp; t) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 4</span>
-
-// Generic constructor (<code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T, A&gt;</code>)
-template&lt;class T&gt;
-constexpr rvariant(T&amp;&amp; t) noexcept(<span class="see-below">see below</span>); // TODO <span class="candidate">// 4</span>
 
 
 template&lt;class T, class... Args&gt;
@@ -947,16 +943,6 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </li>
 <li>
 <p><span class="candidate">4)</span> <em>Generic constructor</em>. Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.ctor">[spec]</a></sup> except:</p>
-<div class="paragraph">
-<p><strong><em>Constraints:</em></strong> In addition to the original specification,</p>
-</div>
-<div class="ulist none">
-<ul class="none">
-<li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::remove_cvref_t&lt;T&gt;</code> is not a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
-</li>
-</ul>
-</div>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> <code>holds_alternative<span class="underline">&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>j</em></sub>&gt;&gt;</span>(*this)</code> is <code>true</code>.</p>
 </div>
@@ -1118,13 +1104,9 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr rvariant&amp; operator=(rvariant const&amp; rhs);<span class="candidate">// 1</span>
 constexpr rvariant&amp; operator=(rvariant&amp;&amp; rhs) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 2</span>
 
-// Generic assignment operator (non-wrapped <code>T</code>)
+// Generic assignment operator
 template&lt;class T&gt;
 constexpr rvariant&amp; operator=(T&amp;&amp; t) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 3</span>
-
-// Generic assignment operator (<code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T, A&gt;</code>)
-template&lt;class T&gt;
-constexpr rvariant&amp; operator=(T&amp;&amp; t) noexcept(<span class="see-below">see below</span>); // TODO <span class="candidate">// 3</span>
 
 // Flexible copy assignment operator
 template&lt;class... Us&gt;
@@ -1143,16 +1125,6 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </li>
 <li>
 <p><span class="candidate">3)</span> <em>Generic assignment operator</em>. Equivalent to the <code>std::variant</code> counterpart, <sup><a href="https://eel.is/c++draft/variant.assign">[spec]</a></sup> except:</p>
-<div class="paragraph">
-<p><strong><em>Constraints:</em></strong> In addition to the original specification,</p>
-</div>
-<div class="ulist none">
-<ul class="none">
-<li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::remove_cvref_t&lt;T&gt;</code> is not a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
-</li>
-</ul>
-</div>
 <div class="paragraph">
 <p><strong><em>Postconditions:</em></strong> <code>holds_alternative<span class="underline">&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>j</em></sub>&gt;&gt;</span>(*this)</code> is <code>true</code>, with <code>T<sub><em>j</em></sub></code> selected by the imaginary function overload resolution described above.</p>
 </div>
