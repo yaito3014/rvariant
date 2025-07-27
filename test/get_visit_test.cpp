@@ -612,18 +612,18 @@ TEST_CASE("visit")
             [](SI const&) { return 0; },
             [](SD const&) { return 1; },
         };
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SI>}) == 0);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SD>}) == 1);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}) == 0);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}) == 1);
 
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}) == 1);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}) == 1);
 
-        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SI>}.visit<int>(vis) == 0);
-        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SD>}.visit<int>(vis) == 1);
-        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SI>}.visit(vis) == 0);
-        CHECK(yk::rvariant<SI, SD>{std::in_place_type<SD>}.visit(vis) == 1);
+        CHECK(yk::rvariant<SI, SD>{SI{}}.visit<int>(vis) == 0);
+        CHECK(yk::rvariant<SI, SD>{SD{}}.visit<int>(vis) == 1);
+        CHECK(yk::rvariant<SI, SD>{SI{}}.visit(vis) == 0);
+        CHECK(yk::rvariant<SI, SD>{SD{}}.visit(vis) == 1);
     }
     {
         auto const vis = yk::overloaded{
@@ -632,19 +632,19 @@ TEST_CASE("visit")
             [](SD const&, SC const&) { return 2; },
             [](SD const&, SW const&) { return 3; },
         };
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SI>}, std::variant<SC, SW>{std::in_place_type<SC>}) == 0);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SI>}, std::variant<SC, SW>{std::in_place_type<SW>}) == 1);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SD>}, std::variant<SC, SW>{std::in_place_type<SC>}) == 2);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{std::in_place_type<SD>}, std::variant<SC, SW>{std::in_place_type<SW>}) == 3);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}, std::variant<SC, SW>{SC{}}) == 0);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}, std::variant<SC, SW>{SW{}}) == 1);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}, std::variant<SC, SW>{SC{}}) == 2);
+        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}, std::variant<SC, SW>{SW{}}) == 3);
 
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
     }
 
     {
@@ -679,15 +679,15 @@ TEST_CASE("visit", "[wrapper]")
             [](SI /* unwrapped */ const&) { return 0; },
             [](SD const&) { return 1; },
         };
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}) == 1);
+        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}) == 1);
 
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}.visit<int>(vis) == 0);
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}.visit<int>(vis) == 1);
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}.visit(vis) == 0);
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}.visit(vis) == 1);
+        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}.visit<int>(vis) == 0);
+        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}.visit<int>(vis) == 1);
+        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}.visit(vis) == 0);
+        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}.visit(vis) == 1);
     }
     {
         auto const vis = yk::overloaded{
@@ -696,14 +696,14 @@ TEST_CASE("visit", "[wrapper]")
             [](SD const&, SC const&) { return 2; },
             [](SD const&, SW const&) { return 3; },
         };
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SI>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SC>}) == 2);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{std::in_place_type<SD>}, yk::rvariant<SC, SW>{std::in_place_type<SW>}) == 3);
+        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
     }
 }
 
