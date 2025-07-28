@@ -1197,4 +1197,4 @@ operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
 
 }  // namespace yk
 
-#endif  // YK_RVARIANT_HPP
+#endif

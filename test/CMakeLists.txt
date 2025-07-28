@@ -24,6 +24,7 @@ add_executable(
     flexible_test.cpp
     recursive_wrapper_test.cpp
     truly_recursive_test.cpp
+    io_test.cpp
 )
 
 target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp)
@@ -52,7 +53,7 @@ if(MSVC)
     target_compile_options(
         yk_rvariant_test
             PUBLIC
-                /MP /utf-8 /W3 /analyze /analyze:external-
+                /MP /utf-8 /W4 /analyze /analyze:external-
     )
 else()
     target_compile_options(

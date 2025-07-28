@@ -144,6 +144,34 @@ struct variadic_union<false, T, Ts...>
     };
 };
 
+template<class Variant>
+struct forward_storage_t_impl
+{
+    static_assert(
+        core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, rvariant>,
+        "`forward_storage` will only accept types which are exactly `rvariant`. Maybe you forgot `as_rvariant_t`?"
+    );
+    using type = decltype(std::declval<Variant>().storage());
+};
+
+template<class Variant>
+using forward_storage_t = typename forward_storage_t_impl<Variant>::type;
+
+template<class Variant>
+[[nodiscard]] constexpr forward_storage_t<Variant>&&
+forward_storage(std::remove_reference_t<Variant>& v YK_LIFETIMEBOUND) noexcept
+{
+    return std::forward<Variant>(v).storage();
+}
+
+template<class Variant>
+[[nodiscard]] constexpr forward_storage_t<Variant>&&
+forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+{
+    return std::forward<Variant>(v).storage();
+}
+
+
 // TODO: apply same logic to other visits with >= O(n^2) branch
 inline constexpr std::size_t visit_instantiation_limit = 1024;
 
@@ -244,7 +272,7 @@ struct raw_visit_dispatch_table;
 
 template<class Visitor, class Storage>
 using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visitor&&, Storage&&)
-noexcept(raw_visit_noexcept<Visitor, Storage>);
+    noexcept(raw_visit_noexcept<Visitor, Storage>);
 
 template<class Visitor, class Storage, std::size_t... Is>
 struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
@@ -257,6 +285,16 @@ struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
         &raw_visit_dispatch<Is, Visitor, Storage>...
     };
 };
+
+template<class Variant, class Visitor>
+constexpr raw_visit_return_type<Visitor, forward_storage_t<Variant>>
+raw_visit(Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
+    noexcept(raw_visit_noexcept<Visitor, forward_storage_t<Variant>>)
+{
+    constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, forward_storage_t<Variant>>::value;
+    auto&& f = table[v.index() + 1];
+    return std::invoke(f, std::forward<Visitor>(vis), forward_storage<Variant>(v));
+}
 
 // --------------------------------------------------
 // --------------------------------------------------
@@ -284,34 +322,6 @@ template<class T>
 using as_variant_t = decltype(as_variant_impl::as_variant(std::declval<T>()));
 
 // --------------------------------------------------
-
-template<class Variant>
-struct forward_storage_t_impl
-{
-    static_assert(
-        core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, rvariant>,
-        "`forward_storage` will only accept types which are exactly `rvariant`. Maybe you forgot `as_rvariant_t`?"
-    );
-    using type = decltype(std::declval<Variant>().storage());
-};
-
-template<class Variant>
-using forward_storage_t = typename forward_storage_t_impl<Variant>::type;
-
-template<class Variant>
-[[nodiscard]] constexpr forward_storage_t<Variant>&&
-forward_storage(std::remove_reference_t<Variant>& v YK_LIFETIMEBOUND) noexcept
-{
-    return std::forward<Variant>(v).storage();
-}
-
-template<class Variant>
-[[nodiscard]] constexpr forward_storage_t<Variant>&&
-forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-{
-    return std::forward<Variant>(v).storage();
-}
-
 
 // `std::invoke_result_t` MUST NOT be used here due to its side effects:
 // <https://eel.is/c++draft/meta.trans.other#tab:meta.trans.other-row-11-column-2-note-2>
