@@ -10,10 +10,9 @@
 
 namespace unit_test {
 
-namespace MoveThrows_ADL_guard {
+namespace MC_Thrower_ADL_guard {
 
-// TODO: rename this to `MC_Thrower`
-struct MoveThrows
+struct MC_Thrower
 {
     struct non_throwing_t {};
     struct throwing_t {};
@@ -23,36 +22,36 @@ struct MoveThrows
     static constexpr throwing_t throwing{};
     static constexpr potentially_throwing_t potentially_throwing{};
 
-    MoveThrows() = default;
-    MoveThrows(MoveThrows const&) = default;
-    MoveThrows(MoveThrows&&) noexcept(false) { throw std::exception{}; }
-    MoveThrows& operator=(MoveThrows const&) = default;
-    MoveThrows& operator=(MoveThrows&&) = default;
+    MC_Thrower() = default;
+    MC_Thrower(MC_Thrower const&) = default;
+    MC_Thrower(MC_Thrower&&) noexcept(false) { throw std::exception{}; }
+    MC_Thrower& operator=(MC_Thrower const&) = default;
+    MC_Thrower& operator=(MC_Thrower&&) = default;
 
-    MoveThrows(non_throwing_t) noexcept {}
-    MoveThrows(throwing_t) noexcept(false) { throw std::exception{}; }
-    MoveThrows(potentially_throwing_t) noexcept(false) {}
+    MC_Thrower(non_throwing_t) noexcept {}
+    MC_Thrower(throwing_t) noexcept(false) { throw std::exception{}; }
+    MC_Thrower(potentially_throwing_t) noexcept(false) {}
 
-    friend bool operator==(MoveThrows const&, MoveThrows const&) noexcept { return true; }
-    friend auto operator<=>(MoveThrows const&, MoveThrows const&) noexcept { return std::strong_ordering::equal; }
+    friend bool operator==(MC_Thrower const&, MC_Thrower const&) noexcept { return true; }
+    friend auto operator<=>(MC_Thrower const&, MC_Thrower const&) noexcept { return std::strong_ordering::equal; }
 };
 
-std::ostream& operator<<(std::ostream&, MoveThrows const&);
+std::ostream& operator<<(std::ostream&, MC_Thrower const&);
 
-} // MoveThrows_ADL_guard
+} // MC_Thrower_ADL_guard
 
-using MoveThrows_ADL_guard::MoveThrows;
+using MC_Thrower_ADL_guard::MC_Thrower;
 
 template <class... Ts, class... Args>
-[[nodiscard]] constexpr yk::rvariant<Ts..., MoveThrows> make_valueless(Args&&... args)
+[[nodiscard]] constexpr yk::rvariant<Ts..., MC_Thrower> make_valueless(Args&&... args)
 {
-    using V = yk::rvariant<Ts..., MoveThrows>;
+    using V = yk::rvariant<Ts..., MC_Thrower>;
 
     static_assert(std::is_nothrow_constructible_v<V, Args...>);
     V a(std::forward<Args>(args)...);
 
     try {
-        V b(std::in_place_type<MoveThrows>);
+        V b(std::in_place_type<MC_Thrower>);
         a = std::move(b);
     } catch(...) {  // NOLINT(bugprone-empty-catch)
     }

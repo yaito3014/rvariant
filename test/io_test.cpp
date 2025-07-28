@@ -51,14 +51,14 @@ struct NonStreamable {};
 
 namespace unit_test {
 
-namespace MoveThrows_ADL_guard {
+namespace MC_Thrower_ADL_guard {
 
-std::ostream& operator<<(std::ostream& os, MoveThrows const&)
+std::ostream& operator<<(std::ostream& os, MC_Thrower const&)
 {
-    return os << "MoveThrows";
+    return os << "MC_Thrower";
 }
 
-} // MoveThrows_ADL_guard
+} // MC_Thrower_ADL_guard
 
 
 namespace {
@@ -208,14 +208,14 @@ TEST_CASE("rvariant.io, exceptions")
 
     // [valueless] good at first + no exceptions
     {
-        yk::rvariant<int, MoveThrows> v = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> v = make_valueless<int>();
         std::ostringstream oss; // good at first
         REQUIRE_THROWS_AS(oss << v, std::bad_variant_access); // valueless always throws
         CHECK(oss.str().empty());
     }
     // [valueless] bad at first + no exceptions
     {
-        yk::rvariant<int, MoveThrows> v = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> v = make_valueless<int>();
         std::ostringstream oss;
         oss.setstate(std::ios_base::badbit); // BAD at first
         REQUIRE_NOTHROW(oss << v); // sentry should be engaged
@@ -225,7 +225,7 @@ TEST_CASE("rvariant.io, exceptions")
 
     // [valueless] good at first + exceptions
     {
-        yk::rvariant<int, MoveThrows> v = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> v = make_valueless<int>();
         std::ostringstream oss; // good at first
         oss.exceptions(std::ios_base::badbit);
         REQUIRE_THROWS_AS(oss << v, std::bad_variant_access); // valueless always throws
@@ -233,7 +233,7 @@ TEST_CASE("rvariant.io, exceptions")
     }
     // [valueless] bad at first + exceptions
     {
-        yk::rvariant<int, MoveThrows> v = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> v = make_valueless<int>();
         std::ostringstream oss;
         oss.setstate(std::ios_base::badbit); // BAD at first
         try {
@@ -248,14 +248,14 @@ TEST_CASE("rvariant.io, exceptions")
 
     // [nested valueless] good at first + no exceptions
     {
-        yk::rvariant<int, yk::rvariant<int, MoveThrows>> v = make_valueless<int>();
+        yk::rvariant<int, yk::rvariant<int, MC_Thrower>> v = make_valueless<int>();
         std::ostringstream oss; // good at first
         REQUIRE_THROWS_AS(oss << v, std::bad_variant_access); // valueless always throws
         CHECK(oss.str().empty());
     }
     // [nested valueless] bad at first + no exceptions
     {
-        yk::rvariant<int, yk::rvariant<int, MoveThrows>> v = make_valueless<int>();
+        yk::rvariant<int, yk::rvariant<int, MC_Thrower>> v = make_valueless<int>();
         std::ostringstream oss;
         oss.setstate(std::ios_base::badbit); // BAD at first
         REQUIRE_NOTHROW(oss << v);
@@ -265,7 +265,7 @@ TEST_CASE("rvariant.io, exceptions")
 
     // [nested valueless] good at first + exceptions
     {
-        yk::rvariant<int, yk::rvariant<int, MoveThrows>> v = make_valueless<int>();
+        yk::rvariant<int, yk::rvariant<int, MC_Thrower>> v = make_valueless<int>();
         std::ostringstream oss; // good at first
         oss.exceptions(std::ios_base::badbit);
         REQUIRE_THROWS_AS(oss << v, std::bad_variant_access); // valueless always throws
@@ -273,7 +273,7 @@ TEST_CASE("rvariant.io, exceptions")
     }
     // [nested valueless] bad at first + exceptions
     {
-        yk::rvariant<int, yk::rvariant<int, MoveThrows>> v = make_valueless<int>();
+        yk::rvariant<int, yk::rvariant<int, MC_Thrower>> v = make_valueless<int>();
         std::ostringstream oss;
         oss.setstate(std::ios_base::badbit); // BAD at first
         try {

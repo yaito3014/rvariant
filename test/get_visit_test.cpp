@@ -45,9 +45,9 @@ TEST_CASE("get")
         REQUIRE_THROWS(yk::get<float>(var));
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         REQUIRE_THROWS(yk::get<int>(valueless));
-        REQUIRE_THROWS(yk::get<MoveThrows>(valueless));
+        REQUIRE_THROWS(yk::get<MC_Thrower>(valueless));
     }
 }
 
@@ -101,11 +101,11 @@ TEST_CASE("get_if")
         REQUIRE(yk::get<float>(&std::as_const(var)) == nullptr);
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         REQUIRE(yk::get_if<0>(&valueless) == nullptr);
         REQUIRE(yk::get_if<1>(&valueless) == nullptr);
         REQUIRE(yk::get_if<int>(&valueless) == nullptr);
-        REQUIRE(yk::get_if<MoveThrows>(&valueless) == nullptr);
+        REQUIRE(yk::get_if<MC_Thrower>(&valueless) == nullptr);
     }
 }
 
@@ -648,7 +648,7 @@ TEST_CASE("visit")
     }
 
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         auto const vis = [](auto&&) {};
         CHECK_THROWS(yk::visit<void>(vis, valueless));
         CHECK_THROWS(yk::visit(vis, valueless));
@@ -657,7 +657,7 @@ TEST_CASE("visit")
     }
     {
         yk::rvariant<int> never_valueless;
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         auto const vis = [](auto&&, auto&&, auto&&) {};
         CHECK_THROWS(yk::visit<void>(vis, never_valueless, valueless, never_valueless));
         CHECK_THROWS(yk::visit(vis, never_valueless, valueless, never_valueless));

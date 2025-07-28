@@ -270,8 +270,8 @@ TEST_CASE("flexible copy construction", "[flexible]")
         CHECK(c.index() == 2);
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, float, MoveThrows> a(valueless);
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MC_Thrower> a(valueless);
         CHECK(a.valueless_by_exception());
     }
 }
@@ -295,8 +295,8 @@ TEST_CASE("flexible move construction", "[flexible]")
         CHECK(c.index() == 2);
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, float, MoveThrows> a(std::move(valueless));
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MC_Thrower> a(std::move(valueless));
         CHECK(a.valueless_by_exception());
     }
 }
@@ -331,8 +331,8 @@ TEST_CASE("flexible copy assignment", "[flexible]")
         CHECK(b.index() == 0);  // b's contained value is directly assigned from a's contained value, no alternative changed
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, float, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MC_Thrower> a;
         a = valueless;
         CHECK(a.valueless_by_exception());
     }
@@ -368,8 +368,8 @@ TEST_CASE("flexible move assignment", "[flexible]")
         CHECK(b.index() == 0);  // b's contained value is directly assigned from a's contained value, no alternative changed
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, float, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, float, MC_Thrower> a;
         a = std::move(valueless);
         CHECK(a.valueless_by_exception());
     }
@@ -413,8 +413,8 @@ TEST_CASE("subset", "[flexible]")
         REQUIRE_THROWS(a.subset<float>());
     }
     {
-        yk::rvariant<int, float, MoveThrows> valueless = make_valueless<int, float>();
-        yk::rvariant<int, MoveThrows> a = valueless.subset<int, MoveThrows>();
+        yk::rvariant<int, float, MC_Thrower> valueless = make_valueless<int, float>();
+        yk::rvariant<int, MC_Thrower> a = valueless.subset<int, MC_Thrower>();
         CHECK(a.valueless_by_exception());
     }
 }

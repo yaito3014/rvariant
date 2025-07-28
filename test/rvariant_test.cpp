@@ -23,7 +23,7 @@ namespace unit_test {
 
 TEST_CASE("make_valueless", "[detail]")
 {
-    yk::rvariant<int, MoveThrows> valueless = make_valueless<int>(42);
+    yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>(42);
     CHECK(valueless.valueless_by_exception());
     CHECK(valueless.index() == std::variant_npos);
     STATIC_CHECK(!std::remove_cvref_t<decltype(valueless)>::never_valueless);
@@ -504,8 +504,8 @@ TEST_CASE("copy construction")
     // NOLINTEND(modernize-use-equals-default)
 
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> a(valueless);
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a(valueless);
         CHECK(a.valueless_by_exception());
     }
 }
@@ -551,8 +551,8 @@ TEST_CASE("move construction")
     }
 
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> a(std::move(valueless));
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a(std::move(valueless));
         CHECK(a.valueless_by_exception());
     }
 }
@@ -647,8 +647,8 @@ TEST_CASE("copy assignment")
     }
 
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a;
         a = valueless;
         CHECK(a.valueless_by_exception());
     }
@@ -693,8 +693,8 @@ TEST_CASE("move assignment")
     }
 
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a;
         a = std::move(valueless);
         CHECK(a.valueless_by_exception());
     }
@@ -714,25 +714,25 @@ TEST_CASE("generic assignment")
     }
 
     {
-        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> a;
         try {
-            a = MoveThrows::non_throwing;
+            a = MC_Thrower::non_throwing;
         } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
     {
-        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> a;
         try {
-            a = MoveThrows::throwing;
+            a = MC_Thrower::throwing;
         } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
     {
-        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> a;
         try {
-            a = MoveThrows::potentially_throwing;
+            a = MC_Thrower::potentially_throwing;
         } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(a.valueless_by_exception());
@@ -764,25 +764,25 @@ TEST_CASE("emplace")
     }
 
     {
-        yk::rvariant<MoveThrows> a;
+        yk::rvariant<MC_Thrower> a;
         try {
-            a.emplace<0>(MoveThrows::non_throwing);
+            a.emplace<0>(MC_Thrower::non_throwing);
         } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
     {
-        yk::rvariant<MoveThrows> a;
+        yk::rvariant<MC_Thrower> a;
         try {
-            a.emplace<0>(MoveThrows::throwing);
+            a.emplace<0>(MC_Thrower::throwing);
         } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
     {
-        yk::rvariant<MoveThrows> a;
+        yk::rvariant<MC_Thrower> a;
         try {
-            a.emplace<0>(MoveThrows::potentially_throwing);
+            a.emplace<0>(MC_Thrower::potentially_throwing);
         } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(a.valueless_by_exception());
@@ -843,8 +843,8 @@ TEST_CASE("swap")
     }
 
     {
-        yk::rvariant<int, MoveThrows> a = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> b;
+        yk::rvariant<int, MC_Thrower> a = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> b;
         CHECK( a.valueless_by_exception());
         CHECK(!b.valueless_by_exception());
         try {
@@ -855,8 +855,8 @@ TEST_CASE("swap")
         CHECK( b.valueless_by_exception());
     }
     {
-        yk::rvariant<int, MoveThrows> a;
-        yk::rvariant<int, MoveThrows> b = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a;
+        yk::rvariant<int, MC_Thrower> b = make_valueless<int>();
         CHECK(!a.valueless_by_exception());
         CHECK( b.valueless_by_exception());
         try {
@@ -867,8 +867,8 @@ TEST_CASE("swap")
         CHECK(!b.valueless_by_exception());
     }
     {
-        yk::rvariant<int, MoveThrows> a = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> b = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> b = make_valueless<int>();
         CHECK(a.valueless_by_exception());
         CHECK(b.valueless_by_exception());
         CHECK_NOTHROW(a.swap(b));
@@ -876,8 +876,8 @@ TEST_CASE("swap")
         CHECK(b.valueless_by_exception());
     }
     {
-        yk::rvariant<int, MoveThrows> a = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> b(std::in_place_type<MoveThrows>);
+        yk::rvariant<int, MC_Thrower> a = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> b(std::in_place_type<MC_Thrower>);
         CHECK( a.valueless_by_exception());
         CHECK(!b.valueless_by_exception());
         try {
@@ -888,8 +888,8 @@ TEST_CASE("swap")
         CHECK(!b.valueless_by_exception());
     }
     {
-        yk::rvariant<int, MoveThrows> a(std::in_place_type<int>);
-        yk::rvariant<int, MoveThrows> b(std::in_place_type<MoveThrows>);
+        yk::rvariant<int, MC_Thrower> a(std::in_place_type<int>);
+        yk::rvariant<int, MC_Thrower> b(std::in_place_type<MC_Thrower>);
         CHECK(!a.valueless_by_exception());
         CHECK(!b.valueless_by_exception());
         try {
@@ -909,9 +909,9 @@ TEST_CASE("holds_alternative")
     }
 
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         CHECK(!yk::holds_alternative<int>(valueless));
-        CHECK(!yk::holds_alternative<MoveThrows>(valueless));
+        CHECK(!yk::holds_alternative<MC_Thrower>(valueless));
     }
 }
 
@@ -1139,8 +1139,8 @@ TEST_CASE("relational operators")
         CHECK((b <=> a) == std::partial_ordering::greater);
     }
     {
-        yk::rvariant<int, MoveThrows> valueless = make_valueless<int>();
-        yk::rvariant<int, MoveThrows> a;
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        yk::rvariant<int, MC_Thrower> a;
 
         CHECK(valueless == valueless);
         CHECK(!(a == valueless));
