@@ -12,6 +12,17 @@
 
 #include <cassert>
 
+#if defined(_MSC_VER)
+# define YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN \
+    _Pragma("warning(push)") \
+    _Pragma("warning(disable: 4702)")
+# define YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END \
+    _Pragma("warning(pop)")
+#else
+# define YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
+# define YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
+#endif
+
 namespace yk::detail {
 
 template<bool TriviallyDestructible, class... Ts>
