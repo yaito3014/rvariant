@@ -123,7 +123,7 @@ s| Flexible construction +
 [[why-is-recursive-wrapper-needed-1]]
 ### Why is recursive_wrapper needed?
 
-A variant class cannot determine its storage's size when it contains incomplete types. Therefore, recursive alternatives always require a *recursive wrapper class* that holds the incomplete type by pointer and performs dynamic memory allocation on it.
+A recursive type is effectively an incomplete type at the point of its initial definition. However, a `std`-style variant class requires all alternative types to be complete, since the storage size must be determined at compile time. As a result, recursive alternatives must be wrapped in a *recursive wrapper class*, which holds the incomplete type via a pointer and manages it through dynamic memory allocation.
 
 
 [[why-is-recursive-wrapper-needed-2]]
@@ -137,39 +137,43 @@ However, *it is essential to have compatible interfaces in the variant class*, b
 
 * _unwrap_ the instance every time you access an alternative with `get()` or `visit()`.
 
-In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that infect the application layer, which is undesirable in practice.
+In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that spreads to the application layer, which is undesirable in practice.
 
 
-[[why-is-rvariant-needed-1]]
+[[why-is-rvariant-not-a-wrapper-of-std]]
 ### Why can't rvariant be a thin wrapper around std::variant?
 
 Ultimately, `rvariant` is designed to be a strict superset of `std::variant`, not just to act as a third-party drop-in replacement.
 
 If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g. inheritance or composition), such a specification could never be standardized.
 
-For this purpose, the documentation of `rvariant` is presented in a diff-style format that mirrors `std::variant`, with differences clearly marked using [.underline]#underlines#.
+For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with differences marked using [.underline]#underlines#.
 
 
-[[why-is-rvariant-needed-2]]
+[[why-is-rvariant-proposed-to-boost-1]]
+### Why is rvariant being proposed to Boost?
+
+One of the co-authors of `rvariant`, Nana Sakisaka, has been using Boost.Spirit for over 15 years and was endorsed as its maintainer in May 2025. *Modernizing recursive variant support* is a fundamental part of upgrading the Boost.Spirit.X3 codebase, and has become a key focus of ongoing maintenance efforts.
+
+Although Boost.Spirit.X3 has a https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html[somewhat updated counterpart], it was never designed around a formal specification and still retains https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131[legacy implementation details] from earlier stages of development.
+
+As such, the initial version of `rvariant` was developed as an internal replacement within Boost.Spirit, as a sub-component with no external exposure. However, before a PR was even submitted, it became clear that the design had potential value beyond Spirit. This prompted a complete redesign into a standalone superset of `std::variant`, followed by preparation for formal Boost review.
+
+
+[[why-is-rvariant-proposed-to-boost-2]]
 ### Why can't rvariant be submitted directly to the C++ Standards Committee?
 
 Historically, *the concept of recursive variants in {cpp} has been closely tied to https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/tutorial.html#variant.tutorial.recursive[Boost.Variant] and link:pass:attributes[https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/html/spirit/qi/tutorials/mini_xml___asts_.html#spirit.qi.tutorials.mini_xml___asts_.the_structures][Boost.Spirit.Qi]*. It has been investigated, implemented, and used across Boost Libraries and by end users for _decades_. For this reason, we believe it's best to first gather feedback from the Boost community.
 
-Moreover, we expect the working group to seek implementation experience, which inevitably involves the current state of Boost.Variant and related components. Submitting `rvariant` independently would likely result in the committee re-evaluating the outdated status quo. In our view, this could leave too much room for design ambiguity, potentially making the process unnecessarily time-consuming.
+Moreover, we expect the working group to seek implementation experience, which inevitably involves the current state of Boost.Variant and related components. Submitting `rvariant` independently would likely result in making the process unnecessarily time-consuming.
 
 
-[[why-is-rvariant-needed-3]]
-### Why is rvariant being proposed to Boost?
+[[recursive-variants-in-general]]
+### Are recursive variants useful in general-purpose code?
 
-One of the co-authors of `rvariant`, Nana Sakisaka, has been contributing to the maintenance of Boost.Spirit since May 2025. Modernizing recursive variant support is a foundational part of upgrading the Boost.Spirit.X3 codebase, and has become a major technical interest in ongoing maintenance efforts.
+Boost.Spirit is just one example of a parser combinator library. In practice, _any application that constructs statically typed recursive data structures_ can benefit from a recursive variant class. Furthermore, with the arrival of {cpp}26 reflection, such data structures are likely to become even more common.
 
-Originally, `rvariant` was developed as an internal replacement within Boost.Spirit, as a sub-component with no broader exposure. However, it was later decided to submit it for formal review to benefit the wider community.
-
-Although Boost.Spirit.X3 has a https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html[somewhat updated counterpart], it was never designed around a formal specification and still retains some https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131[legacy implementation] from earlier stages of the development.
-
-Boost.Spirit is just one example of a parser combinator library, and represents only the tip of the iceberg. Many kinds of libraries inherently require recursive variants: any library that constructs *statically typed recursive data structures* would benefit from them. Furthermore, once {cpp}26 reflection becomes available, such data structures will likely become even more common.
-
-A proper solution to these challenges requires a fully-featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a starting point for broader discussion about recursive variants in Boost and beyond.
+A proper solution to these challenges requires a fully-featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a foundation for broader discussion about recursive variants in Boost and beyond.
 
 
 = Feature Cheat Sheet
