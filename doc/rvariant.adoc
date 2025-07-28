@@ -1330,6 +1330,10 @@ template<class Allocator, class Value>
 
 [,cpp,subs="+macros,+attributes"]
 ----
+// <temp_ns/rvariant/recursive_wrapper_pmr.hpp>
+
+#include <memory_resource>
+
 namespace temp_ns::pmr {
 
 template<class T>
