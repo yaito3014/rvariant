@@ -1177,7 +1177,8 @@ template<class... Ts, class Compare = std::greater_equal<>>
 
 template<class... Ts>
     requires (std::three_way_comparable<Ts> && ...)
-[[nodiscard]] constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...> operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+[[nodiscard]] constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
+operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
 {
     if (v.valueless_by_exception() || w.valueless_by_exception()) return w.valueless_by_exception() <=> v.valueless_by_exception();
