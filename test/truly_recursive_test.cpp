@@ -90,4 +90,4 @@ TEST_CASE("truly recursive", "[wrapper][recursive]")
 # pragma warning(pop)
 #endif
 
-}
+} // unit_test

@@ -707,4 +707,4 @@ TEST_CASE("visit", "[wrapper]")
     }
 }
 
-}
+} // unit_test

@@ -440,16 +440,16 @@ TEST_CASE("default construction")
         {
             S() noexcept(false) {}
         };
-        STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<S>);
-        STATIC_REQUIRE_FALSE(std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
+        STATIC_REQUIRE(!std::is_nothrow_default_constructible_v<S>);
+        STATIC_REQUIRE(!std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
     }
     {
         struct S
         {
             S() = delete;
         };
-        STATIC_REQUIRE_FALSE(std::is_default_constructible_v<S>);
-        STATIC_REQUIRE_FALSE(std::is_default_constructible_v<yk::rvariant<S>>);
+        STATIC_REQUIRE(!std::is_default_constructible_v<S>);
+        STATIC_REQUIRE(!std::is_default_constructible_v<yk::rvariant<S>>);
     }
     {
         struct S
@@ -542,6 +542,7 @@ TEST_CASE("move construction")
         {
             S() = default;
             S(S&&) noexcept(false) { throw std::exception(); }
+            S& operator=(S&&) = delete;
         };
         static_assert(!std::is_move_assignable_v<S>);
         yk::rvariant<S> a;
@@ -716,7 +717,7 @@ TEST_CASE("generic assignment")
         yk::rvariant<int, MoveThrows> a;
         try {
             a = MoveThrows::non_throwing;
-        } catch(...) {
+        } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
@@ -724,7 +725,7 @@ TEST_CASE("generic assignment")
         yk::rvariant<int, MoveThrows> a;
         try {
             a = MoveThrows::throwing;
-        } catch(...) {
+        } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
@@ -732,7 +733,7 @@ TEST_CASE("generic assignment")
         yk::rvariant<int, MoveThrows> a;
         try {
             a = MoveThrows::potentially_throwing;
-        } catch(...) {
+        } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(a.valueless_by_exception());
     }
@@ -766,7 +767,7 @@ TEST_CASE("emplace")
         yk::rvariant<MoveThrows> a;
         try {
             a.emplace<0>(MoveThrows::non_throwing);
-        } catch(...) {
+        } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
@@ -774,7 +775,7 @@ TEST_CASE("emplace")
         yk::rvariant<MoveThrows> a;
         try {
             a.emplace<0>(MoveThrows::throwing);
-        } catch(...) {
+        } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
     }
@@ -782,7 +783,7 @@ TEST_CASE("emplace")
         yk::rvariant<MoveThrows> a;
         try {
             a.emplace<0>(MoveThrows::potentially_throwing);
-        } catch(...) {
+        } catch(...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(a.valueless_by_exception());
     }
@@ -815,9 +816,9 @@ TEST_CASE("swap")
         {
             S() = default;
             S(S const&) = default;
-            S(S&&) {}
+            S(S&&) noexcept(false) {}
             S& operator=(S const&) = default;
-            S& operator=(S&&) { return *this; }
+            S& operator=(S&&) noexcept(false) { return *this; }
         };
 
         STATIC_REQUIRE(!yk::core::is_trivially_swappable_v<S>);
@@ -848,7 +849,7 @@ TEST_CASE("swap")
         CHECK(!b.valueless_by_exception());
         try {
             a.swap(b);
-        } catch (...) {
+        } catch (...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK(!a.valueless_by_exception());
         CHECK( b.valueless_by_exception());
@@ -860,7 +861,7 @@ TEST_CASE("swap")
         CHECK( b.valueless_by_exception());
         try {
             a.swap(b);
-        } catch (...) {
+        } catch (...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK( a.valueless_by_exception());
         CHECK(!b.valueless_by_exception());
@@ -881,7 +882,7 @@ TEST_CASE("swap")
         CHECK(!b.valueless_by_exception());
         try {
             a.swap(b);
-        } catch (...) {
+        } catch (...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK( a.valueless_by_exception());
         CHECK(!b.valueless_by_exception());
@@ -893,7 +894,7 @@ TEST_CASE("swap")
         CHECK(!b.valueless_by_exception());
         try {
             a.swap(b);
-        } catch (...) {
+        } catch (...) {  // NOLINT(bugprone-empty-catch)
         }
         CHECK( a.valueless_by_exception());  // swap-ee          becomes valueless
         CHECK(!b.valueless_by_exception());  // swap-er does not become  valueless
@@ -1167,20 +1168,20 @@ TEST_CASE("relational operators")
             42,
             33,
             4,
-            3.141,
-            2.718,
-            1.414,
-            1.618,
+            3.0141,
+            2.0718,
+            1.0414,
+            1.0618,
         };
         std::ranges::sort(vec);
         CHECK(vec == std::vector<yk::rvariant<int, double>>{
             4,
             33,
             42,
-            1.414,
-            1.618,
-            2.718,
-            3.141,
+            1.0414,
+            1.0618,
+            2.0718,
+            3.0141,
         });
     }
 }

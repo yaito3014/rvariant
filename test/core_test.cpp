@@ -31,4 +31,4 @@ TEST_CASE("find_index", "[core]")
     STATIC_REQUIRE(yk::core::find_index_v<int,    yk::core::type_list<float, double>> == yk::core::find_npos);
 }
 
-}
+} // unit_test

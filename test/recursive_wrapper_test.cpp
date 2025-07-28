@@ -291,4 +291,4 @@ TEST_CASE("implicit conversion + flexible (int/double)", "[wrapper][flexible]")
 # pragma warning(pop)
 #endif
 
-}
+} // unit_test
