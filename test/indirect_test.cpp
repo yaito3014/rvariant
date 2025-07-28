@@ -10,6 +10,7 @@ TEST_CASE("construction and assignment", "[indirect]")
     yk::indirect<int> b = a;             // copy ctor
     yk::indirect<int> c = std::move(a);  // move ctor
     c = b;                               // copy assign
+    (void)c;
     c = std::move(b);                    // move assign
 
 #ifdef _MSC_VER
@@ -17,8 +18,8 @@ TEST_CASE("construction and assignment", "[indirect]")
 # pragma warning(disable: 26800) // use-after-free
 #endif
 
-    REQUIRE(a.valueless_after_move());
-    REQUIRE(b.valueless_after_move());
+    REQUIRE(a.valueless_after_move());  // NOLINT(bugprone-use-after-move)
+    REQUIRE(b.valueless_after_move());  // NOLINT(bugprone-use-after-move)
 
 #ifdef _MSC_VER
 # pragma warning(pop)
