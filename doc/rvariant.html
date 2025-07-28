@@ -438,19 +438,19 @@ struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
 <div class="sect2">
 <h3 id="why-is-rvariant-not-a-wrapper-of-std"><a class="anchor" href="#why-is-rvariant-not-a-wrapper-of-std"></a>Why can&#8217;t rvariant be a thin wrapper around std::variant?</h3>
 <div class="paragraph">
-<p>Ultimately, <code>rvariant</code> is designed to be a strict superset of <code>std::variant</code>, not just to act as a third-party drop-in replacement.</p>
+<p><code>rvariant</code> is designed to be a strict superset of <code>std::variant</code>, not just to act as a third-party drop-in replacement.</p>
 </div>
 <div class="paragraph">
 <p>If <code>rvariant</code> is specified correctly, it has the potential to become the <strong>only variant library in the C++ standard</strong> capable of handling <em>both</em> recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around <code>std::variant</code> (e.g. inheritance or composition), such a specification could never be standardized.</p>
 </div>
 <div class="paragraph">
-<p>For this purpose, the documentation of <code>rvariant</code> is presented in a diff-based format that mirrors <code>std::variant</code>, with differences marked using <span class="underline">underlines</span>.</p>
+<p>For this purpose, the documentation of <code>rvariant</code> is presented in a diff-based format that mirrors <code>std::variant</code>, with key differences marked using <span class="underline">underlines</span>.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="why-is-rvariant-proposed-to-boost-1"><a class="anchor" href="#why-is-rvariant-proposed-to-boost-1"></a>Why is rvariant being proposed to Boost?</h3>
 <div class="paragraph">
-<p>One of the co-authors of <code>rvariant</code>, Nana Sakisaka, has been using Boost.Spirit for over 15 years and was endorsed as its maintainer in May 2025. <strong>Modernizing recursive variant support</strong> is a fundamental part of upgrading the Boost.Spirit.X3 codebase, and has become a key focus of ongoing maintenance efforts.</p>
+<p>One of the co-authors of <code>rvariant</code>, Nana Sakisaka, has been using Boost.Spirit for over 15 years and was endorsed as its maintainer in May 2025. <strong>Modernizing recursive variant support</strong> is a fundamental part of upgrading the Boost.Spirit.X3 codebase, and has become a main focus of ongoing maintenance efforts.</p>
 </div>
 <div class="paragraph">
 <p>Although Boost.Spirit.X3 has a <a href="https://www.boost.org/doc/libs/1_88_0/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html">somewhat updated counterpart</a>, it was never designed around a formal specification and still retains <a href="https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131">legacy implementation details</a> from earlier stages of development.</p>

@@ -143,17 +143,17 @@ In other words, the commonly seen advice like _"use std::unique_ptr if you want 
 [[why-is-rvariant-not-a-wrapper-of-std]]
 ### Why can't rvariant be a thin wrapper around std::variant?
 
-Ultimately, `rvariant` is designed to be a strict superset of `std::variant`, not just to act as a third-party drop-in replacement.
+`rvariant` is designed to be a strict superset of `std::variant`, not just to act as a third-party drop-in replacement.
 
 If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g. inheritance or composition), such a specification could never be standardized.
 
-For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with differences marked using [.underline]#underlines#.
+For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with key differences marked using [.underline]#underlines#.
 
 
 [[why-is-rvariant-proposed-to-boost-1]]
 ### Why is rvariant being proposed to Boost?
 
-One of the co-authors of `rvariant`, Nana Sakisaka, has been using Boost.Spirit for over 15 years and was endorsed as its maintainer in May 2025. *Modernizing recursive variant support* is a fundamental part of upgrading the Boost.Spirit.X3 codebase, and has become a key focus of ongoing maintenance efforts.
+One of the co-authors of `rvariant`, Nana Sakisaka, has been using Boost.Spirit for over 15 years and was endorsed as its maintainer in May 2025. *Modernizing recursive variant support* is a fundamental part of upgrading the Boost.Spirit.X3 codebase, and has become a main focus of ongoing maintenance efforts.
 
 Although Boost.Spirit.X3 has a https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html[somewhat updated counterpart], it was never designed around a formal specification and still retains https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131[legacy implementation details] from earlier stages of development.
 
