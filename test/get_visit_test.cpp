@@ -281,13 +281,6 @@ TEST_CASE("raw_visit", "[detail]")
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 }
 
-namespace {
-
-template<bool... NeverValueless>
-using never_valueless_seq = std::integer_sequence<bool, NeverValueless...>;
-
-} // anonymous
-
 TEST_CASE("flat_index", "[detail]")
 {
     using yk::detail::flat_index;
