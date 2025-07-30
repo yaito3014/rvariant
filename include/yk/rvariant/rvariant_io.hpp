@@ -4,6 +4,7 @@
 #include <yk/rvariant/rvariant.hpp>
 #include <yk/core/io.hpp>
 
+// ReSharper disable once CppUnusedIncludeDirective
 #include <ostream>
 
 namespace yk {
