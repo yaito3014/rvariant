@@ -301,6 +301,19 @@ TEST_CASE("rvariant formatter")
 {
     CHECK(std::format("{}", yk::rvariant<int, double>{42}) == "42");
     CHECK(std::format("{}", yk::rvariant<int, double>{3.14}) == "3.14");
+
+    {
+        using V = yk::rvariant<int, double>;
+        constexpr auto spec = yk::make_format_spec_for<V>("{:04d}", "{:.1f}");
+        {
+            V v(42);
+            CHECK(std::format("pre{}post", yk::format_by(spec, v)) == "pre0042post");
+        }
+        {
+            V v(3.14);
+            CHECK(std::format("pre{}post", yk::format_by(spec, v)) == "pre3.1post");
+        }
+    }
 }
 
 TEST_CASE("rvariant formatter", "[recursive]")
