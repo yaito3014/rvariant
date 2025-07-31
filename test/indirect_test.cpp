@@ -28,6 +28,34 @@ TEST_CASE("construction and assignment", "[indirect]")
     REQUIRE_FALSE(c.valueless_after_move());
 }
 
+TEST_CASE("construction and assignment (stateful allocator)", "[indirect]")
+{
+    struct MyAllocator : std::allocator<int>
+    {
+        using is_always_equal = std::false_type;
+    };
+    yk::indirect<int, MyAllocator> a(42);
+    yk::indirect<int, MyAllocator> b = a;             // copy ctor
+    yk::indirect<int, MyAllocator> c = std::move(a);  // move ctor
+    c = b;                               // copy assign
+    (void)c;
+    c = std::move(b);                    // move assign
+
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 26800) // use-after-free
+#endif
+
+    REQUIRE(a.valueless_after_move());  // NOLINT(bugprone-use-after-move)
+    REQUIRE(b.valueless_after_move());  // NOLINT(bugprone-use-after-move)
+
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+
+    REQUIRE_FALSE(c.valueless_after_move());
+}
+
 TEST_CASE("dereference", "[indirect]")
 {
     yk::indirect<int> a(42);

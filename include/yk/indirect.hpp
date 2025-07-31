@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <cassert>
+
 namespace yk {
 
 namespace detail {
@@ -157,7 +159,12 @@ public:
         , ptr_(make_obj(il, std::forward<Us>(us)...))
     {}
 
-    constexpr ~indirect() { reset(nullptr); }
+    constexpr ~indirect() noexcept
+    {
+        if (ptr_) [[likely]] {
+            destroy_deallocate();
+        }
+    }
 
     constexpr indirect& operator=(indirect const& other)
     {
@@ -170,7 +177,6 @@ public:
 
         constexpr bool pocca = std::allocator_traits<Allocator>::propagate_on_container_copy_assignment::value;
 
-        pointer p = nullptr;
         if (other.ptr_) [[likely]] {
             if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {  // NOLINT(bugprone-branch-clone)
                 if (ptr_) [[likely]] {
@@ -181,6 +187,16 @@ public:
                     }
                     return *this;
                 }
+
+                assert(other.ptr_ && !ptr_);
+                if constexpr (pocca) {
+                    ptr_ = other.make_obj(*other);
+                    alloc_ = other.alloc_;
+                } else {
+                    ptr_ = this->make_obj(*other);
+                }
+                return *this;
+
             } else if (alloc_ == other.alloc_) {
                 if (ptr_) [[likely]] {
                     // both contain value and allocator is equal; copy assign
@@ -190,18 +206,42 @@ public:
                     }
                     return *this;
                 }
-            }
-            // either allocator is not equal or `this` does not contain value; create copy from `other`
-            indirect const& x = pocca ? other : *this;
-            p = x.make_obj(*other);
-        }
 
-        // destroy `*ptr_`, then replace the pointer with `p`
-        reset(p);
-        if constexpr (pocca) {
-            alloc_ = other.alloc_;
+                assert(other.ptr_ && !ptr_);
+                if constexpr (pocca) {
+                    ptr_ = other.make_obj(*other);
+                    alloc_ = other.alloc_;
+                } else {
+                    ptr_ = this->make_obj(*other);
+                }
+                return *this;
+
+            } else {
+                // other.ptr_ && (ptr_ || !ptr_)
+                // either allocator is not equal or `this` does not contain value; create copy from `other`
+                if (ptr_) [[likely]] {
+                    destroy_deallocate();
+                    ptr_ = nullptr; // make it safer
+                }
+                if constexpr (pocca) {
+                    ptr_ = other.make_obj(*other);
+                    alloc_ = other.alloc_;
+                } else {
+                    ptr_ = this->make_obj(*other);
+                }
+                return *this;
+            }
+
+        } else [[unlikely]] { // !other.ptr_
+            if (ptr_) [[likely]] {
+                destroy_deallocate();
+                ptr_ = nullptr; // make it safer
+            }
+            if constexpr (pocca) {
+                alloc_ = other.alloc_;
+            }
+            return *this;
         }
-        return *this;
     }
 
     constexpr indirect& operator=(indirect&& other)
@@ -218,24 +258,49 @@ public:
 
         constexpr bool pocma = std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value;
 
-        pointer p = nullptr;
         if (other.ptr_) [[likely]] {
             if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {
-                p = std::exchange(other.ptr_, nullptr);
-            } else if (alloc_ == other.alloc_) {
-                p = std::exchange(other.ptr_, nullptr);
-            } else {
-                indirect& x = pocma ? other : *this;
-                p = x.make_obj(std::move(*other));
-                other.reset(nullptr);
-            }
-        }
+                if (ptr_) [[likely]] {
+                    destroy_deallocate();
+                }
+                ptr_ = std::exchange(other.ptr_, nullptr);
+                if constexpr (pocma) {
+                    alloc_ = other.alloc_;
+                }
+                return *this;
 
-        reset(p);
-        if constexpr (pocma) {
-            alloc_ = other.alloc_;
+            } else if (alloc_ == other.alloc_) {
+                if (ptr_) [[likely]] {
+                    destroy_deallocate();
+                }
+                ptr_ = std::exchange(other.ptr_, nullptr);
+                if constexpr (pocma) {
+                    alloc_ = other.alloc_;
+                }
+                return *this;
+
+            } else {
+                if (ptr_) [[likely]] {
+                    destroy_deallocate();
+                }
+                if constexpr (pocma) {
+                    ptr_ = other.make_obj(std::move(*other));
+                } else {
+                    ptr_ = this->make_obj(std::move(*other));
+                }
+                other.destroy_deallocate();
+                return *this;
+            }
+        } else [[unlikely]] { // !other.ptr_
+            if (ptr_) [[likely]] {
+                destroy_deallocate();
+                ptr_ = nullptr;
+            }
+            if constexpr (pocma) {
+                alloc_ = other.alloc_;
+            }
+            return *this;
         }
-        return *this;
     }
 
     template<class U = T>
@@ -286,13 +351,11 @@ public:
     }
 
 private:
-    constexpr pointer reset(pointer p) // TODO: make this branchless as per precondition
+    constexpr void destroy_deallocate()
     {
-        if (ptr_) {
-            std::allocator_traits<Allocator>::destroy(alloc_, std::to_address(ptr_));
-            std::allocator_traits<Allocator>::deallocate(alloc_, ptr_, 1);
-        }
-        return ptr_ = p;
+        assert(ptr_);
+        std::allocator_traits<Allocator>::destroy(alloc_, std::to_address(ptr_));
+        std::allocator_traits<Allocator>::deallocate(alloc_, ptr_, 1);
     }
 
     template<class... Args>
