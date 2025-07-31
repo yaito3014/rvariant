@@ -5,6 +5,7 @@
 
 #include <iosfwd>
 #include <compare>
+#include <functional>
 #include <exception>
 #include <utility>
 
@@ -58,6 +59,26 @@ template <class... Ts, class... Args>
     return a;
 }
 
+template<class T>
+struct HashForwarded
+{
+    T value;
+};
+
 }  // unit_test
 
-#endif // YK_RVARIANT_TEST_HPP
+
+namespace std {
+
+template<class T>
+struct hash<::unit_test::HashForwarded<T>>
+{
+    size_t operator()(::unit_test::HashForwarded<T> const& v) const
+    {
+        return std::hash<T>{}(v.value);
+    }
+};
+
+} // std
+
+#endif

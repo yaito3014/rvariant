@@ -32,7 +32,9 @@ public:
     constexpr ~scoped_allocation()
         noexcept(noexcept(std::allocator_traits<Alloc>::deallocate(alloc_, ptr_, 1)))
     {
-        if (ptr_) std::allocator_traits<Alloc>::deallocate(alloc_, ptr_, 1);
+        if (ptr_) [[unlikely]] {
+            std::allocator_traits<Alloc>::deallocate(alloc_, ptr_, 1);
+        }
     }
 
     [[nodiscard]] constexpr Alloc get_allocator() const noexcept { return alloc_; }
@@ -162,14 +164,16 @@ public:
         static_assert(std::is_copy_assignable_v<T>);
         static_assert(std::is_copy_constructible_v<T>);
 
-        if (std::addressof(other) == this) return *this;
+        if (std::addressof(other) == this) [[unlikely]] {
+            return *this;
+        }
 
         constexpr bool pocca = std::allocator_traits<Allocator>::propagate_on_container_copy_assignment::value;
 
         pointer p = nullptr;
-        if (other.ptr_) {
-            if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {
-                if (ptr_) {
+        if (other.ptr_) [[likely]] {
+            if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {  // NOLINT(bugprone-branch-clone)
+                if (ptr_) [[likely]] {
                     // both contain value and allocator is equal; copy assign
                     **this = *other;
                     if constexpr (pocca) {
@@ -178,7 +182,7 @@ public:
                     return *this;
                 }
             } else if (alloc_ == other.alloc_) {
-                if (ptr_) {
+                if (ptr_) [[likely]] {
                     // both contain value and allocator is equal; copy assign
                     **this = *other;
                     if constexpr (pocca) {
@@ -192,7 +196,7 @@ public:
             p = x.make_obj(*other);
         }
 
-        // destroy current contained value, optionally replace with new one
+        // destroy `*ptr_`, then replace the pointer with `p`
         reset(p);
         if constexpr (pocca) {
             alloc_ = other.alloc_;
@@ -208,12 +212,14 @@ public:
     {
         static_assert(std::is_move_constructible_v<T>);
 
-        if (std::addressof(other) == this) return *this;
+        if (std::addressof(other) == this) [[unlikely]] {
+            return *this;
+        }
 
         constexpr bool pocma = std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value;
 
         pointer p = nullptr;
-        if (other.ptr_) {
+        if (other.ptr_) [[likely]] {
             if constexpr (std::allocator_traits<Allocator>::is_always_equal::value) {
                 p = std::exchange(other.ptr_, nullptr);
             } else if (alloc_ == other.alloc_) {
@@ -239,10 +245,10 @@ public:
             std::is_assignable_v<T&, U>
     constexpr indirect& operator=(U&& u)
     {
-        if (ptr_) {
+        if (ptr_) [[likely]] {
             **this = std::forward<U>(u);
 
-        } else {
+        } else [[unlikely]] {
             ptr_ = make_obj(std::forward<U>(u));
         }
         return *this;
@@ -280,7 +286,7 @@ public:
     }
 
 private:
-    constexpr pointer reset(pointer p)
+    constexpr pointer reset(pointer p) // TODO: make this branchless as per precondition
     {
         if (ptr_) {
             std::allocator_traits<Allocator>::destroy(alloc_, std::to_address(ptr_));
@@ -313,55 +319,65 @@ template<class T, class Allocator, class U, class AA>
 constexpr bool operator==(indirect<T, Allocator> const& lhs, indirect<U, AA> const& rhs)
     noexcept(noexcept(*lhs == *rhs))
 {
-    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) [[unlikely]] {
         return lhs.valueless_after_move() == rhs.valueless_after_move();
+    } else [[likely]] {
+        return *lhs == *rhs;
     }
-    return *lhs == *rhs;
 }
 
 template<class T, class Allocator, class U, class AA>
 constexpr auto operator<=>(indirect<T, Allocator> const& lhs, indirect<U, AA> const& rhs)
     noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result_t<T, U>
 {
-    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) [[unlikely]] {
         return !lhs.valueless_after_move() <=> !rhs.valueless_after_move();
+    } else [[likely]] {
+        return core::synth_three_way(*lhs, *rhs);
     }
-    return core::synth_three_way(*lhs, *rhs);
 }
 
 template<class T, class Allocator, class U>
 constexpr bool operator==(indirect<T, Allocator> const& lhs, U const& rhs)
     noexcept(noexcept(*lhs == rhs))
 {
-    if (lhs.valueless_after_move()) return false;
-    return *lhs == rhs;
+    if (lhs.valueless_after_move()) [[unlikely]] {
+        return false;
+    } else [[likely]] {
+        return *lhs == rhs;
+    }
 }
 
 template<class T, class Allocator, class U> requires (!core::is_ttp_specialization_of_v<U, indirect>)
 constexpr auto operator<=>(indirect<T, Allocator> const& lhs, U const& rhs)
     noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result_t<T, U>
 {
-    if (lhs.valueless_after_move()) return std::strong_ordering::less;
-    return core::synth_three_way(*lhs, rhs);
+    if (lhs.valueless_after_move()) [[unlikely]] {
+        return std::strong_ordering::less;
+    } else [[likely]] {
+        return core::synth_three_way(*lhs, rhs);
+    }
 }
 
 }  // yk
 
-
 namespace std {
 
-template<class T, class A>
-    requires requires { typename hash<T>; }
-struct hash<yk::indirect<T, A>>
+template<class T, class Allocator>
+    requires ::yk::core::is_hash_enabled_v<T>
+struct hash<::yk::indirect<T, Allocator>>
 {
-    std::size_t operator()(yk::indirect<T, A> const& i) const
-        noexcept(noexcept(hash<T>{}(*i))) /* strengthened */
+    [[nodiscard]] static size_t operator()(::yk::indirect<T, Allocator> const& obj)
+        noexcept(::yk::core::is_nothrow_hashable_v<T>)
     {
-        if (i.valueless_after_move()) return 33 - 4zu;  // arbitrary number
-        return hash<T>{}(*i);
+        if (obj.valueless_after_move()) [[unlikely]] {
+            return 0;
+        } else [[likely]] {
+            return std::hash<T>{}(*obj);
+        }
     }
 };
 
-}  // std
+} // std
 
 #endif  // YK_INDIRECT_HPP

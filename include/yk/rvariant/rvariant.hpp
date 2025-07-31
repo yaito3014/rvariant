@@ -1188,6 +1188,34 @@ operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     });
 }
 
-}  // namespace yk
+}  // yk
+
+
+namespace std {
+
+// https://eel.is/c++draft/variant.hash
+template<class... Ts>
+    requires std::conjunction_v<::yk::core::is_hash_enabled<std::remove_const_t<Ts>>...>
+struct hash<::yk::rvariant<Ts...>>  // NOLINT(cert-dcl58-cpp)
+{
+    [[nodiscard]] static /* constexpr */ std::size_t operator()(::yk::rvariant<Ts...> const& v)
+        noexcept(std::conjunction_v<::yk::core::is_nothrow_hashable<Ts>...>)
+    {
+        return ::yk::detail::raw_visit(v, []<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& t)
+            noexcept(std::disjunction_v<
+                std::bool_constant<i == std::variant_npos>,
+                ::yk::core::is_nothrow_hashable<T>
+            >)
+        {
+            if constexpr (i == std::variant_npos) {
+                return 0uz; // arbitrary value
+            } else {
+                return std::hash<T>{}(t);
+            }
+        });
+    }
+};
+
+} // std
 
 #endif

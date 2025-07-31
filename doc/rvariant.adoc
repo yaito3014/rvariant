@@ -1197,6 +1197,12 @@ struct hash<::temp_ns::recursive_wrapper<T, Allocator>>;pass:quotes[[.candidate\
 } // std
 ----
 
+[WARNING]
+--
+.Notes on non-"exactly-once" variant
+*We strongly discourage non-"exactly-once" instantiation of variant* because the duplicate alternatives lead to *serious runtime performance issues* as the typical, well-optimized implementation of `std::hash` specialization would never consider `v.index()` during the hash generation.
+--
+
 [.candidates]
 --
 * [.candidate]#1)# *_Effects:_* Equivalent to `std::hash<rvariant<Ts\...>>{}(v)`.
@@ -1291,7 +1297,7 @@ struct compact_alternative;
 +
 *_Definition:_*  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `<<rvariant.xo.pack,_pack-union-t_>><TT, A, B>`. The member typedef `type` denotes `Ts\...[0]` if `sizeof\...(Ts) == 1`; otherwise, the member typedef `type` denotes `TT<Ts\...>`.
 
-[NOTE]
+[WARNING]
 .Notes on single-type variant
 A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
 

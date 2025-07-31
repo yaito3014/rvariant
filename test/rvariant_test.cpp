@@ -26,6 +26,7 @@ TEST_CASE("make_valueless", "[detail]")
     yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>(42);
     CHECK(valueless.valueless_by_exception());
     CHECK(valueless.index() == std::variant_npos);
+    // ReSharper disable once CppStaticAssertFailure
     STATIC_CHECK(!std::remove_cvref_t<decltype(valueless)>::never_valueless);
 }
 
@@ -386,6 +387,24 @@ TEST_CASE("forward_storage", "[detail]")
     // NOLINTEND(performance-move-const-arg)
 }
 
+// --------------------------------------------
+
+TEST_CASE("helper class")
+{
+    STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int>> == 1);
+    STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int, float>> == 2);
+
+    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int>>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int, float>>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, yk::rvariant<int, float>>, float>);
+
+    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int> const>, int const>);
+    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int, float> const>, int const>);
+    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, yk::rvariant<int, float> const>, float const>);
+}
+
+// --------------------------------------------
+
 TEST_CASE("default construction")
 {
     {
@@ -440,7 +459,9 @@ TEST_CASE("default construction")
         {
             S() noexcept(false) {}
         };
+        // ReSharper disable once CppStaticAssertFailure
         STATIC_REQUIRE(!std::is_nothrow_default_constructible_v<S>);
+        // ReSharper disable once CppStaticAssertFailure
         STATIC_REQUIRE(!std::is_nothrow_default_constructible_v<yk::rvariant<S>>);
     }
     {
@@ -1071,6 +1092,7 @@ TEST_CASE("non_recursive_same_as_std") // not [recursive]
         using V = std::variant<int>;
         STATIC_REQUIRE(std::is_constructible_v<V, V>);
         STATIC_REQUIRE(std::is_constructible_v<V, int>);
+        // ReSharper disable once CppStaticAssertFailure
         STATIC_REQUIRE(!std::is_constructible_v<V, double>); // !!false!!
         //V{3.14}; // ill-formed
     }
@@ -1186,19 +1208,38 @@ TEST_CASE("relational operators")
     }
 }
 
-TEST_CASE("helper class")
+TEST_CASE("rvariant.hash")
 {
-    STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int>> == 1);
-    STATIC_REQUIRE(yk::variant_size_v<yk::rvariant<int, float>> == 2);
-
-    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int>>, int>);
-    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int, float>>, int>);
-    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, yk::rvariant<int, float>>, float>);
-
-    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int> const>, int const>);
-    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<0, yk::rvariant<int, float> const>, int const>);
-    STATIC_REQUIRE(std::is_same_v<yk::variant_alternative_t<1, yk::rvariant<int, float> const>, float const>);
+    {
+        STATIC_REQUIRE(yk::core::is_hash_enabled_v<int>);
+        STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::rvariant<int>>);
+        CHECK(std::hash<int>{}(42) == std::hash<yk::rvariant<int>>{}(yk::rvariant<int>(42)));
+    }
+    {
+        struct NonExistent;
+        STATIC_REQUIRE(!yk::core::is_hash_enabled_v<NonExistent>);
+        STATIC_REQUIRE(!yk::core::is_hash_enabled_v<yk::rvariant<NonExistent>>);
+    }
+    {
+        STATIC_REQUIRE(yk::core::is_hash_enabled_v<HashForwarded<int>>);
+    }
 }
+
+TEST_CASE("rvariant.hash", "[wrapper]")
+{
+    {
+        STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::recursive_wrapper<int>>);
+        CHECK(std::hash<int>{}(42) == std::hash<yk::recursive_wrapper<int>>{}(yk::recursive_wrapper<int>(42)));
+    }
+    {
+        yk::recursive_wrapper<int> a(42);
+        auto b = std::move(a);
+        REQUIRE(a.valueless_after_move());  // NOLINT(bugprone-use-after-move)
+        CHECK(std::hash<yk::recursive_wrapper<int>>{}(a) == 0);
+    }
+}
+
+// --------------------------------------------
 
 TEST_CASE("pack_union", "[pack][detail]")
 {

@@ -1782,6 +1782,21 @@ struct hash&lt;::temp_ns::recursive_wrapper&lt;T, Allocator&gt;&gt;;<span class=
 } // std</code></pre>
 </div>
 </div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<div class="title">Notes on non-"exactly-once" variant</div>
+<p><strong>We strongly discourage non-"exactly-once" instantiation of variant</strong> because the duplicate alternatives lead to <strong>serious runtime performance issues</strong> as the typical, well-optimized implementation of <code>std::hash</code> specialization would never consider <code>v.index()</code> during the hash generation.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="openblock candidates">
 <div class="content">
 <div class="ulist">
@@ -1928,11 +1943,11 @@ struct compact_alternative;
 </li>
 </ul>
 </div>
-<div class="admonitionblock note">
+<div class="admonitionblock warning">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
 <div class="title">Notes on single-type variant</div>

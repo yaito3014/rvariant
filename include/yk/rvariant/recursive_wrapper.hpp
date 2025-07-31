@@ -173,37 +173,64 @@ template<class T, class TA, class U, class UA>
 constexpr bool operator==(recursive_wrapper<T, TA> const& lhs, recursive_wrapper<U, UA> const& rhs)
     noexcept(noexcept(*lhs == *rhs))
 {
-    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) [[unlikely]] {
         return lhs.valueless_after_move() == rhs.valueless_after_move();
+    } else [[likely]] {
+        return *lhs == *rhs;
     }
-    return *lhs == *rhs;
 }
 
 template<class T, class TA, class U, class UA>
 constexpr auto operator<=>(recursive_wrapper<T, TA> const& lhs, recursive_wrapper<U, UA> const& rhs) noexcept(core::synth_three_way_noexcept<T, U>)
     -> core::synth_three_way_result_t<T, U>
 {
-    if (lhs.valueless_after_move() || rhs.valueless_after_move()) {
+    if (lhs.valueless_after_move() || rhs.valueless_after_move()) [[unlikely]] {
         return !lhs.valueless_after_move() <=> !rhs.valueless_after_move();
+    } else [[likely]] {
+        return core::synth_three_way(*lhs, *rhs);
     }
-    return core::synth_three_way(*lhs, *rhs);
 }
 
 template<class T, class A, class U>
 constexpr bool operator==(recursive_wrapper<T, A> const& lhs, U const& rhs)
     noexcept(noexcept(*lhs == rhs))
 {
-    if (lhs.valueless_after_move()) return false;
-    return *lhs == rhs;
+    if (lhs.valueless_after_move()) [[unlikely]] {
+        return false;
+    } else [[likely]] {
+        return *lhs == rhs;
+    }
 }
 
 template<class T, class A, class U>
 constexpr auto operator<=>(recursive_wrapper<T, A> const& lhs, U const& rhs) noexcept(core::synth_three_way_noexcept<T, U>) -> core::synth_three_way_result_t<T, U>
 {
-    if (lhs.valueless_after_move()) return std::strong_ordering::less;
-    return core::synth_three_way(*lhs, rhs);
+    if (lhs.valueless_after_move()) [[unlikely]] {
+        return std::strong_ordering::less;
+    } else [[likely]] {
+        return core::synth_three_way(*lhs, rhs);
+    }
 }
 
 }  // yk
+
+namespace std {
+
+template<class T, class Allocator>
+    requires ::yk::core::is_hash_enabled_v<T>
+struct hash<::yk::recursive_wrapper<T, Allocator>>
+{
+    [[nodiscard]] static size_t operator()(::yk::recursive_wrapper<T, Allocator> const& obj)
+        noexcept(::yk::core::is_nothrow_hashable_v<T>)
+    {
+        if (obj.valueless_after_move()) [[unlikely]] {
+            return 0;
+        } else [[likely]] {
+            return std::hash<T>{}(*obj);
+        }
+    }
+};
+
+} // std
 
 #endif

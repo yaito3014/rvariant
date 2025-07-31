@@ -1,7 +1,7 @@
 #ifndef YK_CORE_LIBRARY_HPP
 #define YK_CORE_LIBRARY_HPP
 
-#include <yk/core/concepts.hpp>
+#include <yk/core/requirements.hpp>
 
 #include <compare>
 #include <functional>

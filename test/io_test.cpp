@@ -287,7 +287,6 @@ TEST_CASE("rvariant.io, exceptions")
     }
 }
 
-
 TEST_CASE("rvariant.io", "[recursive]")
 {
     {

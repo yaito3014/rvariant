@@ -31,4 +31,343 @@ TEST_CASE("find_index", "[core]")
     STATIC_REQUIRE(yk::core::find_index_v<int,    yk::core::type_list<float, double>> == yk::core::find_npos);
 }
 
+TEST_CASE("Cpp17EqualityComparable", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17EqualityComparable<int>);
+    {
+        struct S
+        {
+            bool operator==(S const&) const { return true; }
+        };
+        STATIC_REQUIRE(yk::core::Cpp17EqualityComparable<S>);
+    }
+    {
+        struct S
+        {
+            bool operator==(S const&) const = delete;
+        };
+        STATIC_REQUIRE(!yk::core::Cpp17EqualityComparable<S>);
+    }
+}
+
+TEST_CASE("Cpp17LessThanComparable", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17LessThanComparable<int>);
+    {
+        struct S
+        {
+            bool operator<(S const&) const { return false; }
+        };
+        STATIC_REQUIRE(yk::core::Cpp17LessThanComparable<S>);
+    }
+    {
+        struct S
+        {
+            bool operator<(S const&) const = delete;
+        };
+        STATIC_REQUIRE(!yk::core::Cpp17LessThanComparable<S>);
+    }
+}
+
+TEST_CASE("Cpp17DefaultConstructible", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17DefaultConstructible<int>);
+    {
+        using T = int const;
+        STATIC_REQUIRE(std::is_default_constructible_v<T>);
+        // ReSharper disable once CppStaticAssertFailure
+        STATIC_REQUIRE(!std::default_initializable<T>);
+        // ReSharper disable once CppStaticAssertFailure
+        STATIC_REQUIRE(!yk::core::Cpp17DefaultConstructible<T>);
+    }
+    {
+        using T = int const[10];
+        STATIC_REQUIRE(std::is_default_constructible_v<T>);
+        STATIC_REQUIRE(!yk::core::Cpp17DefaultConstructible<T>);
+    }
+    {
+        struct S
+        {
+            S() = delete;
+        };
+        STATIC_REQUIRE(!std::is_default_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17DefaultConstructible<S>);
+    }
+}
+
+TEST_CASE("Cpp17MoveConstructible", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17MoveConstructible<int>);
+    {
+        using T = int const;
+        STATIC_REQUIRE(std::is_move_constructible_v<T>);
+        STATIC_REQUIRE(yk::core::Cpp17MoveConstructible<T>);
+    }
+    {
+        using T = int const[10];
+        STATIC_REQUIRE(!std::is_move_constructible_v<T>);
+        STATIC_REQUIRE(!std::move_constructible<T>);
+        STATIC_REQUIRE(!yk::core::Cpp17MoveConstructible<T>);
+    }
+    {
+        struct S
+        {
+            S(S&&) = delete;
+        };
+        STATIC_REQUIRE(!std::is_move_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17MoveConstructible<S>);
+    }
+    {
+        struct S
+        {
+            explicit S(S&&) noexcept {}
+        };
+        STATIC_REQUIRE(std::is_move_constructible_v<S>);
+        STATIC_REQUIRE(!std::move_constructible<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17MoveConstructible<S>);
+    }
+}
+
+TEST_CASE("Cpp17CopyConstructible", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17CopyConstructible<int>);
+    {
+        using T = int const;
+        STATIC_REQUIRE(std::is_copy_constructible_v<T>);
+        STATIC_REQUIRE(yk::core::Cpp17CopyConstructible<T>);
+    }
+    {
+        using T = int const[10];
+        STATIC_REQUIRE(!std::is_copy_constructible_v<T>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<T>);
+    }
+    {
+        struct S
+        {
+            int const t[10];  // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+        };
+        STATIC_REQUIRE(std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(yk::core::Cpp17CopyConstructible<S>);
+    }
+    {
+        struct S
+        {
+            S(S&&) = default;
+            S(S const&) = delete;
+        };
+        STATIC_REQUIRE(!std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<S>);
+    }
+    {
+        struct S
+        {
+            S(S&&) = delete;
+            S(S const&) = default;
+        };
+        STATIC_REQUIRE(std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<S>);
+    }
+    {
+        struct S
+        {
+            explicit S(S const&) {}  // NOLINT(modernize-use-equals-default)
+        };
+        STATIC_REQUIRE(std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<S>);
+    }
+    {
+        struct S
+        {
+            S(S&) = delete;
+            S(S const&) {}  // NOLINT(modernize-use-equals-default)
+            S(S const&&) noexcept {}
+        };
+        STATIC_REQUIRE(std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<S>);
+    }
+    {
+        struct S
+        {
+            S(S&) {}  // NOLINT(modernize-use-equals-default)
+            S(S const&) = delete;
+            S(S const&&) noexcept {}
+        };
+        STATIC_REQUIRE(!std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<S>);
+    }
+    {
+        struct S
+        {
+            S(S&) {}  // NOLINT(modernize-use-equals-default)
+            S(S const&) {}  // NOLINT(modernize-use-equals-default)
+            S(S const&&) = delete;
+        };
+        STATIC_REQUIRE(std::is_copy_constructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyConstructible<S>);
+    }
+}
+
+TEST_CASE("Cpp17MoveAssignable", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17MoveAssignable<int>);
+    {
+        using T = int const;
+        STATIC_REQUIRE(!std::is_move_assignable_v<T>);
+        STATIC_REQUIRE(!std::assignable_from<T&, T&&>);
+        STATIC_REQUIRE(!yk::core::Cpp17MoveAssignable<T>);
+    }
+    {
+        using T = int const [10];
+        STATIC_REQUIRE(!std::is_move_assignable_v<T>);
+        STATIC_REQUIRE(!std::assignable_from<T&, T&&>);
+        STATIC_REQUIRE(!yk::core::Cpp17MoveAssignable<T>);
+    }
+    {
+        struct S
+        {
+            S& operator=(S&&) = delete;
+        };
+        STATIC_REQUIRE(!std::is_move_assignable_v<S>);
+        STATIC_REQUIRE(!std::assignable_from<S&, S&&>);
+        STATIC_REQUIRE(!yk::core::Cpp17MoveAssignable<S>);
+    }
+}
+
+TEST_CASE("Cpp17CopyAssignable", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17CopyAssignable<int>);
+    {
+        using T = int const;
+        STATIC_REQUIRE(!std::is_copy_assignable_v<T>);
+        STATIC_REQUIRE(!std::assignable_from<T&, T const&>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<T>);
+    }
+    {
+        using T = int const [10];
+        STATIC_REQUIRE(!std::is_copy_assignable_v<T>);
+        STATIC_REQUIRE(!std::assignable_from<T&, T const&>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<T>);
+    }
+    {
+        struct S
+        {
+            S& operator=(S const&) = delete;
+        };
+        STATIC_REQUIRE(!std::is_copy_assignable_v<S>);
+        STATIC_REQUIRE(!std::assignable_from<S&, S const&>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<S>);
+    }
+    {
+        struct S
+        {
+            S& operator=(S&) = delete;
+            S& operator=(S const&) { return *this; }  // NOLINT(modernize-use-equals-default)
+            S& operator=(S const&&) noexcept { return *this; }  // NOLINT(misc-unconventional-assign-operator)
+        };
+        STATIC_REQUIRE(std::is_copy_assignable_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<S>);
+    }
+    {
+        struct S
+        {
+            S& operator=(S&) { return *this; }  // NOLINT(modernize-use-equals-default, misc-unconventional-assign-operator)
+            S& operator=(S const&) = delete;
+            S& operator=(S const&&) noexcept { return *this; }  // NOLINT(misc-unconventional-assign-operator)
+        };
+        STATIC_REQUIRE(!std::is_copy_assignable_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<S>);
+    }
+    {
+        struct S
+        {
+            S& operator=(S&) { return *this; }  // NOLINT(misc-unconventional-assign-operator, modernize-use-equals-default)
+            S& operator=(S const&) { return *this; }  // NOLINT(modernize-use-equals-default)
+            S& operator=(S const&&) = delete;
+        };
+        STATIC_REQUIRE(std::is_copy_assignable_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<S>);
+    }
+    {
+        struct S
+        {
+            S& operator=(S const&) { return *this; }  // NOLINT(modernize-use-equals-default)
+            S& operator=(S&&) = delete;
+        };
+        STATIC_REQUIRE(std::is_copy_assignable_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17CopyAssignable<S>);
+    }
+}
+
+TEST_CASE("Cpp17Destructible", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17Destructible<int>);
+    {
+        struct S
+        {
+            ~S() {}  // NOLINT(modernize-use-equals-default)
+        };
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<S>);
+        STATIC_REQUIRE(yk::core::Cpp17Destructible<S>);
+    }
+    {
+        struct S
+        {
+            ~S() noexcept(true) {}  // NOLINT(modernize-use-equals-default)
+        };
+        STATIC_REQUIRE(std::is_nothrow_destructible_v<S>);
+        STATIC_REQUIRE(yk::core::Cpp17Destructible<S>);
+    }
+    {
+        struct S
+        {
+            ~S() noexcept(false) {}  // NOLINT(modernize-use-equals-default)
+        };
+        STATIC_REQUIRE(std::is_destructible_v<S>);
+        STATIC_REQUIRE(!std::is_nothrow_destructible_v<S>);
+        STATIC_REQUIRE(!yk::core::Cpp17Destructible<S>);
+    }
+}
+
+namespace {
+
+struct NonMovable
+{
+    NonMovable() {}  // NOLINT(modernize-use-equals-default)
+    NonMovable(NonMovable const&) = delete;
+    NonMovable(NonMovable&&) = delete;
+    NonMovable& operator=(NonMovable const&) = delete;
+    NonMovable& operator=(NonMovable&&) = delete;
+    ~NonMovable() {}  // NOLINT(modernize-use-equals-default)
+};
+
+struct S
+{
+    [[maybe_unused]] NonMovable nm;
+};
+
+struct Ss
+{
+    [[maybe_unused]] NonMovable nm;
+    friend void swap(Ss&, Ss&) noexcept {}
+};
+
+} // anonymous
+
+TEST_CASE("Cpp17Swappable", "[core]")
+{
+    STATIC_REQUIRE(yk::core::Cpp17Swappable<int>);
+    {
+        STATIC_REQUIRE(!std::is_swappable_v<S&>);
+        STATIC_REQUIRE(!yk::core::Cpp17Swappable<S>);
+    }
+    {
+        STATIC_REQUIRE(std::is_swappable_v<Ss&>);
+        STATIC_REQUIRE(yk::core::Cpp17Swappable<Ss>);
+
+        Ss a, b;
+        using std::swap;
+        swap(a, b);
+    }
+}
+
 } // unit_test
