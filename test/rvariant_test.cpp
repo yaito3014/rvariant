@@ -1214,6 +1214,7 @@ TEST_CASE("rvariant.hash")
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<int>);
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::rvariant<int>>);
         CHECK(std::hash<int>{}(42) == std::hash<yk::rvariant<int>>{}(yk::rvariant<int>(42)));
+        CHECK(std::hash<int>{}(42) == hash_value(yk::rvariant<int>(42)));
     }
     {
         struct NonExistent;
@@ -1222,6 +1223,12 @@ TEST_CASE("rvariant.hash")
     }
     {
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<HashForwarded<int>>);
+        CHECK(std::hash<int>{}(42) == std::hash<HashForwarded<int>>{}(HashForwarded<int>(42)));
+    }
+    {
+        STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::rvariant<HashForwarded<int>>>);
+        CHECK(std::hash<int>{}(42) == std::hash<yk::rvariant<HashForwarded<int>>>{}(yk::rvariant<HashForwarded<int>>(HashForwarded<int>(42))));
+        CHECK(std::hash<int>{}(42) == hash_value(yk::rvariant<HashForwarded<int>>(HashForwarded<int>(42))));
     }
 }
 
@@ -1230,12 +1237,14 @@ TEST_CASE("rvariant.hash", "[wrapper]")
     {
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::recursive_wrapper<int>>);
         CHECK(std::hash<int>{}(42) == std::hash<yk::recursive_wrapper<int>>{}(yk::recursive_wrapper<int>(42)));
+        CHECK(std::hash<int>{}(42) == hash_value(yk::recursive_wrapper<int>(42)));
     }
     {
         yk::recursive_wrapper<int> a(42);
         auto b = std::move(a);
         REQUIRE(a.valueless_after_move());  // NOLINT(bugprone-use-after-move)
         CHECK(std::hash<yk::recursive_wrapper<int>>{}(a) == 0);
+        CHECK(hash_value(a) == 0);
     }
 }
 

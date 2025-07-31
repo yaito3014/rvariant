@@ -1199,7 +1199,7 @@ template<class... Ts>
 struct hash<::yk::rvariant<Ts...>>  // NOLINT(cert-dcl58-cpp)
 {
     [[nodiscard]] static /* constexpr */ std::size_t operator()(::yk::rvariant<Ts...> const& v)
-        noexcept(std::conjunction_v<::yk::core::is_nothrow_hashable<Ts>...>)
+        noexcept(std::conjunction_v<::yk::core::is_nothrow_hashable<std::remove_const_t<Ts>>...>)
     {
         return ::yk::detail::raw_visit(v, []<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& t)
             noexcept(std::disjunction_v<
@@ -1217,5 +1217,18 @@ struct hash<::yk::rvariant<Ts...>>  // NOLINT(cert-dcl58-cpp)
 };
 
 } // std
+
+
+namespace yk {
+
+template<class... Ts>
+    requires std::conjunction_v<core::is_hash_enabled<std::remove_const_t<Ts>>...>
+[[nodiscard]] std::size_t hash_value(rvariant<Ts...> const& v)
+    noexcept(std::conjunction_v<core::is_nothrow_hashable<std::remove_const_t<Ts>>...>)
+{
+    return std::hash<rvariant<Ts...>>{}(v);
+}
+
+} // yk
 
 #endif

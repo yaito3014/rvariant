@@ -233,4 +233,17 @@ struct hash<::yk::recursive_wrapper<T, Allocator>>
 
 } // std
 
+
+namespace yk {
+
+template<class T, class Allocator>
+    requires core::is_hash_enabled_v<T>
+[[nodiscard]] std::size_t hash_value(recursive_wrapper<T, Allocator> const& obj)
+    noexcept(core::is_nothrow_hashable_v<T>)
+{
+    return std::hash<recursive_wrapper<T, Allocator>>{}(obj);
+}
+
+} // yk
+
 #endif
