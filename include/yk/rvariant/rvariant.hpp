@@ -1174,7 +1174,9 @@ template<class... Ts>
 operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
 {
-    if (v.valueless_by_exception() || w.valueless_by_exception()) return w.valueless_by_exception() <=> v.valueless_by_exception();
+    if (v.valueless_by_exception() || w.valueless_by_exception()) [[unlikely]] {
+        return w.valueless_by_exception() <=> v.valueless_by_exception();
+    }
     if (auto c = v.index() <=> w.index(); c != 0) return c;
     return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, T const& alt)
         noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
