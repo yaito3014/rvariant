@@ -297,4 +297,15 @@ TEST_CASE("rvariant.io", "[recursive]")
     }
 }
 
+TEST_CASE("rvariant formatter")
+{
+    CHECK(std::format("{}", yk::rvariant<int, double>{42}) == "42");
+    CHECK(std::format("{}", yk::rvariant<int, double>{3.14}) == "3.14");
+}
+
+TEST_CASE("rvariant formatter", "[recursive]")
+{
+    CHECK(std::format("{}", yk::rvariant<yk::recursive_wrapper<int>>{42}) == "42");
+}
+
 } // unit_test
