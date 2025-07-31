@@ -130,7 +130,7 @@ struct formatter<yk::detail::format_by_proxy<F, Ts...>> {
 };
 
 template <class... Ts>
-    requires (std::formattable<Ts, char> && ...)
+    requires (std::formattable<yk::unwrap_recursive_t<Ts>, char> && ...)
 struct formatter<yk::rvariant<Ts...>> {
     constexpr auto parse(std::format_parse_context& pc)
     {
