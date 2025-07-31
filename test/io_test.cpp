@@ -120,7 +120,9 @@ TEST_CASE("rvariant.io, simple")
         STATIC_REQUIRE(!yk::core::ADL_ostreamable_v<yk::rvariant<NonExistent>>);
     }
     {
+        // ReSharper disable once CppStaticAssertFailure
         STATIC_REQUIRE(!yk::core::ADL_ostreamable_v<NonStreamable_ns::NonStreamable>);
+        // ReSharper disable once CppStaticAssertFailure
         STATIC_REQUIRE(!yk::core::ADL_ostreamable_v<yk::rvariant<NonStreamable_ns::NonStreamable>>);
 
         std::ostringstream oss;
