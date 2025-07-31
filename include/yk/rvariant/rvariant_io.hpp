@@ -45,10 +45,15 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v)
         return os;
     }
 
+    if (v.valueless_by_exception()) [[unlikely]] {
+        // does not set badbit, as per the spec
+        throw std::bad_variant_access(); // always throw, regardless of `os.exceptions()`
+    }
+
     try {
         detail::raw_visit(v, [&os]<std::size_t i>(std::in_place_index_t<i>, [[maybe_unused]] auto const& o) {
             if constexpr (i == std::variant_npos) {
-                throw std::bad_variant_access{};
+                std::unreachable();
             } else {
                 os << detail::unwrap_recursive(o); // NOTE: this may also throw `std::bad_variant_access`
             }
