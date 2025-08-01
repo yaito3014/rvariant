@@ -1895,7 +1895,7 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 <p>Let <code>v</code> denote an object of <code>rvariant</code>, and let <code>proxy</code> denote an object of <code><em>variant_format_proxy</em></code>.</p>
 </li>
 <li>
-<p><code>std::formatter</code> specialization is enabled for <code>rvariant</code>, with the following characteristics:</p>
+<p>The specialization <code>std::formatter&lt;::temp_ns::rvariant&lt;Ts...&gt;, charT&gt;</code> (for arbitrary <code>charT</code>) is enabled if and only if <code>std::formattable&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts<sub><em>i</em></sub>&gt;, charT&gt;</code> is <code>true</code> for all <em>i</em>, with the following characteristics:</p>
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -1905,7 +1905,7 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 <p>&#8201;&#8212;&#8201;if <code>v.valueless_by_exception()</code> is <code>true</code>, <code>std::bad_variant_access</code> is thrown, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), <em>paren</em>, <em>GET</em>&lt;v.index()&gt;(v))</code>, with <code><em>paren</em></code> being a string literal <code>"{}"</code> interpreted on the target character type.</p>
+<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), <em>paren</em>, <em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(<em>GET</em>&lt;v.index()&gt;(v)))</code>, with <code><em>paren</em></code> being a string literal <code>"{}"</code> interpreted on the target character type.</p>
 </li>
 <li>
 <p><em>Example:</em></p>
@@ -1919,7 +1919,23 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 </div>
 </li>
 <li>
-<p><code>std::formatter</code> specialization is enabled for <code><em>variant_format_proxy</em></code>, with the following characteristics:</p>
+<p>The specialization <code>std::formatter&lt;<em>variant_format_proxy</em>&lt;VFormat, Variant&gt;, charT&gt;</code> is enabled if and only if:</p>
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::remove_cvref_t&lt;VFormat&gt;</code> is a specialization of <code><em>variant_format_string</em></code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::remove_cvref_t&lt;Variant&gt;</code> is a specialization of <code>rvariant</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::formattable&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts<sub><em>i</em></sub>&gt;, charT&gt;</code> is <code>true</code> for all <em>i</em>, with <code>Ts</code> being the template parameter pack of cv-unqualified non-reference type for <code>Variant</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>It has the following characteristics:</p>
 <div class="ulist none">
 <ul class="none">
 <li>
@@ -1929,7 +1945,7 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 <p>&#8201;&#8212;&#8201;if <code>v.valueless_by_exception()</code> is <code>true</code>, <code>std::bad_variant_access</code> is thrown, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type&lt;Ts...[proxy.v.index()]&gt;), <em>GET</em>&lt;proxy.v.index()&gt;(proxy.v))</code>, with <code>Ts</code> being the template parameter pack of the type of <code>proxy.v</code>.</p>
+<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type&lt;Ts...[proxy.v.index()]&gt;), <em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(<em>GET</em>&lt;proxy.v.index()&gt;(proxy.v)))</code>, with <code>Ts</code> being the template parameter pack of the type of <code>proxy.v</code>.</p>
 </li>
 <li>
 <p><em>Example:</em></p>

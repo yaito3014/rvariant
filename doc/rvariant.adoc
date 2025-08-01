@@ -1268,12 +1268,12 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v);pass:quotes
 [none]
 * Let `v` denote an object of `rvariant`, and let `proxy` denote an object of `{variant-format-proxy}`.
 
-* `std::formatter` specialization is enabled for `rvariant`, with the following characteristics:
+* The specialization `std::formatter<::temp_ns::rvariant<Ts\...>, charT>` (for arbitrary `charT`) is enabled if and only if `std::formattable<{unwrap_recursive_t}<Ts~_i_~>, charT>` is `true` for all _i_, with the following characteristics:
 +
 [none]
 ** -- The format specifier must be empty, otherwise `std::format_error` is thrown, and
 ** -- if `v.valueless_by_exception()` is `true`, `std::bad_variant_access` is thrown, and
-** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), _paren_, _GET_<v.index()>(v))`, with `_paren_` being a string literal `"{}"` interpreted on the target character type.
+** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), _paren_, {UNWRAP_RECURSIVE}(_GET_<v.index()>(v)))`, with `_paren_` being a string literal `"{}"` interpreted on the target character type.
 ** _Example:_
 +
 [,cpp,subs="+macros,+attributes"]
@@ -1281,12 +1281,19 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v);pass:quotes
 std::println("{}", temp_ns::rvariant<int, double>(42)); // prints pass:quotes[`42`]
 ----
 
-* `std::formatter` specialization is enabled for `{variant-format-proxy}`, with the following characteristics:
+* The specialization `std::formatter<{variant-format-proxy}<VFormat, Variant>, charT>` is enabled if and only if:
++
+[none]
+** -- `std::remove_cvref_t<VFormat>` is a specialization of `{variant-format-string}`, and
+** -- `std::remove_cvref_t<Variant>` is a specialization of `rvariant`, and
+** -- `std::formattable<{unwrap_recursive_t}<Ts~_i_~>, charT>` is `true` for all _i_, with `Ts` being the template parameter pack of cv-unqualified non-reference type for `Variant`.
+
+* It has the following characteristics:
 +
 [none]
 ** -- The format specifier must be empty, otherwise `std::format_error` is thrown, and
 ** -- if `v.valueless_by_exception()` is `true`, `std::bad_variant_access` is thrown, and
-** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type<Ts\...[proxy.v.index()]>), _GET_<proxy.v.index()>(proxy.v))`, with `Ts` being the template parameter pack of the type of `proxy.v`.
+** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type<Ts\...[proxy.v.index()]>), {UNWRAP_RECURSIVE}(_GET_<proxy.v.index()>(proxy.v)))`, with `Ts` being the template parameter pack of the type of `proxy.v`.
 ** _Example:_
 +
 [,cpp,subs="+macros,+attributes"]

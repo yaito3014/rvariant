@@ -163,14 +163,29 @@ format_by(VFormat&& v_fmt YK_LIFETIMEBOUND, Variant&& v YK_LIFETIMEBOUND) noexce
     };
 }
 
+namespace detail {
+
+template<class charT, class Variant>
+struct variant_alts_formattable : std::false_type
+{
+    static_assert(core::is_ttp_specialization_of_v<Variant, rvariant>);
+};
+
+template<class charT, class... Ts>
+struct variant_alts_formattable<charT, rvariant<Ts...>>
+    : std::bool_constant<(std::formattable<unwrap_recursive_t<Ts>, charT> && ...)>
+{};
+
+} // detail
+
 }  // yk
 
 
 namespace std {
 
 template<class... Ts, class charT>
-    requires (std::formattable<yk::unwrap_recursive_t<Ts>, charT> && ...)
-struct formatter<yk::rvariant<Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
+    requires (std::formattable<::yk::unwrap_recursive_t<Ts>, charT> && ...)
+struct formatter<::yk::rvariant<Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
 {
     static constexpr typename std::basic_format_parse_context<charT>::const_iterator
     parse(std::basic_format_parse_context<charT>& ctx)
@@ -185,23 +200,32 @@ struct formatter<yk::rvariant<Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
     }
 
     template<class OutIt>
-    static OutIt format(yk::rvariant<Ts...> const& var, std::basic_format_context<OutIt, charT>& ctx)
+    static OutIt format(::yk::rvariant<Ts...> const& v, std::basic_format_context<OutIt, charT>& ctx)
     {
-        return yk::visit(
-            [&]<class T>(T const& alt) {
-                return std::format_to(
-                    ctx.out(),
-                    ::yk::format_traits<charT>::template brace_full<T const&>,
-                    alt
-                );
-            },
-            var
+        return ::yk::detail::raw_visit(
+            v,
+            [&]<std::size_t i, class VT>(std::in_place_index_t<i>, VT const& alt) -> OutIt {
+                if constexpr (i == std::variant_npos) {
+                    (void)alt;
+                    throw std::bad_variant_access{};
+                } else {
+                    return std::format_to(
+                        ctx.out(),
+                        ::yk::format_traits<charT>::template brace_full<::yk::unwrap_recursive_t<VT> const&>,
+                        ::yk::detail::unwrap_recursive(alt)
+                    );
+                }
+            }
         );
     }
 };
 
-template<class VFormat, class... Ts, class charT>
-struct formatter<yk::detail::variant_format_proxy<VFormat, Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
+template<class VFormat, class Variant, class charT>
+    requires
+        ::yk::core::is_ttp_specialization_of_v<std::remove_cvref_t<VFormat>, ::yk::detail::variant_format_string> &&
+        ::yk::core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, ::yk::rvariant> &&
+        ::yk::detail::variant_alts_formattable<charT, std::remove_cvref_t<Variant>>::value
+struct formatter<::yk::detail::variant_format_proxy<VFormat, Variant>, charT>  // NOLINT(cert-dcl58-cpp)
 {
     static constexpr typename std::basic_format_parse_context<charT>::const_iterator
     parse(std::basic_format_parse_context<charT>& ctx)
@@ -215,21 +239,26 @@ struct formatter<yk::detail::variant_format_proxy<VFormat, Ts...>, charT>  // NO
     }
 
     template<class OutIt>
-    static OutIt format(yk::detail::variant_format_proxy<VFormat, Ts...> const& proxy, std::basic_format_context<OutIt, charT>& ctx)
+    static OutIt format(::yk::detail::variant_format_proxy<VFormat, Variant> const& proxy, std::basic_format_context<OutIt, charT>& ctx)
     {
-        return yk::visit(
-            [&]<class T>(T const& alt) {
-                static_assert(
-                    std::is_invocable_v<VFormat, std::in_place_type_t<T>>,
-                    "`VFormat` must provide format string for all alternative types."
-                );
-                return std::format_to(
-                    ctx.out(),
-                    std::invoke(proxy.v_fmt, std::in_place_type<T>),
-                    alt
-                );
-            },
-            proxy.v
+        return ::yk::detail::raw_visit(
+            proxy.v,
+            [&]<std::size_t i, class VT>(std::in_place_index_t<i>, VT const& alt) -> OutIt {
+                if constexpr (i == std::variant_npos) {
+                    (void)alt;
+                    throw std::bad_variant_access{};
+                } else {
+                    static_assert(
+                        std::is_invocable_v<VFormat, std::in_place_type_t<::yk::unwrap_recursive_t<VT>>>,
+                        "`VFormat` must provide format string for all alternative types."
+                    );
+                    return std::format_to(
+                        ctx.out(),
+                        std::invoke(proxy.v_fmt, std::in_place_type<::yk::unwrap_recursive_t<VT>>),
+                        ::yk::detail::unwrap_recursive(alt)
+                    );
+                }
+            }
         );
     }
 };
