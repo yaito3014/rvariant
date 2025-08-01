@@ -1266,7 +1266,11 @@ struct hash<::yk::rvariant<Ts...>>  // NOLINT(cert-dcl58-cpp)
                 //   `HC(v.index(), GET<v.index()>(v))`
                 // where `HC` is an arbitrary hash mixer function.
 
-                return ::yk::hash_combine_suffix<::yk::FNV_hash<>::hash(i)>(t);
+                // We assume `hash_combine` is unnecessary here, since the collision
+                // is very unlikely to occur as long as the `index_hash` is NOT
+                // evaluated as the re-interpreted bit representation.
+                constexpr std::size_t index_hash = ::yk::FNV_hash<>::hash(i);
+                return index_hash + std::hash<T>{}(t);
             }
         });
     }
