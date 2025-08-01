@@ -15,6 +15,7 @@ Yaito Kakeyama; Nana Sakisaka
 
 :boost-version: 1_88_0
 
+:cxx: c++
 :see-below: pass:quotes[[.see-below]#see below#]
 :exposition-only: pass:quotes[[.exposition-only]#exposition only#]
 :bad-variant-access: pass:quotes,macros[https://eel.is/c++draft/variant.bad.access[`std::bad_variant_access`]]
@@ -225,11 +226,11 @@ A* a = temp_ns::<<rvariant.get,get>><0>(&ab);
 A* a = temp_ns::get<A>(&ab);
 C* c = temp_ns::get<C>(&ab);    // `nullptr`
 
-<<rvariant.TODO,ab == ab>>;
-<<rvariant.TODO,ab < ab>>;
-<<rvariant.TODO,ab <=> ab>>; // `requires (https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable[std::three_way_comparable]<Ts> && ...)`
+https://eel.is/{cxx}draft/variant.relops#lib:operator==,variant[ab pass:quotes[==] ab];
+https://eel.is/{cxx}draft/variant.relops#lib:operator<,variant[ab pass:quotes[&lt;] ab];
+https://eel.is/{cxx}draft/variant.relops#lib:operator<=>,variant[ab pass:quotes[&lt;=&gt;] ab]; // `requires (https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable[std::three_way_comparable]<Ts> && ...)`
 
-auto visitor = temp_ns::<<rvariant.TODO,overloaded>> {
+auto visitor = temp_ns::overloaded {
     [](A const& a) {},
     [](B const& b) {},
 };
@@ -275,14 +276,17 @@ std::size_t _ = <<rvariant.hash,hash_value>>(ab); // compatibility with boost
 
 // <<rvariant.io,I/O support>>
 {
-    std::println("{}", AB{123});   // "123"
-    std::cout << AB{123} << '\n';  // "123"
+    using V = ::temp_ns::rvariant<int, double>;
 
-    // "type is A, value is 123" -- {cpp}26 reflection
-    std::println("{:type is %t, value is %v}", AB{123}); // Note that %t prints `A`, not `int`
+    // <<rvariant.io.ostream,`operator<<` support>>
+    std::cout << V{42} << '\n';  // prints pass:quotes[`42`]
 
-    std::println("{}", ABC{C{}});  // "C" -- {cpp}26 reflection
-    std::cout << ABC{C{}} << '\n'; // "C" -- {cpp}26 reflection
+    // <<rvariant.io.format,`std::formatter` support>>
+    std::println("{}", V{42});   // prints pass:quotes[`42`]
+
+    constexpr auto v_fmt = temp_ns::variant_format_for<V>("{:04d}", "{:.1f}");
+    std::println("foo{}bar", temp_ns::format_by(v_fmt, V(42)); // prints pass:quotes[`foo0042bar`]
+    std::println("foo{}bar", temp_ns::format_by(v_fmt, V(3.14)); // prints pass:quotes[`foo3.1bar`]
 }
 ----
 

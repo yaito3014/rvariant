@@ -538,11 +538,11 @@ A* a = temp_ns::<a href="#rvariant.get">get</a>&lt;0&gt;(&amp;ab);
 A* a = temp_ns::get&lt;A&gt;(&amp;ab);
 C* c = temp_ns::get&lt;C&gt;(&amp;ab);    // <code>nullptr</code>
 
-<a href="#rvariant.TODO">ab == ab</a>;
-<a href="#rvariant.TODO">ab &lt; ab</a>;
-<a href="#rvariant.TODO">ab &lt;=&gt; ab</a>; // <code>requires (<a href="https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable">std::three_way_comparable</a>&lt;Ts&gt; &amp;&amp; ...)</code>
+<a href="https://eel.is/c++draft/variant.relops#lib:operator==,variant">ab == ab</a>;
+<a href="https://eel.is/c++draft/variant.relops#lib:operator&lt;,variant">ab &lt; ab</a>;
+<a href="https://eel.is/c++draft/variant.relops#lib:operator&lt;=&gt;,variant">ab &lt;=&gt; ab</a>; // <code>requires (<a href="https://en.cppreference.com/w/cpp/utility/compare/three_way_comparable">std::three_way_comparable</a>&lt;Ts&gt; &amp;&amp; ...)</code>
 
-auto visitor = temp_ns::<a href="#rvariant.TODO">overloaded</a> {
+auto visitor = temp_ns::overloaded {
     [](A const&amp; a) {},
     [](B const&amp; b) {},
 };
@@ -590,14 +590,17 @@ std::size_t _ = <a href="#rvariant.hash">hash_value</a>(ab); // compatibility wi
 
 // <a href="#rvariant.io">I/O support</a>
 {
-    std::println("{}", AB{123});   // "123"
-    std::cout &lt;&lt; AB{123} &lt;&lt; '\n';  // "123"
+    using V = ::temp_ns::rvariant&lt;int, double&gt;;
 
-    // "type is A, value is 123" -- C&#43;&#43;26 reflection
-    std::println("{:type is %t, value is %v}", AB{123}); // Note that %t prints <code>A</code>, not <code>int</code>
+    // <a href="#rvariant.io.ostream"><code>operator&lt;&lt;</code> support</a>
+    std::cout &lt;&lt; V{42} &lt;&lt; '\n';  // prints <code>42</code>
 
-    std::println("{}", ABC{C{}});  // "C" -- C&#43;&#43;26 reflection
-    std::cout &lt;&lt; ABC{C{}} &lt;&lt; '\n'; // "C" -- C&#43;&#43;26 reflection
+    // <a href="#rvariant.io.format"><code>std::formatter</code> support</a>
+    std::println("{}", V{42});   // prints <code>42</code>
+
+    constexpr auto v_fmt = temp_ns::variant_format_for&lt;V&gt;("{:04d}", "{:.1f}");
+    std::println("foo{}bar", temp_ns::format_by(v_fmt, V(42)); // prints <code>foo0042bar</code>
+    std::println("foo{}bar", temp_ns::format_by(v_fmt, V(3.14)); // prints <code>foo3.1bar</code>
 }</code></pre>
 </div>
 </div>
