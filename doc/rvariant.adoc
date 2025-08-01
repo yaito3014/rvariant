@@ -469,9 +469,9 @@ public:
 
   // <<rvariant.ctor,[rvariant.ctor]>>, flexible constructors
   template<class... Us>
-    constexpr rvariant(rvariant<Us...> const& w);
+    constexpr rvariant(rvariant<Us...> const&);
   template<class... Us>
-    constexpr rvariant(rvariant<Us...>&& w) noexcept({see-below});
+    constexpr rvariant(rvariant<Us...>&&) noexcept({see-below});
 
   // <<rvariant.dtor,[rvariant.dtor]>>, destructor
   constexpr ~rvariant();
@@ -1426,7 +1426,11 @@ class recursive_wrapper
 {
   // provides the same functionality as https://eel.is/c+\+draft/indirect[pass:quotes[`std::indirect`]], unless otherwise noted
 
-  // TODO: revise this to match the actual implementation
+  // <<rvariant.recursive.ctor,[rvariant.recursive.ctor]>>, constructors
+  constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper();
+
+  template<class U = T>
+  constexpr explicit({see-below}) recursive_wrapper(U&& x) noexcept({see-below});
 };
 
 // equivalent to the https://eel.is/c+\+draft/indirect[pass:quotes[`std::indirect`]] counterpart
@@ -1470,6 +1474,36 @@ Unless otherwise noted, the class template `temp_ns::recursive_wrapper` and rele
 NOTE: `temp_ns::recursive_wrapper` is designed to be *NOT* a type alias of `std::indirect` because such a declaration would not satisfy the characteristics described above.
 
 NOTE: Although `std::indirect` is a {cpp}26 feature, `temp_ns::recursive_wrapper` can be used in {cpp}23.
+
+
+[[rvariant.recursive.ctor]]
+=== Constructors
+Effectively overrides only the ones listed below; rest are the same as `std::indirect` counterparts. ^https://eel.is/c++draft/indirect.ctor[[spec\]]^
+
+[,cpp,subs="+macros,+attributes"]
+----
+constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper();pass:quotes[[.candidate\]#// 1#]
+
+template<class U = T>
+constexpr explicit({see-below}) recursive_wrapper(U&& x) noexcept({see-below});pass:quotes[[.candidate\]#// 2#]
+----
+
+[.candidates]
+* [.candidate]#1)# Equivalent to the `std::indirect` counterpart,^https://eel.is/c++draft/indirect.ctor#lib:indirect,constructor[[spec\]]^ except that [.underline]#it is _not_ `explicit`#.
+
+* [.candidate]#2)# *_Constraints:_*
++
+--
+[none]
+** -- `std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>` is `false`, and
+** -- `std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>` is `false`, and
+** -- `std::is_default_constructible_v<Allocator>` is `true`, and
+** -- [.underline]#`std::is_convertible_v<U, T>` is `true`, or `T` can be aggregate-initialized by `U` in unevaluated context#. (_Note:_ This prevents recursive instantiation of `std::is_constructible`, even for recursive types, while preserving SFINAE-friendliness.)
+--
++
+*_Effects:_* Equivalent to the `std::indirect` counterpart. ^link:pass:[https://eel.is/c++draft/indirect.ctor#lib:indirect,constructor______][[spec\]]^
++
+*_Remarks:_* [.underline]#The explicit specifier is equivalent to `!std::is_convertible_v<U, T>`#.
 
 
 [[rvariant.recursive.helper]]

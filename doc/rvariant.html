@@ -264,6 +264,7 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.recursive">Class template <code>recursive_wrapper</code> <span class="slug">[rvariant.recursive]</span></a>
 <ul class="sectlevel2">
 <li><a href="#rvariant.recursive.general">General <span class="slug">[rvariant.recursive.general]</span></a></li>
+<li><a href="#rvariant.recursive.ctor">Constructors</a></li>
 </ul>
 </li>
 <li><a href="#rvariant.recursive.helper"><code>recursive_wrapper</code> helper classes <span class="slug">[rvariant.recursive.helper]</span></a></li>
@@ -801,9 +802,9 @@ public:
 
   // <a href="#rvariant.ctor">[rvariant.ctor]</a>, flexible constructors
   template&lt;class... Us&gt;
-    constexpr rvariant(rvariant&lt;Us...&gt; const&amp; w);
+    constexpr rvariant(rvariant&lt;Us...&gt; const&amp;);
   template&lt;class... Us&gt;
-    constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp; w) noexcept(<span class="see-below">see below</span>);
+    constexpr rvariant(rvariant&lt;Us...&gt;&amp;&amp;) noexcept(<span class="see-below">see below</span>);
 
   // <a href="#rvariant.dtor">[rvariant.dtor]</a>, destructor
   constexpr ~rvariant();
@@ -2124,7 +2125,11 @@ class recursive_wrapper
 {
   // provides the same functionality as <a href="https://eel.is/c++draft/indirect"><code>std::indirect</code></a>, unless otherwise noted
 
-  // TODO: revise this to match the actual implementation
+  // <a href="#rvariant.recursive.ctor">[rvariant.recursive.ctor]</a>, constructors
+  constexpr <span class="underline">/* not explicit */</span> recursive_wrapper();
+
+  template&lt;class U = T&gt;
+  constexpr explicit(<span class="see-below">see below</span>) recursive_wrapper(U&amp;&amp; x) noexcept(<span class="see-below">see below</span>);
 };
 
 // equivalent to the <a href="https://eel.is/c++draft/indirect"><code>std::indirect</code></a> counterpart
@@ -2194,6 +2199,56 @@ Although <code>std::indirect</code> is a C&#43;&#43;26 feature, <code>temp_ns::r
 </td>
 </tr>
 </table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.recursive.ctor"><a class="anchor" href="#rvariant.recursive.ctor"></a>Constructors</h3>
+<div class="paragraph">
+<p>Effectively overrides only the ones listed below; rest are the same as <code>std::indirect</code> counterparts. <sup><a href="https://eel.is/c++draft/indirect.ctor">[spec]</a></sup></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr <span class="underline">/* not explicit */</span> recursive_wrapper();<span class="candidate">// 1</span>
+
+template&lt;class U = T&gt;
+constexpr explicit(<span class="see-below">see below</span>) recursive_wrapper(U&amp;&amp; x) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 2</span></code></pre>
+</div>
+</div>
+<div class="ulist candidates">
+<ul>
+<li>
+<p><span class="candidate">1)</span> Equivalent to the <code>std::indirect</code> counterpart,<sup><a href="https://eel.is/c++draft/indirect.ctor#lib:indirect,constructor">[spec]</a></sup> except that <span class="underline">it is <em>not</em> <code>explicit</code></span>.</p>
+</li>
+<li>
+<p><span class="candidate">2)</span> <strong><em>Constraints:</em></strong></p>
+<div class="openblock">
+<div class="content">
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_same_v&lt;std::remove_cvref_t&lt;U&gt;, recursive_wrapper&gt;</code> is <code>false</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_same_v&lt;std::remove_cvref_t&lt;U&gt;, std::in_place_t&gt;</code> is <code>false</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_default_constructible_v&lt;Allocator&gt;</code> is <code>true</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_convertible_v&lt;U, T&gt;</code> is <code>true</code>, or <code>T</code> can be aggregate-initialized by <code>U</code> in unevaluated context</span>. (<em>Note:</em> This prevents recursive instantiation of <code>std::is_constructible</code>, even for recursive types, while preserving SFINAE-friendliness.)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><strong><em>Effects:</em></strong> Equivalent to the <code>std::indirect</code> counterpart. <sup><a href="https://eel.is/c++draft/indirect.ctor#lib:indirect,constructor______">[spec]</a></sup></p>
+</div>
+<div class="paragraph">
+<p><strong><em>Remarks:</em></strong> <span class="underline">The explicit specifier is equivalent to <code>!std::is_convertible_v&lt;U, T&gt;</code></span>.</p>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
