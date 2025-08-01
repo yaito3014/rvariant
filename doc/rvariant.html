@@ -1758,61 +1758,36 @@ constexpr R visit(this Self&amp;&amp; self, Visitor&amp;&amp; vis);<span class="
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
-
-template&lt;class... Ts&gt;
-/* constexpr */ std::size_t hash_value(rvariant&lt;Ts...&gt; const&amp; v);<span class="candidate">// 1</span>
-
-template&lt;class T, class Allocator&gt;
-/* constexpr */ std::size_t hash_value(recursive_wrapper&lt;T, Allocator&gt; const&amp; rw);<span class="candidate">// 2</span>
-
-} // temp_ns</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace std {
 
 template&lt;class... Ts&gt;
-struct hash&lt;::temp_ns::rvariant&lt;Ts...&gt;&gt;;<span class="candidate">// 3</span>
+struct hash&lt;::temp_ns::rvariant&lt;Ts...&gt;&gt;;<span class="candidate">// 1</span>
 
 template&lt;class T, class Allocator&gt;
-struct hash&lt;::temp_ns::recursive_wrapper&lt;T, Allocator&gt;&gt;;<span class="candidate">// 4</span>
+struct hash&lt;::temp_ns::recursive_wrapper&lt;T, Allocator&gt;&gt;;<span class="candidate">// 2</span>
 
 } // std</code></pre>
 </div>
 </div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<div class="title">Notes on non-"exactly-once" variant</div>
-<p><strong>We strongly discourage non-"exactly-once" instantiation of variant</strong> because the duplicate alternatives lead to <strong>serious runtime performance issues</strong> as the typical, well-optimized implementation of <code>std::hash</code> specialization would never consider <code>v.index()</code> during the hash generation.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;class... Ts&gt;
+/* constexpr */ std::size_t hash_value(rvariant&lt;Ts...&gt; const&amp; v);<span class="candidate">// 3</span>
+
+template&lt;class T, class Allocator&gt;
+/* constexpr */ std::size_t hash_value(recursive_wrapper&lt;T, Allocator&gt; const&amp; rw);<span class="candidate">// 4</span>
+
+} // temp_ns</code></pre>
 </div>
-</td>
-</tr>
-</table>
 </div>
 <div class="openblock candidates">
 <div class="content">
 <div class="ulist">
 <ul>
 <li>
-<p><span class="candidate">1)</span> <strong><em>Effects:</em></strong> Equivalent to <code>std::hash&lt;rvariant&lt;Ts...&gt;&gt;{}(v)</code>.</p>
-</li>
-<li>
-<p><span class="candidate">2)</span> <strong><em>Effects:</em></strong> Equivalent to <code>std::hash&lt;recursive_wrapper&lt;T, Allocator&gt;&gt;{}(rw)</code>.</p>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><span class="candidate">3)</span>
+<p><span class="candidate">1)</span>
 Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://eel.is/c++draft/variant.hash">[spec]</a></sup></p>
 </li>
 </ul>
@@ -1820,8 +1795,14 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist">
 <ul>
 <li>
-<p><span class="candidate">4)</span>
+<p><span class="candidate">2)</span>
 Equivalent to the <code>std::indirect</code> counterpart. <sup><a href="https://eel.is/c++draft/indirect.hash">[spec]</a></sup></p>
+</li>
+<li>
+<p><span class="candidate">3)</span> <strong><em>Effects:</em></strong> Equivalent to <code>std::hash&lt;rvariant&lt;Ts...&gt;&gt;{}(v)</code>.</p>
+</li>
+<li>
+<p><span class="candidate">4)</span> <strong><em>Effects:</em></strong> Equivalent to <code>std::hash&lt;recursive_wrapper&lt;T, Allocator&gt;&gt;{}(rw)</code>.</p>
 </li>
 </ul>
 </div>

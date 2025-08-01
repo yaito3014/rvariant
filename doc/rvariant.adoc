@@ -1173,49 +1173,43 @@ constexpr R visit(this Self&& self, Visitor&& vis);pass:quotes[[.candidate\]#// 
 
 [,cpp,subs="+macros,+attributes"]
 ----
-namespace temp_ns {
-
-template<class... Ts>
-/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);pass:quotes[[.candidate\]#// 1#]
-
-template<class T, class Allocator>
-/* constexpr */ std::size_t hash_value(recursive_wrapper<T, Allocator> const& rw);pass:quotes[[.candidate\]#// 2#]
-
-} // temp_ns
-----
-
-[,cpp,subs="+macros,+attributes"]
-----
 namespace std {
 
 template<class... Ts>
-struct hash<::temp_ns::rvariant<Ts...>>;pass:quotes[[.candidate\]#// 3#]
+struct hash<::temp_ns::rvariant<Ts...>>;pass:quotes[[.candidate\]#// 1#]
 
 template<class T, class Allocator>
-struct hash<::temp_ns::recursive_wrapper<T, Allocator>>;pass:quotes[[.candidate\]#// 4#]
+struct hash<::temp_ns::recursive_wrapper<T, Allocator>>;pass:quotes[[.candidate\]#// 2#]
 
 } // std
 ----
 
-[WARNING]
---
-.Notes on non-"exactly-once" variant
-*We strongly discourage non-"exactly-once" instantiation of variant* because the duplicate alternatives lead to *serious runtime performance issues* as the typical, well-optimized implementation of `std::hash` specialization would never consider `v.index()` during the hash generation.
---
+[,cpp,subs="+macros,+attributes"]
+----
+namespace temp_ns {
+
+template<class... Ts>
+/* constexpr */ std::size_t hash_value(rvariant<Ts...> const& v);pass:quotes[[.candidate\]#// 3#]
+
+template<class T, class Allocator>
+/* constexpr */ std::size_t hash_value(recursive_wrapper<T, Allocator> const& rw);pass:quotes[[.candidate\]#// 4#]
+
+} // temp_ns
+----
 
 [.candidates]
 --
-* [.candidate]#1)# *_Effects:_* Equivalent to `std::hash<rvariant<Ts\...>>{}(v)`.
-
-* [.candidate]#2)# *_Effects:_* Equivalent to `std::hash<recursive_wrapper<T, Allocator>>{}(rw)`.
-
 :spec-url: https://eel.is/c++draft/variant.hash
-* [.candidate]#3)#
+* [.candidate]#1)#
 include::_std-variant-proxy.adoc[]
 
 :spec-url: https://eel.is/c++draft/indirect.hash
-* [.candidate]#4)#
+* [.candidate]#2)#
 include::_std-indirect-proxy.adoc[]
+
+* [.candidate]#3)# *_Effects:_* Equivalent to `std::hash<rvariant<Ts\...>>{}(v)`.
+
+* [.candidate]#4)# *_Effects:_* Equivalent to `std::hash<recursive_wrapper<T, Allocator>>{}(rw)`.
 --
 
 
