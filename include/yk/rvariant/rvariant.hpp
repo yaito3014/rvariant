@@ -1260,7 +1260,7 @@ struct hash<::yk::rvariant<Ts...>>  // NOLINT(cert-dcl58-cpp)
                 // HARMFUL because an end-user will face observable performance issues
                 // just by switching their compiler from MSVC to GCC/Clang.
                 //
-                // Demo: https://godbolt.org/z/7YWE1fGxn
+                // Demo: https://godbolt.org/z/aKhs4vbco
                 //
                 // All above issues can be eliminated by simply returning
                 //   `HC(v.index(), GET<v.index()>(v))`
