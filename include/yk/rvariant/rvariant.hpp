@@ -10,6 +10,8 @@
 #include <yk/core/type_traits.hpp>
 #include <yk/core/cond_trivial.hpp>
 
+#include <yk/hash.hpp>
+
 #include <functional>
 #include <initializer_list>
 #include <type_traits>
@@ -1209,16 +1211,62 @@ struct hash<::yk::rvariant<Ts...>>  // NOLINT(cert-dcl58-cpp)
     [[nodiscard]] static /* constexpr */ std::size_t operator()(::yk::rvariant<Ts...> const& v)
         noexcept(std::conjunction_v<::yk::core::is_nothrow_hashable<std::remove_const_t<Ts>>...>)
     {
-        return ::yk::detail::raw_visit(v, []<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& t)
+        return ::yk::detail::raw_visit(v, []<std::size_t i, class T>(std::in_place_index_t<i>, T const& t)
             noexcept(std::disjunction_v<
                 std::bool_constant<i == std::variant_npos>,
                 ::yk::core::is_nothrow_hashable<T>
             >)
         {
             if constexpr (i == std::variant_npos) {
-                return 0uz; // arbitrary value
+                // Arbitrary value. Might be better to not use common values like
+                // `0` or `-1`, because some hash implementations yield the re-interpreted
+                // integral representation for fundamental types.
+                (void)t;
+                return 0xbaddeadbeefuz;
+
             } else {
-                return std::hash<T>{}(t);
+                // Assume x64 for the description below. This assumption is solely for
+                // demonstration, and the issue described below applies to any architecture.
+                //
+                // Let `Int` denote a strong typedef of `int` such that:
+                //   -- The specialization `std::hash<Int>` is _enabled_ ([unord.hash]), and
+                //   -- such specialization yields the same value as the underlying type.
+                //
+                // Statement 1.
+                // For any standard library implementation,
+                //   hash{}(variant<int, Int>{std::in_place_type<int>, 0}) ==
+                //   hash{}(variant<int, Int>{std::in_place_type<Int>, 0})
+                // yields false-positive `true` if `v.index()` is not hash-mixed.
+                //
+                // Statement 2.
+                // Additionally, for any standard library implementation where
+                //   hash{}(int(0)) == hash(unsigned(0)) // true in GCC/Clang/MSVC
+                // is true, then:
+                //   hash{}(variant<int, unsigned>{std::in_place_type<int>, 0}) ==
+                //   hash{}(variant<int, unsigned>{std::in_place_type<unsigned>, 0})
+                // yields false-positive `true` if `v.index()` is not hash-mixed.
+                //
+                // Statement 3.
+                // Furthermore, for any standard library implementation where
+                // the hash function does not consider the type's actual bit width, i.e.:
+                //   hash{}(int(0)) == hash{}(long long(0)) // true in GCC/Clang, false in MSVC
+                // the following expression:
+                //   hash{}(variant<int, long long>{std::in_place_type<int>, 0}) ==
+                //   hash{}(variant<int, long long>{std::in_place_type<long long>, 0})
+                // yields false-positive `true` if `v.index()` is not hash-mixed.
+                //
+                // For the statements 1 and 2, one may embrace the status quo and just live
+                // with hash collisions. However, for the statement 3, it is actually
+                // HARMFUL because an end-user will face observable performance issues
+                // just by switching their compiler from MSVC to GCC/Clang.
+                //
+                // Demo: https://godbolt.org/z/7YWE1fGxn
+                //
+                // All above issues can be eliminated by simply returning
+                //   `HC(v.index(), GET<v.index()>(v))`
+                // where `HC` is an arbitrary hash mixer function.
+
+                return ::yk::hash_combine_suffix<::yk::FNV_hash<>::hash(i)>(t);
             }
         });
     }

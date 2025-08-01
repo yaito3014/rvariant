@@ -218,13 +218,13 @@ namespace std {
 
 template<class T, class Allocator>
     requires ::yk::core::is_hash_enabled_v<T>
-struct hash<::yk::recursive_wrapper<T, Allocator>>
+struct hash<::yk::recursive_wrapper<T, Allocator>>  // NOLINT(cert-dcl58-cpp)
 {
     [[nodiscard]] static size_t operator()(::yk::recursive_wrapper<T, Allocator> const& obj)
         noexcept(::yk::core::is_nothrow_hashable_v<T>)
     {
         if (obj.valueless_after_move()) [[unlikely]] {
-            return 0;
+            return 0xbaddeadbeefuz;
         } else [[likely]] {
             return std::hash<T>{}(*obj);
         }

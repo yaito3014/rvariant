@@ -435,7 +435,7 @@ struct hash<::yk::indirect<T, Allocator>>
         noexcept(::yk::core::is_nothrow_hashable_v<T>)
     {
         if (obj.valueless_after_move()) [[unlikely]] {
-            return 0;
+            return 0xbaddeadbeefuz;
         } else [[likely]] {
             return std::hash<T>{}(*obj);
         }

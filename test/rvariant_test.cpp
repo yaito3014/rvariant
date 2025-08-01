@@ -16,6 +16,7 @@
 #include <ranges>
 #include <bit>
 #include <array>
+#include <print>
 
 #include <cstddef>
 
@@ -1208,13 +1209,22 @@ TEST_CASE("relational operators")
     }
 }
 
+namespace {
+
+template<class T>
+[[nodiscard]] constexpr std::size_t do_hash(T const& t) noexcept(yk::core::is_nothrow_hashable_v<T>)
+{
+    return std::hash<T>{}(t);
+}
+
+} // anonymous
+
 TEST_CASE("rvariant.hash")
 {
     {
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<int>);
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::rvariant<int>>);
-        CHECK(std::hash<int>{}(42) == std::hash<yk::rvariant<int>>{}(yk::rvariant<int>(42)));
-        CHECK(std::hash<int>{}(42) == hash_value(yk::rvariant<int>(42)));
+        CHECK(do_hash(yk::rvariant<int>(42)) == hash_value(yk::rvariant<int>(42)));
     }
     {
         struct NonExistent;
@@ -1227,8 +1237,23 @@ TEST_CASE("rvariant.hash")
     }
     {
         STATIC_REQUIRE(yk::core::is_hash_enabled_v<yk::rvariant<HashForwarded<int>>>);
-        CHECK(std::hash<int>{}(42) == std::hash<yk::rvariant<HashForwarded<int>>>{}(yk::rvariant<HashForwarded<int>>(HashForwarded<int>(42))));
-        CHECK(std::hash<int>{}(42) == hash_value(yk::rvariant<HashForwarded<int>>(HashForwarded<int>(42))));
+        yk::rvariant<HashForwarded<int>> v(HashForwarded<int>(42));
+        CHECK(do_hash(v) == hash_value(v));
+    }
+
+    // heuristic tests; may fail on collisions
+    {
+        using Int = HashForwarded<int>;
+        using V = yk::rvariant<int, Int>;
+        CHECK(do_hash(V(std::in_place_type<int>, 42)) != do_hash(V(std::in_place_type<Int>, 42)));
+    }
+    {
+        using V = yk::rvariant<int, unsigned>;
+        CHECK(do_hash(V(std::in_place_type<int>, 42)) != do_hash(V(std::in_place_type<unsigned>, 42)));
+    }
+    {
+        using V = yk::rvariant<int, long long>;
+        CHECK(do_hash(V(std::in_place_type<int>, 42)) != do_hash(V(std::in_place_type<long long>, 42)));
     }
 }
 
@@ -1243,8 +1268,7 @@ TEST_CASE("rvariant.hash", "[wrapper]")
         yk::recursive_wrapper<int> a(42);
         auto b = std::move(a);
         REQUIRE(a.valueless_after_move());  // NOLINT(bugprone-use-after-move)
-        CHECK(std::hash<yk::recursive_wrapper<int>>{}(a) == 0);
-        CHECK(hash_value(a) == 0);
+        CHECK(std::hash<yk::recursive_wrapper<int>>{}(a) == hash_value(a));
     }
 }
 
