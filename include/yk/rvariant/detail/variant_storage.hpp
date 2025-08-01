@@ -595,7 +595,7 @@ template<
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
 detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
-visit(Visitor&& vis, Variants&&... vars)
+constexpr visit(Visitor&& vis, Variants&&... vars)
 {
     using T0R = detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>;
     using Check = detail::visit_check<T0R, Visitor, detail::as_variant_t<Variants>...>;
@@ -623,7 +623,7 @@ template<
     // https://eel.is/c++draft/variant.visit#2
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
-R visit(Visitor&& vis, Variants&&... vars)
+constexpr R visit(Visitor&& vis, Variants&&... vars)
 {
     using Check = detail::visit_R_check<R, Visitor, detail::as_variant_t<Variants>...>;
     static_assert(

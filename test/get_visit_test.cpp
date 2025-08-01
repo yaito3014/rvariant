@@ -421,14 +421,14 @@ struct not_a_variant {};
 
 template<class R, class Foo, class... Bar>
     requires (!std::disjunction_v<yk::core::is_ttp_specialization_of<std::remove_cvref_t<Bar>, DerivedVariant>...>)
-R visit(Foo&&, Bar&&...)
+constexpr R visit(Foo&&, Bar&&...)
 {
     return R{"not_a_variant"};
 }
 
 template<class Foo, class... Bar>
     requires (!std::disjunction_v<yk::core::is_ttp_specialization_of<std::remove_cvref_t<Bar>, DerivedVariant>...>)
-decltype(auto) visit(Foo&&, Bar&&...)
+constexpr decltype(auto) visit(Foo&&, Bar&&...)
 {
     return std::string_view{"not_a_variant"};
 }
@@ -458,13 +458,13 @@ struct overload_resolvable<
 
 TEST_CASE("visit (Constraints)")
 {
-    [[maybe_unused]] auto const vis = yk::overloaded{
+    [[maybe_unused]] constexpr auto vis = yk::overloaded{
         [](int const&) -> std::string_view { return "variant"; },
         [](float const&) -> std::string_view { return "variant"; },
     };
     using Visitor = decltype(vis);
 
-    [[maybe_unused]] auto const different_R_vis = yk::overloaded{
+    [[maybe_unused]] constexpr auto different_R_vis = yk::overloaded{
         [](int const&) -> std::string_view { return "variant"; },
         [](float const&) -> std::string /* different type */ { return "variant"; },
     };
@@ -479,27 +479,27 @@ TEST_CASE("visit (Constraints)")
         using IntChecker = yk::detail::visit_check_impl<std::string_view, Visitor, yk::core::type_list<int>>;
         using DoubleChecker = yk::detail::visit_check_impl<std::string_view, Visitor, yk::core::type_list<double>>;
 
-        static_assert(IntChecker::accepts_all_alternatives);
-        static_assert(IntChecker::value);
-        static_assert(!DoubleChecker::accepts_all_alternatives);
-        static_assert(!DoubleChecker::value);
+        STATIC_REQUIRE(IntChecker::accepts_all_alternatives);
+        STATIC_REQUIRE(IntChecker::value);
+        STATIC_REQUIRE(!DoubleChecker::accepts_all_alternatives);
+        STATIC_REQUIRE(!DoubleChecker::value);
 
         {
             using Check = yk::detail::visit_check<std::string_view, Visitor, yk::rvariant<int, float>&&>;
-            static_assert(Check::accepts_all_alternatives);
-            static_assert(Check::same_return_type);
-            static_assert(Check::value);
+            STATIC_REQUIRE(Check::accepts_all_alternatives);
+            STATIC_REQUIRE(Check::same_return_type);
+            STATIC_REQUIRE(Check::value);
         }
         {
             using Check = yk::detail::visit_check<std::string_view, DifferentRVisitor, yk::rvariant<int, float>&&>;
-            static_assert(Check::accepts_all_alternatives);
-            static_assert(!Check::same_return_type);
-            static_assert(!Check::value);
+            STATIC_REQUIRE(Check::accepts_all_alternatives);
+            STATIC_REQUIRE(!Check::same_return_type);
+            STATIC_REQUIRE(!Check::value);
         }
         {
             using Check = yk::detail::visit_check<std::string_view, Visitor, yk::rvariant<int, double>&&>;
-            static_assert(!Check::accepts_all_alternatives);
-            static_assert(!Check::value);
+            STATIC_REQUIRE(!Check::accepts_all_alternatives);
+            STATIC_REQUIRE(!Check::value);
         }
     }
     // for `visit<R>(...)`
@@ -507,28 +507,28 @@ TEST_CASE("visit (Constraints)")
         using IntChecker = yk::detail::visit_R_check_impl<std::string_view, Visitor, yk::core::type_list<int>>;
         using DoubleChecker = yk::detail::visit_R_check_impl<std::string_view, Visitor, yk::core::type_list<double>>;
 
-        static_assert(IntChecker::accepts_all_alternatives);
-        static_assert(IntChecker::return_type_convertible_to_R);
-        static_assert(IntChecker::value);
-        static_assert(!DoubleChecker::accepts_all_alternatives);
-        static_assert(!DoubleChecker::value);
+        STATIC_REQUIRE(IntChecker::accepts_all_alternatives);
+        STATIC_REQUIRE(IntChecker::return_type_convertible_to_R);
+        STATIC_REQUIRE(IntChecker::value);
+        STATIC_REQUIRE(!DoubleChecker::accepts_all_alternatives);
+        STATIC_REQUIRE(!DoubleChecker::value);
 
         {
             using Check = yk::detail::visit_R_check<std::string_view, Visitor, yk::rvariant<int, float>&&>;
-            static_assert(Check::accepts_all_alternatives);
-            static_assert(Check::return_type_convertible_to_R);
-            static_assert(Check::value);
+            STATIC_REQUIRE(Check::accepts_all_alternatives);
+            STATIC_REQUIRE(Check::return_type_convertible_to_R);
+            STATIC_REQUIRE(Check::value);
         }
         {
             using Check = yk::detail::visit_R_check<std::string, DifferentRVisitor, yk::rvariant<int, float>&&>;
-            static_assert(Check::accepts_all_alternatives);
-            static_assert(!Check::return_type_convertible_to_R);
-            static_assert(!Check::value);
+            STATIC_REQUIRE(Check::accepts_all_alternatives);
+            STATIC_REQUIRE(!Check::return_type_convertible_to_R);
+            STATIC_REQUIRE(!Check::value);
         }
         {
             using Check = yk::detail::visit_R_check<std::string_view, Visitor, yk::rvariant<int, double>&&>;
-            static_assert(!Check::accepts_all_alternatives);
-            static_assert(!Check::value);
+            STATIC_REQUIRE(!Check::accepts_all_alternatives);
+            STATIC_REQUIRE(!Check::value);
         }
     }
 
@@ -540,8 +540,8 @@ TEST_CASE("visit (Constraints)")
         });
 
         using std::visit;
-        CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
-        CHECK(visit<std::string_view>(vis, std::variant<int, float>{}) == "variant");
+        STATIC_CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
+        STATIC_CHECK(visit<std::string_view>(vis, std::variant<int, float>{}) == "variant");
     }
     {
         // Asserts the "Constraints:" is implemented correctly
@@ -551,28 +551,28 @@ TEST_CASE("visit (Constraints)")
         });
 
         using ::yk::visit;
-        CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
-        CHECK(visit<std::string_view>(vis, yk::rvariant<int, float>{}) == "variant");
-        CHECK(visit(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
-        CHECK(visit(vis, yk::rvariant<int, float>{}) == "variant");
-        CHECK(yk::rvariant<int, float>{}.visit<std::string_view>(vis) == "variant");
-        CHECK(yk::rvariant<int, float>{}.visit(vis) == "variant");
+        STATIC_CHECK(visit<std::string_view>(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
+        STATIC_CHECK(visit<std::string_view>(vis, yk::rvariant<int, float>{}) == "variant");
+        STATIC_CHECK(visit(vis, not_a_variant_ADL::not_a_variant<int, float>{}) == "not_a_variant");
+        STATIC_CHECK(visit(vis, yk::rvariant<int, float>{}) == "variant");
+        STATIC_CHECK(yk::rvariant<int, float>{}.visit<std::string_view>(vis) == "variant");
+        STATIC_CHECK(yk::rvariant<int, float>{}.visit(vis) == "variant");
 
         // Asserts as-variant is working
-        CHECK(visit<std::string_view>(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
-        CHECK(visit(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
-        CHECK(not_a_variant_ADL::DerivedVariant<int, float>{42}.visit<std::string_view>(vis) == "variant");
-        CHECK(not_a_variant_ADL::DerivedVariant<int, float>{42}.visit(vis) == "variant");
+        STATIC_CHECK(visit<std::string_view>(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
+        STATIC_CHECK(visit(vis, not_a_variant_ADL::DerivedVariant<int, float>{42}) == "variant");
+        STATIC_CHECK(not_a_variant_ADL::DerivedVariant<int, float>{42}.visit<std::string_view>(vis) == "variant");
+        STATIC_CHECK(not_a_variant_ADL::DerivedVariant<int, float>{42}.visit(vis) == "variant");
     }
     {
         // Not permitted (hard error); std::string_view -> std::string is not implicitly convertible
-        //CHECK(std::visit<std::string>(different_R_vis, std::variant<int>{}) == "variant");
-        //CHECK(yk::visit<std::string>(different_R_vis, yk::rvariant<int>{}) == "variant");
+        //STATIC_CHECK(std::visit<std::string>(different_R_vis, std::variant<int>{}) == "variant");
+        //STATIC_CHECK(yk::visit<std::string>(different_R_vis, yk::rvariant<int>{}) == "variant");
     }
     {
         // Implicit cast from different types shall be permitted as per INVOKE<R>(...)
-        CHECK(std::visit<std::string_view>(different_R_vis, std::variant<int, float>{}) == "variant");
-        CHECK(yk::visit<std::string_view>(different_R_vis, yk::rvariant<int, float>{}) == "variant");
+        STATIC_CHECK(std::visit<std::string_view>(different_R_vis, std::variant<int, float>{}) == "variant");
+        STATIC_CHECK(yk::visit<std::string_view>(different_R_vis, yk::rvariant<int, float>{}) == "variant");
     }
     {
         // Case for T0 leading to ill-formed invocation.
@@ -601,43 +601,43 @@ TEST_CASE("visit")
     using SW = strong<wchar_t>;
 
     {
-        auto const vis = yk::overloaded{
+        constexpr auto vis = yk::overloaded{
             [](SI const&) { return 0; },
             [](SD const&) { return 1; },
         };
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}) == 0);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}) == 1);
+        STATIC_CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}) == 0);
+        STATIC_CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}) == 1);
 
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}) == 1);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}) == 0);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}) == 1);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}) == 0);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}) == 1);
 
-        CHECK(yk::rvariant<SI, SD>{SI{}}.visit<int>(vis) == 0);
-        CHECK(yk::rvariant<SI, SD>{SD{}}.visit<int>(vis) == 1);
-        CHECK(yk::rvariant<SI, SD>{SI{}}.visit(vis) == 0);
-        CHECK(yk::rvariant<SI, SD>{SD{}}.visit(vis) == 1);
+        STATIC_CHECK(yk::rvariant<SI, SD>{SI{}}.visit<int>(vis) == 0);
+        STATIC_CHECK(yk::rvariant<SI, SD>{SD{}}.visit<int>(vis) == 1);
+        STATIC_CHECK(yk::rvariant<SI, SD>{SI{}}.visit(vis) == 0);
+        STATIC_CHECK(yk::rvariant<SI, SD>{SD{}}.visit(vis) == 1);
     }
     {
-        auto const vis = yk::overloaded{
+        constexpr auto vis = yk::overloaded{
             [](SI const&, SC const&) { return 0; },
             [](SI const&, SW const&) { return 1; },
             [](SD const&, SC const&) { return 2; },
             [](SD const&, SW const&) { return 3; },
         };
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}, std::variant<SC, SW>{SC{}}) == 0);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}, std::variant<SC, SW>{SW{}}) == 1);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}, std::variant<SC, SW>{SC{}}) == 2);
-        CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}, std::variant<SC, SW>{SW{}}) == 3);
+        STATIC_CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}, std::variant<SC, SW>{SC{}}) == 0);
+        STATIC_CHECK(std::visit<int>(vis, std::variant<SI, SD>{SI{}}, std::variant<SC, SW>{SW{}}) == 1);
+        STATIC_CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}, std::variant<SC, SW>{SC{}}) == 2);
+        STATIC_CHECK(std::visit<int>(vis, std::variant<SI, SD>{SD{}}, std::variant<SC, SW>{SW{}}) == 3);
 
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
-        CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
-        CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<SI, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
     }
 
     {
@@ -668,35 +668,35 @@ TEST_CASE("visit", "[wrapper]")
     using SW = strong<wchar_t>;
 
     {
-        auto const vis = yk::overloaded{
+        constexpr auto vis = yk::overloaded{
             [](SI /* unwrapped */ const&) { return 0; },
             [](SD const&) { return 1; },
         };
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}) == 1);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}) == 0);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}) == 1);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}) == 0);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}) == 1);
 
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}.visit<int>(vis) == 0);
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}.visit<int>(vis) == 1);
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}.visit(vis) == 0);
-        CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}.visit(vis) == 1);
+        STATIC_CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}.visit<int>(vis) == 0);
+        STATIC_CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}.visit<int>(vis) == 1);
+        STATIC_CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}.visit(vis) == 0);
+        STATIC_CHECK(yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}.visit(vis) == 1);
     }
     {
-        auto const vis = yk::overloaded{
+        constexpr auto vis = yk::overloaded{
             [](SI /* unwrapped */ const&, SC const&) { return 0; },
             [](SI /* unwrapped */ const&, SW const&) { return 1; },
             [](SD const&, SC const&) { return 2; },
             [](SD const&, SW const&) { return 3; },
         };
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
-        CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
-        CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        STATIC_CHECK(yk::visit<int>(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SC{}}) == 0);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
+        STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
     }
 }
 
