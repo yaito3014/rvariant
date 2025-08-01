@@ -301,38 +301,84 @@ TEST_CASE("rvariant.io", "[recursive]")
 
 TEST_CASE("rvariant formatter (char)")
 {
-    CHECK(std::format("{}", yk::rvariant<int, double>{42}) == "42");
-    CHECK(std::format("{}", yk::rvariant<int, double>{3.14}) == "3.14");
+    using V = yk::rvariant<int, double>;
+    CHECK(std::format("{}", V{42}) == "42");
+    CHECK(std::format("{}", V{3.14}) == "3.14");
 
     {
-        using V = yk::rvariant<int, double>;
-        constexpr auto spec = yk::make_format_spec_for<V>("{:04d}", "{:.1f}");
+        constexpr auto v_fmt = yk::variant_format<int, double>("{:04d}", "{:.1f}");
         {
             V v(42);
-            CHECK(std::format("pre{}post", yk::format_by(spec, v)) == "pre0042post");
+            CHECK(std::format("pre{}post", yk::format_by(v_fmt, v)) == "pre0042post");
         }
         {
             V v(3.14);
-            CHECK(std::format("pre{}post", yk::format_by(spec, v)) == "pre3.1post");
+            CHECK(std::format("pre{}post", yk::format_by(v_fmt, v)) == "pre3.1post");
+        }
+    }
+    {
+        constexpr auto v_fmt = yk::variant_format_for<V>("{:04d}", "{:.1f}");
+        {
+            V v(42);
+            CHECK(std::format("pre{}post", yk::format_by(v_fmt, v)) == "pre0042post");
+        }
+        {
+            V v(3.14);
+            CHECK(std::format("pre{}post", yk::format_by(v_fmt, v)) == "pre3.1post");
+        }
+    }
+    {
+        auto const v = make_valueless<int>();
+        CHECK_THROWS_AS(std::format("{}", v), std::bad_variant_access);
+        {
+            constexpr auto v_fmt = yk::variant_format_for<decltype(v)>("{}", "");
+            CHECK_THROWS_AS(std::format("{}", yk::format_by(v_fmt, v)), std::bad_variant_access);
+        }
+        {
+            constexpr auto v_fmt = yk::variant_format<int, MC_Thrower>("{}", "");
+            CHECK_THROWS_AS(std::format("{}", yk::format_by(v_fmt, v)), std::bad_variant_access);
         }
     }
 }
 
 TEST_CASE("rvariant formatter (wchar_t)")
 {
-    CHECK(std::format(L"{}", yk::rvariant<int, double>{42}) == L"42");
-    CHECK(std::format(L"{}", yk::rvariant<int, double>{3.14}) == L"3.14");
+    using V = yk::rvariant<int, double>;
+    CHECK(std::format(L"{}", V{42}) == L"42");
+    CHECK(std::format(L"{}", V{3.14}) == L"3.14");
 
     {
-        using V = yk::rvariant<int, double>;
-        constexpr auto spec = yk::make_format_spec_for<V>(L"{:04d}", L"{:.1f}");
+        constexpr auto v_fmt = yk::variant_format<int, double>(L"{:04d}", L"{:.1f}");
         {
             V v(42);
-            CHECK(std::format(L"pre{}post", yk::format_by(spec, v)) == L"pre0042post");
+            CHECK(std::format(L"pre{}post", yk::format_by(v_fmt, v)) == L"pre0042post");
         }
         {
             V v(3.14);
-            CHECK(std::format(L"pre{}post", yk::format_by(spec, v)) == L"pre3.1post");
+            CHECK(std::format(L"pre{}post", yk::format_by(v_fmt, v)) == L"pre3.1post");
+        }
+    }
+    {
+        constexpr auto v_fmt = yk::variant_format_for<V>(L"{:04d}", L"{:.1f}");
+        {
+            V v(42);
+            CHECK(std::format(L"pre{}post", yk::format_by(v_fmt, v)) == L"pre0042post");
+        }
+        {
+            V v(3.14);
+            CHECK(std::format(L"pre{}post", yk::format_by(v_fmt, v)) == L"pre3.1post");
+        }
+    }
+    {
+        auto const v = make_valueless<int>();
+        CHECK_THROWS_AS(std::format(L"{}", v), std::bad_variant_access);
+        {
+            constexpr auto v_fmt = yk::variant_format_for<decltype(v)>(L"{}", L"");
+            CHECK_THROWS_AS(std::format(L"{}", yk::format_by(v_fmt, v)), std::bad_variant_access);
+        }
+        {
+            constexpr auto v_fmt = yk::variant_format<int, MC_Thrower>(L"{}", L"");
+            CHECK_THROWS_AS(std::format(L"{}", yk::format_by(v_fmt, v)), std::bad_variant_access);
         }
     }
 }

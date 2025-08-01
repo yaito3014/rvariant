@@ -78,7 +78,7 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v)
 namespace detail {
 
 template<class charT, class T>
-struct format_spec_overload
+struct variant_format_string_overload
 {
     using fmt_type = std::basic_format_string<charT, T const&>;
     fmt_type fmt;
@@ -90,105 +90,83 @@ struct format_spec_overload
 };
 
 template<class... Fs>
-struct format_spec : Fs...
+struct variant_format_string : Fs...
 {
     static_assert(sizeof...(Fs) > 0);
     using Fs::operator()...;
 };
 
 template<class charT, class... Ts>
-using format_spec_t = format_spec<format_spec_overload<charT, Ts>...>;
+using variant_format_string_t = variant_format_string<variant_format_string_overload<charT, Ts>...>;
 
-template<class FormatSpec, class... Ts>
-struct format_by_proxy
+template<class VFormat, class Variant>
+struct variant_format_proxy
 {
+    static_assert(!std::is_rvalue_reference_v<VFormat>);
+    static_assert(!std::is_rvalue_reference_v<Variant>);
     // NOLINTBEGIN(cppcoreguidelines-avoid-const-or-ref-data-members)
-    FormatSpec fspec;
-    rvariant<Ts...> const& v;
+    VFormat v_fmt;
+    Variant v;
     // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 };
 
 template<class charT, class Variant>
-struct make_format_spec_for_impl;
+struct variant_format_for_impl;
 
 template<class charT, class... Ts>
-struct make_format_spec_for_impl<charT, rvariant<Ts...>>
+struct variant_format_for_impl<charT, rvariant<Ts...>>
 {
-    using spec_type = format_spec_t<charT, Ts...>;
+    using spec_type = variant_format_string_t<charT, Ts...>;
 
-    [[nodiscard]] static consteval spec_type
-    apply(std::basic_format_string<charT, Ts const&> const&... fmts) noexcept
+    template<class... Fmts>
+    [[nodiscard]] static YK_CONSTEXPR_UP spec_type
+    apply(Fmts&&... fmts) noexcept
     {
-        return format_spec{format_spec_overload<charT, Ts>{fmts}...};
+        return variant_format_string{variant_format_string_overload<charT, Ts>{
+            std::forward<Fmts>(fmts)
+        }...};
     }
 };
 
 }  // detail
 
 
-template<class charT, class... Ts>
-[[nodiscard]] consteval detail::format_spec_t<charT, Ts...>
-make_format_spec(std::basic_format_string<charT, Ts const&> const&... fmts) noexcept
+template<class... Ts, class... Fmts, class charT = select_char_t<Fmts...>>
+[[nodiscard]] YK_CONSTEXPR_UP detail::variant_format_string_t<charT, Ts...>
+variant_format(Fmts&&... fmts) noexcept
 {
-    return detail::format_spec{detail::format_spec_overload<charT, Ts>{fmts}...};
+    static_assert(sizeof...(Ts) > 0);
+    return detail::variant_format_string{detail::variant_format_string_overload<charT, Ts>{
+        std::forward<Fmts>(fmts)
+    }...};
 }
 
-template<class Variant, class... Fmts>
-[[nodiscard]] consteval typename detail::make_format_spec_for_impl<select_char_t<Fmts...>, Variant>::spec_type
-make_format_spec_for(Fmts const&... fmts) noexcept
+template<class Variant, class... Fmts, class charT = select_char_t<Fmts...>>
+[[nodiscard]] YK_CONSTEXPR_UP typename detail::variant_format_for_impl<charT, std::remove_cvref_t<Variant>>::spec_type
+variant_format_for(Fmts&&... fmts) noexcept
 {
-    return detail::make_format_spec_for_impl<select_char_t<Fmts...>, Variant>::apply(fmts...);
+    static_assert(core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, rvariant>);
+    return detail::variant_format_for_impl<charT, std::remove_cvref_t<Variant>>::apply(
+        std::forward<Fmts>(fmts)...
+    );
 }
 
-template<class FormatSpec, class... Ts>
-[[nodiscard]] constexpr detail::format_by_proxy<FormatSpec, Ts...>
-format_by(FormatSpec&& fspec YK_LIFETIMEBOUND, rvariant<Ts...> const& var YK_LIFETIMEBOUND)
+template<class VFormat, class Variant>
+    requires
+        core::is_ttp_specialization_of_v<std::remove_cvref_t<VFormat>, detail::variant_format_string> &&
+        core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, rvariant>
+[[nodiscard]] constexpr detail::variant_format_proxy<VFormat, Variant>
+format_by(VFormat&& v_fmt YK_LIFETIMEBOUND, Variant&& v YK_LIFETIMEBOUND) noexcept
 {
-    return detail::format_by_proxy<FormatSpec, Ts...>{
-        std::forward<FormatSpec>(fspec), var
+    return detail::variant_format_proxy<VFormat, Variant>{
+        std::forward<VFormat>(v_fmt), std::forward<Variant>(v)
     };
 }
-
-template<class FormatSpec, class... Ts>
-void format_by(FormatSpec&&, rvariant<Ts...>&&) = delete; // dangling
-
-template<class FormatSpec, class... Ts>
-void format_by(FormatSpec&&, rvariant<Ts...> const&&) = delete; // dangling
 
 }  // yk
 
 
 namespace std {
-
-template<class FormatSpec, class... Ts, class charT>
-struct formatter<yk::detail::format_by_proxy<FormatSpec, Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
-{
-    static constexpr typename std::basic_format_parse_context<charT>::const_iterator
-    parse(std::basic_format_parse_context<charT>& ctx)
-    {
-        if (ctx.begin() == ctx.end()) return ctx.begin();
-        if (*ctx.begin() == ::yk::format_traits<charT>::brace_close) return ctx.begin();
-        throw std::format_error(
-            "format_by only accepts empty format spec; use "
-            "`make_format_spec` for full controls."
-        );
-    }
-
-    template<class OutIt>
-    static OutIt format(yk::detail::format_by_proxy<FormatSpec, Ts...> const& proxy, std::basic_format_context<OutIt, charT>& ctx)
-    {
-        return yk::visit(
-            [&]<class T>(T const& alt) {
-                return std::format_to(
-                    ctx.out(),
-                    std::invoke(proxy.fspec, std::in_place_type<T>),
-                    alt
-                );
-            },
-            proxy.v
-        );
-    }
-};
 
 template<class... Ts, class charT>
     requires (std::formattable<yk::unwrap_recursive_t<Ts>, charT> && ...)
@@ -218,6 +196,40 @@ struct formatter<yk::rvariant<Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
                 );
             },
             var
+        );
+    }
+};
+
+template<class VFormat, class... Ts, class charT>
+struct formatter<yk::detail::variant_format_proxy<VFormat, Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
+{
+    static constexpr typename std::basic_format_parse_context<charT>::const_iterator
+    parse(std::basic_format_parse_context<charT>& ctx)
+    {
+        if (ctx.begin() == ctx.end()) return ctx.begin();
+        if (*ctx.begin() == ::yk::format_traits<charT>::brace_close) return ctx.begin();
+        throw std::format_error(
+            "format_by only accepts empty format spec; use "
+            "`variant_format` for full controls."
+        );
+    }
+
+    template<class OutIt>
+    static OutIt format(yk::detail::variant_format_proxy<VFormat, Ts...> const& proxy, std::basic_format_context<OutIt, charT>& ctx)
+    {
+        return yk::visit(
+            [&]<class T>(T const& alt) {
+                static_assert(
+                    std::is_invocable_v<VFormat, std::in_place_type_t<T>>,
+                    "`VFormat` must provide format string for all alternative types."
+                );
+                return std::format_to(
+                    ctx.out(),
+                    std::invoke(proxy.v_fmt, std::in_place_type<T>),
+                    alt
+                );
+            },
+            proxy.v
         );
     }
 };

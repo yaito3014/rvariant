@@ -255,7 +255,12 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.get">Value access <span class="slug">[rvariant.get]</span></a></li>
 <li><a href="#rvariant.visit">Visitation <span class="slug">[rvariant.visit]</span></a></li>
 <li><a href="#rvariant.hash">Hash support <span class="slug">[rvariant.hash]</span></a></li>
-<li><a href="#rvariant.io">I/O <span class="slug">[rvariant.io]</span></a></li>
+<li><a href="#rvariant.io">I/O <span class="slug">[rvariant.io]</span></a>
+<ul class="sectlevel2">
+<li><a href="#rvariant.io.ostream"><code>operator&lt;&lt;</code> support</a></li>
+<li><a href="#rvariant.io.format"><code>std::formatter</code> support</a></li>
+</ul>
+</li>
 <li><a href="#rvariant.pack">Pack manipulation and deduping <span class="slug">[rvariant.pack]</span></a></li>
 <li><a href="#rvariant.recursive">Class template <code>recursive_wrapper</code> <span class="slug">[rvariant.recursive]</span></a>
 <ul class="sectlevel2">
@@ -1816,6 +1821,8 @@ Equivalent to the <code>std::indirect</code> counterpart. <sup><a href="https://
 <div class="paragraph">
 <p>I/O components are <em>not</em> included by the global convenience header (<code>&lt;temp_ns/rvariant.hpp&gt;</code>).</p>
 </div>
+<div class="sect2">
+<h3 id="rvariant.io.ostream"><a class="anchor" href="#rvariant.io.ostream"></a><code>operator&lt;&lt;</code> support</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// &lt;temp_ns/rvariant/rvariant_io.hpp&gt;
@@ -1879,15 +1886,100 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 </li>
 </ul>
 </div>
+</div>
+<div class="sect2">
+<h3 id="rvariant.io.format"><a class="anchor" href="#rvariant.io.format"></a><code>std::formatter</code> support</h3>
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>Let <code>v</code> denote an object of <code>rvariant</code>, and let <code>proxy</code> denote an object of <code><em>variant_format_proxy</em></code>.</p>
+</li>
+<li>
+<p><code>std::formatter</code> specialization is enabled for <code>rvariant</code>, with the following characteristics:</p>
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;The format specifier must be empty, otherwise <code>std::format_error</code> is thrown, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;if <code>v.valueless_by_exception()</code> is <code>true</code>, <code>std::bad_variant_access</code> is thrown, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), <em>paren</em>, <em>GET</em>&lt;v.index()&gt;(v))</code>, with <code><em>paren</em></code> being a string literal <code>"{}"</code> interpreted on the target character type.</p>
+</li>
+<li>
+<p><em>Example:</em></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">std::println("{}", temp_ns::rvariant&lt;int, double&gt;(42)); // prints <code>42</code></code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><code>std::formatter</code> specialization is enabled for <code><em>variant_format_proxy</em></code>, with the following characteristics:</p>
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;The format specifier must be empty, otherwise <code>std::format_error</code> is thrown, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;if <code>v.valueless_by_exception()</code> is <code>true</code>, <code>std::bad_variant_access</code> is thrown, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type&lt;Ts...[proxy.v.index()]&gt;), <em>GET</em>&lt;proxy.v.index()&gt;(proxy.v))</code>, with <code>Ts</code> being the template parameter pack of the type of <code>proxy.v</code>.</p>
+</li>
+<li>
+<p><em>Example:</em></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">using V = temp_ns::rvariant&lt;int, double&gt;;
+constexpr auto v_fmt = temp_ns::variant_format_for&lt;V&gt;("{:04d}", "{:.1f}");
+std::println("foo{}bar", temp_ns::format_by(v_fmt, V(42)); // prints <code>foo0042bar</code>
+std::println("foo{}bar", temp_ns::format_by(v_fmt, V(3.14)); // prints <code>foo3.1bar</code></code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">template&lt;class... CharLike&gt;
+using <em>select-char-t</em> = <span class="see-below">see below</span>; // <span class="exposition-only">exposition only</span></code></pre>
+</div>
+</div>
+<div class="ulist candidates">
+<ul>
+<li>
+<p><span class="candidate"></span> Denotes <code>charT</code>, with <code>charT</code> being the character type for which <code>std::is_convertible_v&lt;CharLike<sub><em>i</em></sub>, std::basic_string_view&lt;charT&gt;&gt;</code> is <code>true</code> for all <em>i</em>. If there exists no such substitution, the program is ill-formed.</p>
+</li>
+</ul>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// &lt;temp_ns/rvariant/rvariant_io.hpp&gt;
 
 #include &lt;format&gt;
 
+template&lt;class charT, class... Ts&gt;
+struct <em>variant_format_string</em> // <span class="exposition-only">exposition only</span>
+{
+  std::basic_format_string&lt;charT, Ts...[i] const&amp;&gt; fmts...;
+  auto const&amp; operator()(std::in_place_type&lt;Ts...[i]&gt;) const noexcept { return fmts...[i]; }
+};
+
 namespace temp_ns {
 
-// TODO
+template&lt;class... Ts, class... Fmts&gt;
+constexpr <em>variant_format_string</em>&lt;<span class="see-below">see below</span>&gt; variant_format(Fmts&amp;&amp;... fmts) noexcept;<span class="candidate">// 1</span>
+
+template&lt;class Variant, class... Fmts&gt;
+constexpr <em>variant_format_string</em>&lt;<span class="see-below">see below</span>&gt; variant_format_for(Fmts&amp;&amp;... fmts) noexcept;<span class="candidate">// 2</span>
 
 } // temp_ns</code></pre>
 </div>
@@ -1895,9 +1987,57 @@ namespace temp_ns {
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1)</span> TODO</p>
+<p><span class="candidate">1)</span> <strong><em>Mandates:</em></strong> <code>std::is_convertible_v&lt;Fmts<sub><em>i</em></sub>, <em>select-char-t</em>&lt;Fmts...&gt;&gt;</code> is <code>true</code> for all <em>i</em>, and <code>sizeof...(Ts) &gt; 0</code> is <code>true</code>.</p>
+<div class="paragraph">
+<p>Let <code>charT</code> denote <code><em>select-char-t</em>&lt;Fmts...&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Returns:</em></strong> <code><em>variant_format_string</em>&lt;charT, Ts...&gt;{std::forward&lt;Fmts&gt;(fmts)...}</code>.</p>
+</div>
+</li>
+<li>
+<p><span class="candidate">2)</span> <strong><em>Mandates:</em></strong> <code>std::is_convertible_v&lt;Fmts<sub><em>i</em></sub>, <em>select-char-t</em>&lt;Fmts...&gt;&gt;</code> is <code>true</code> for all <em>i</em>, and <code>std::remove_cvref_t&lt;Variant&gt;</code> is a specialization of <code>rvariant</code>.</p>
+<div class="paragraph">
+<p>Let <code>charT</code> denote <code><em>select-char-t</em>&lt;Fmts...&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Returns:</em></strong> <code><em>variant_format_string</em>&lt;charT, Ts...&gt;{std::forward&lt;Fmts&gt;(fmts)...}</code>, with <code>Ts</code> being the template parameter pack of <code>std::remove_cvref_t&lt;Variant&gt;</code>.</p>
+</div>
 </li>
 </ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// &lt;temp_ns/rvariant/rvariant_io.hpp&gt;
+
+#include &lt;format&gt;
+
+template&lt;class VFormat, class Variant&gt;
+struct <em>variant_format_proxy</em> // <span class="exposition-only">exposition only</span>
+{
+    VFormat v_fmt;
+    Variant v;
+};
+
+namespace temp_ns {
+
+template&lt;class VFormat, class Variant&gt;
+constexpr <em>variant_format_proxy</em>&lt;VFormat, Variant&gt;
+format_by(VFormat&amp;&amp; v_fmt, Variant&amp;&amp; v) noexcept;<span class="candidate">// 1</span>
+
+} // temp_ns</code></pre>
+</div>
+</div>
+<div class="ulist candidates">
+<ul>
+<li>
+<p><span class="candidate">1)</span> <strong><em>Constraints:</em></strong> <code>std::remove_cvref_t&lt;VFormat&gt;</code> is a specialization of <code><em>variant_format_string</em></code>, and <code>std::remove_cvref_t&lt;Variant&gt;</code> is a specialization of <code>rvariant</code>.</p>
+<div class="paragraph">
+<p><strong><em>Returns:</em></strong> <code><em>variant_format_proxy</em>&lt;VFormat, Variant&gt;{std::forward&lt;VFormat&gt;(v_fmt), std::forward&lt;Variant&gt;(v)}</code>.</p>
+</div>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>

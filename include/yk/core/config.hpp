@@ -35,4 +35,11 @@
 # endif
 #endif
 
+
+#if __cpp_consteval >= 202211L
+# define YK_CONSTEXPR_UP constexpr
+#else
+# define YK_CONSTEXPR_UP consteval
+#endif
+
 #endif

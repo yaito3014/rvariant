@@ -1217,6 +1217,9 @@ include::_std-indirect-proxy.adoc[]
 == I/O [.slug]##<<rvariant.io,[rvariant.io]>>##
 I/O components are _not_ included by the global convenience header (`<temp_ns/rvariant.hpp>`).
 
+[[rvariant.io.ostream]]
+=== `operator<<` support
+
 [,cpp,subs="+macros,+attributes"]
 ----
 // <temp_ns/rvariant/rvariant_io.hpp>
@@ -1256,21 +1259,119 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v);pass:quotes
 *_Throws:_* `std::bad_variant_access` if `v.valueless_by_exception()` is `true`. Otherwise, throws any exception thrown as per the formatted output function's specification.
 
 
+[[rvariant.io.format]]
+=== `std::formatter` support
+
+:variant-format-string: pass:quotes[_variant_format_string_]
+:variant-format-proxy: pass:quotes[_variant_format_proxy_]
+
+[none]
+* Let `v` denote an object of `rvariant`, and let `proxy` denote an object of `{variant-format-proxy}`.
+
+* `std::formatter` specialization is enabled for `rvariant`, with the following characteristics:
++
+[none]
+** -- The format specifier must be empty, otherwise `std::format_error` is thrown, and
+** -- if `v.valueless_by_exception()` is `true`, `std::bad_variant_access` is thrown, and
+** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), _paren_, _GET_<v.index()>(v))`, with `_paren_` being a string literal `"{}"` interpreted on the target character type.
+** _Example:_
++
+[,cpp,subs="+macros,+attributes"]
+----
+std::println("{}", temp_ns::rvariant<int, double>(42)); // prints pass:quotes[`42`]
+----
+
+* `std::formatter` specialization is enabled for `{variant-format-proxy}`, with the following characteristics:
++
+[none]
+** -- The format specifier must be empty, otherwise `std::format_error` is thrown, and
+** -- if `v.valueless_by_exception()` is `true`, `std::bad_variant_access` is thrown, and
+** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type<Ts\...[proxy.v.index()]>), _GET_<proxy.v.index()>(proxy.v))`, with `Ts` being the template parameter pack of the type of `proxy.v`.
+** _Example:_
++
+[,cpp,subs="+macros,+attributes"]
+----
+using V = temp_ns::rvariant<int, double>;
+constexpr auto v_fmt = temp_ns::variant_format_for<V>("{:04d}", "{:.1f}");
+std::println("foo{}bar", temp_ns::format_by(v_fmt, V(42)); // prints pass:quotes[`foo0042bar`]
+std::println("foo{}bar", temp_ns::format_by(v_fmt, V(3.14)); // prints pass:quotes[`foo3.1bar`]
+----
+
+
+[,cpp,subs="+macros,+attributes"]
+----
+template<class... CharLike>
+using pass:quotes[_select-char-t_] = {see-below}; // {exposition-only}
+----
+
+[.candidates]
+* [.candidate]#{empty}# Denotes `charT`, with `charT` being the character type for which `std::is_convertible_v<CharLike~_i_~, std::basic_string_view<charT>>` is `true` for all _i_. If there exists no such substitution, the program is ill-formed.
+
+
 [,cpp,subs="+macros,+attributes"]
 ----
 // <temp_ns/rvariant/rvariant_io.hpp>
 
 #include <format>
 
+template<class charT, class... Ts>
+struct {variant-format-string} // {exposition-only}
+{
+  std::basic_format_string<charT, Ts...[i] const&> fmts...;
+  auto const& operator()(std::in_place_type<Ts...[i]>) const noexcept { return fmts...[i]; }
+};
+
 namespace temp_ns {
 
-// TODO
+template<class... Ts, class... Fmts>
+constexpr {variant-format-string}<{see-below}> variant_format(Fmts&&... fmts) noexcept;pass:quotes[[.candidate\]#// 1#]
+
+template<class Variant, class... Fmts>
+constexpr {variant-format-string}<{see-below}> variant_format_for(Fmts&&... fmts) noexcept;pass:quotes[[.candidate\]#// 2#]
 
 } // temp_ns
 ----
 
 [.candidates]
-* [.candidate]#1)# TODO
+* [.candidate]#1)# *_Mandates:_* `std::is_convertible_v<Fmts~_i_~, _select-char-t_<Fmts\...>>` is `true` for all _i_, and `sizeof\...(Ts) > 0` is `true`.
++
+Let `charT` denote `_select-char-t_<Fmts\...>`.
++
+*_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`.
+
+* [.candidate]#2)# *_Mandates:_* `std::is_convertible_v<Fmts~_i_~, _select-char-t_<Fmts\...>>` is `true` for all _i_, and `std::remove_cvref_t<Variant>` is a specialization of `rvariant`.
++
+Let `charT` denote `_select-char-t_<Fmts\...>`.
++
+*_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`, with `Ts` being the template parameter pack of `std::remove_cvref_t<Variant>`.
+
+
+[,cpp,subs="+macros,+attributes"]
+----
+// <temp_ns/rvariant/rvariant_io.hpp>
+
+#include <format>
+
+template<class VFormat, class Variant>
+struct {variant-format-proxy} // {exposition-only}
+{
+    VFormat v_fmt;
+    Variant v;
+};
+
+namespace temp_ns {
+
+template<class VFormat, class Variant>
+constexpr {variant-format-proxy}<VFormat, Variant>
+format_by(VFormat&& v_fmt, Variant&& v) noexcept;pass:quotes[[.candidate\]#// 1#]
+
+} // temp_ns
+----
+
+[.candidates]
+* [.candidate]#1)# *_Constraints:_* `std::remove_cvref_t<VFormat>` is a specialization of `{variant-format-string}`, and `std::remove_cvref_t<Variant>` is a specialization of `rvariant`.
++
+*_Returns:_* `{variant-format-proxy}<VFormat, Variant>{std::forward<VFormat>(v_fmt), std::forward<Variant>(v)}`.
 
 
 [[rvariant.pack]]
