@@ -107,7 +107,6 @@ li p:has(+ .ulist) {
 .slug {
   float: right;
   margin-left: .25em;
-  user-select: none;
 }
 
 .slug a {
@@ -881,7 +880,7 @@ See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</
 <p><span class="underline">Let <code>T</code> and <code>A</code> denote arbitrary types. For the template parameter of <code>rvariant</code>, if a user provides both <code>T</code> and <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T, A&gt;</code> , the program is ill-formed.</span></p>
 </li>
 <li>
-<p><span class="underline">Let <code>T</code> denote an arbitrary type. For the template parameter of <code>rvariant</code>, if a user provides multiple different specializations of <code><a href="#rvariant.recursive">recursive_wrapper</a></code> such that the first template parameter is <code>T</code>, the program is ill-formed.</span> <strong>TODO: implement this</strong></p>
+<p><span class="underline">Let <code>T</code> denote an arbitrary type. For the template parameter of <code>rvariant</code>, if a user provides multiple different specializations of <code><a href="#rvariant.recursive">recursive_wrapper</a></code> such that the first template parameter is <code>T</code>, the program is ill-formed.</span></p>
 </li>
 </ul>
 </div>

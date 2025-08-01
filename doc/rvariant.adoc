@@ -534,7 +534,7 @@ NOTE: See also: spec of https://eel.is/c++draft/variant[`std::variant`] and http
 
 * [.underline]#Let `T` and `A` denote arbitrary types. For the template parameter of `rvariant`, if a user provides both `T` and `{recursive_wrapper}<T, A>` , the program is ill-formed.#
 
-* [.underline]#Let `T` denote an arbitrary type. For the template parameter of `rvariant`, if a user provides multiple different specializations of `{recursive_wrapper}` such that the first template parameter is `T`, the program is ill-formed.# *TODO: implement this*
+* [.underline]#Let `T` denote an arbitrary type. For the template parameter of `rvariant`, if a user provides multiple different specializations of `{recursive_wrapper}` such that the first template parameter is `T`, the program is ill-formed.#
 
 [WARNING]
 --

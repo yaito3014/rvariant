@@ -406,6 +406,16 @@ TEST_CASE("helper class")
 
 // --------------------------------------------
 
+TEST_CASE("rvariant.rvariant.general", "[wrapper]")
+{
+    // [rvariant.rvariant.general]
+    //yk::rvariant<int, yk::recursive_wrapper<int>>{}; // hard error
+    //yk::rvariant<yk::recursive_wrapper<int>, int>{}; // hard error
+    (void)yk::rvariant<yk::recursive_wrapper<int>, yk::recursive_wrapper<int>>{}; // ok
+    //struct MyAllocator : std::allocator<int> {};
+    //yk::rvariant<yk::recursive_wrapper<int>, yk::recursive_wrapper<int, MyAllocator>>{}; // hard error
+}
+
 TEST_CASE("default construction")
 {
     {

@@ -26,14 +26,53 @@ namespace yk {
 
 namespace detail {
 
+template<class T, class U>
+struct check_recursive_wrapper_duplicate_impl : std::true_type {};
+
+template<class T, class Allocator>
+struct check_recursive_wrapper_duplicate_impl<recursive_wrapper<T, Allocator>, T>
+    : std::false_type
+{
+    // ReSharper disable once CppStaticAssertFailure
+    static_assert(
+        false,
+        "rvariant cannot contain both `T` and `recursive_wrapper<T, Allocator>` "
+        "([rvariant.rvariant.general])."
+    );
+};
+
+template<class T, class Allocator>
+struct check_recursive_wrapper_duplicate_impl<T, recursive_wrapper<T, Allocator>>
+    : std::false_type
+{
+    // ReSharper disable once CppStaticAssertFailure
+    static_assert(
+        false,
+        "rvariant cannot contain both `T` and `recursive_wrapper<T, Allocator>` "
+        "([rvariant.rvariant.general])."
+    );
+};
+
+template<class T, class Allocator, class UAllocator>
+    requires (!std::is_same_v<Allocator, UAllocator>)
+struct check_recursive_wrapper_duplicate_impl<recursive_wrapper<T, Allocator>, recursive_wrapper<T, UAllocator>>
+    : std::false_type
+{
+    // ReSharper disable once CppStaticAssertFailure
+    static_assert(
+        false,
+        "rvariant cannot contain multiple different allocator specializations of "
+        "`recursive_wrapper` for the same `T` ([rvariant.rvariant.general])."
+    );
+};
+
 template<class T, class... Ts>
-struct has_recursive_wrapper_duplicate
-    : std::false_type {};
+struct check_recursive_wrapper_duplicate : std::true_type {};
 
-template<class T, class Allocator, class... Ts>
-struct has_recursive_wrapper_duplicate<recursive_wrapper<T, Allocator>, Ts...>
-    : core::is_in<T, Ts...> {};
-
+template<class T, class... Ts> requires (sizeof...(Ts) > 0)
+struct check_recursive_wrapper_duplicate<T, T, Ts...>
+    : std::conjunction<check_recursive_wrapper_duplicate_impl<T, Ts>...>
+{};
 
 template<class T, class List>
 struct non_wrapped_exactly_once : core::exactly_once<T, List>
@@ -323,10 +362,7 @@ template<class Compare, class... Ts>
 template<class... Ts>
 class rvariant : private detail::rvariant_base_t<Ts...>
 {
-    static_assert(
-        !std::disjunction_v<detail::has_recursive_wrapper_duplicate<Ts, Ts...>...>,
-        "rvariant cannot have both T and recursive_wrapper of T."
-    );
+    static_assert(std::conjunction_v<detail::check_recursive_wrapper_duplicate<Ts, Ts...>...>);
     static_assert(std::conjunction_v<std::is_destructible<Ts>...>);
     static_assert(sizeof...(Ts) > 0);
 

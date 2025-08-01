@@ -97,7 +97,6 @@ li p:has(+ .ulist) {
 .slug {
   float: right;
   margin-left: .25em;
-  user-select: none;
 }
 
 .slug a {
