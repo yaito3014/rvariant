@@ -1385,32 +1385,6 @@ format_by(VFormat&& v_fmt, Variant&& v) noexcept;pass:quotes[[.candidate\]#// 1#
 *_Returns:_* `{variant-format-proxy}<VFormat, Variant>{std::forward<VFormat>(v_fmt), std::forward<Variant>(v)}`.
 
 
-[[rvariant.pack]]
-== Pack manipulation and deduping [.slug]##<<rvariant.pack,[rvariant.pack]>>##
-
-[,cpp,subs="+macros,+attributes"]
-----
-namespace temp_ns {
-
-template<template<class...> class TT, class A, class B>
-struct compact_alternative;
-
-} // temp_ns
-----
-
-[.candidates]
-* [.candidate]#{empty}# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.
-+
-*_Definition:_*  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `<<rvariant.xo.pack,_pack-union-t_>><TT, A, B>`. The member typedef `type` denotes `Ts\...[0]` if `sizeof\...(Ts) == 1`; otherwise, the member typedef `type` denotes `TT<Ts\...>`.
-
-[WARNING]
-.Notes on single-type variant
-A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
-
-[WARNING]
-`compact_alternative` does not unwrap `{recursive_wrapper}`. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply `{unwrap_recursive_t}` manually.
-
-
 [[rvariant.recursive]]
 == Class template `recursive_wrapper` [.slug]##<<rvariant.recursive,[rvariant.recursive]>>##
 
@@ -1536,6 +1510,32 @@ constexpr {see-below} pass:quotes[_UNWRAP_RECURSIVE_](T&& o) noexcept; // {expos
 
 [.candidates]
 * [.candidate]#{empty}# *_Effects:_* Denotes `*o`, if cv-unqualified non-reference type for `T` is a specialization of `{recursive_wrapper}`. Otherwise, denotes `o`.
+
+
+[[rvariant.pack]]
+== Pack manipulation and deduping [.slug]##<<rvariant.pack,[rvariant.pack]>>##
+
+[,cpp,subs="+macros,+attributes"]
+----
+namespace temp_ns {
+
+template<template<class...> class TT, class A, class B>
+struct compact_alternative;
+
+} // temp_ns
+----
+
+[.candidates]
+* [.candidate]#{empty}# Effectively concatenates contained types in `A` and `B`, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.
++
+*_Definition:_*  Let `Ts` denote an imaginary pack of types where `TT<Ts\...>` is the same type as `<<rvariant.xo.pack,_pack-union-t_>><TT, A, B>`. The member typedef `type` denotes `Ts\...[0]` if `sizeof\...(Ts) == 1`; otherwise, the member typedef `type` denotes `TT<Ts\...>`.
+
+[WARNING]
+.Notes on single-type variant
+A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be _unwrapped_ using `compact_alternative`. This is useful for resolving issues such as https://github.com/boostorg/spirit/issues/610[boostorg/spirit#610].
+
+[WARNING]
+`compact_alternative` does not unwrap `{recursive_wrapper}`. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply `{unwrap_recursive_t}` manually.
 
 
 [[rvariant.xo]]

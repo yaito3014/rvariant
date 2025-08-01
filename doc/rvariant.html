@@ -260,7 +260,6 @@ li p:has(+ .ulist) {
 <li><a href="#rvariant.io.format"><code>std::formatter</code> support</a></li>
 </ul>
 </li>
-<li><a href="#rvariant.pack">Pack manipulation and deduping <span class="slug">[rvariant.pack]</span></a></li>
 <li><a href="#rvariant.recursive">Class template <code>recursive_wrapper</code> <span class="slug">[rvariant.recursive]</span></a>
 <ul class="sectlevel2">
 <li><a href="#rvariant.recursive.general">General <span class="slug">[rvariant.recursive.general]</span></a></li>
@@ -268,6 +267,7 @@ li p:has(+ .ulist) {
 </ul>
 </li>
 <li><a href="#rvariant.recursive.helper"><code>recursive_wrapper</code> helper classes <span class="slug">[rvariant.recursive.helper]</span></a></li>
+<li><a href="#rvariant.pack">Pack manipulation and deduping <span class="slug">[rvariant.pack]</span></a></li>
 <li><a href="#rvariant.xo">Exposition-only utilities <span class="slug">[rvariant.xo]</span></a>
 <ul class="sectlevel2">
 <li><a href="#rvariant.xo.pack">Pack utilities <span class="slug">[rvariant.xo.pack]</span></a></li>
@@ -2061,56 +2061,6 @@ format_by(VFormat&amp;&amp; v_fmt, Variant&amp;&amp; v) noexcept;<span class="ca
 </div>
 </div>
 <div class="sect1">
-<h2 id="rvariant.pack"><a class="anchor" href="#rvariant.pack"></a>Pack manipulation and deduping <span class="slug"><a href="#rvariant.pack">[rvariant.pack]</a></span></h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
-
-template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
-struct compact_alternative;
-
-} // temp_ns</code></pre>
-</div>
-</div>
-<div class="ulist candidates">
-<ul>
-<li>
-<p><span class="candidate"></span> Effectively concatenates contained types in <code>A</code> and <code>B</code>, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.</p>
-<div class="paragraph">
-<p><strong><em>Definition:</em></strong>  Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code><a href="#rvariant.xo.pack"><em>pack-union-t</em></a>&lt;TT, A, B&gt;</code>. The member typedef <code>type</code> denotes <code>Ts...[0]</code> if <code>sizeof...(Ts) == 1</code>; otherwise, the member typedef <code>type</code> denotes <code>TT&lt;Ts...&gt;</code>.</p>
-</div>
-</li>
-</ul>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<div class="title">Notes on single-type variant</div>
-A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be <em>unwrapped</em> using <code>compact_alternative</code>. This is useful for resolving issues such as <a href="https://github.com/boostorg/spirit/issues/610">boostorg/spirit#610</a>.
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-<code>compact_alternative</code> does not unwrap <code><a href="#rvariant.recursive">recursive_wrapper</a></code>. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a></code> manually.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="rvariant.recursive"><a class="anchor" href="#rvariant.recursive"></a>Class template <code>recursive_wrapper</code> <span class="slug"><a href="#rvariant.recursive">[rvariant.recursive]</a></span></h2>
 <div class="sectionbody">
 <div class="listingblock">
@@ -2287,6 +2237,56 @@ constexpr <span class="see-below">see below</span> <em>UNWRAP_RECURSIVE</em>(T&a
 <p><span class="candidate"></span> <strong><em>Effects:</em></strong> Denotes <code>*o</code>, if cv-unqualified non-reference type for <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>. Otherwise, denotes <code>o</code>.</p>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="rvariant.pack"><a class="anchor" href="#rvariant.pack"></a>Pack manipulation and deduping <span class="slug"><a href="#rvariant.pack">[rvariant.pack]</a></span></h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">namespace temp_ns {
+
+template&lt;template&lt;class...&gt; class TT, class A, class B&gt;
+struct compact_alternative;
+
+} // temp_ns</code></pre>
+</div>
+</div>
+<div class="ulist candidates">
+<ul>
+<li>
+<p><span class="candidate"></span> Effectively concatenates contained types in <code>A</code> and <code>B</code>, then dedupes them. If the resulting type list consists of only a single type, the surrounding template is unwrapped.</p>
+<div class="paragraph">
+<p><strong><em>Definition:</em></strong>  Let <code>Ts</code> denote an imaginary pack of types where <code>TT&lt;Ts...&gt;</code> is the same type as <code><a href="#rvariant.xo.pack"><em>pack-union-t</em></a>&lt;TT, A, B&gt;</code>. The member typedef <code>type</code> denotes <code>Ts...[0]</code> if <code>sizeof...(Ts) == 1</code>; otherwise, the member typedef <code>type</code> denotes <code>TT&lt;Ts...&gt;</code>.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="title">Notes on single-type variant</div>
+A variant with a single alternative may introduce unnecessary overhead when used in many places where only the underlying type is actually needed. In such cases, the variant can be <em>unwrapped</em> using <code>compact_alternative</code>. This is useful for resolving issues such as <a href="https://github.com/boostorg/spirit/issues/610">boostorg/spirit#610</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<code>compact_alternative</code> does not unwrap <code><a href="#rvariant.recursive">recursive_wrapper</a></code>. This is intentional, because doing so could lead to instantiating incomplete type on undesired timings. You may apply <code><a href="#rvariant.recursive.helper">unwrap_recursive_t</a></code> manually.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
