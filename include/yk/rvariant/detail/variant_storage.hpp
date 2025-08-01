@@ -192,7 +192,7 @@ struct get_alternative
     static_assert(I != std::variant_npos);
 
     template<class Union>
-    static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
+    [[nodiscard]] static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
     {
         return get_alternative<I - 1>::apply(std::forward<Union>(u).rest);
     }
@@ -202,7 +202,7 @@ template<>
 struct get_alternative<0>
 {
     template<class Union>
-    static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
+    [[nodiscard]] static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
     {
         return std::forward<Union>(u).first;
     }

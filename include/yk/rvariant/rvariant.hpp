@@ -69,7 +69,7 @@ public:
 
     // internal constructor; this is not the same as the most derived class' default constructor (which uses T0)
     constexpr rvariant_base() noexcept
-        : storage_{} // value-initialize
+        : storage_{} // valueless
     {}
 
     // Copy constructor
@@ -270,7 +270,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         return std::invoke(f, std::forward<Visitor>(vis), std::forward<Self>(self).storage());
     }
 
-    storage_type storage_{}; // value-initialize
+    storage_type storage_{}; // valueless
     variant_index_t<sizeof...(Ts)> index_ = variant_npos<sizeof...(Ts)>;
 };
 
@@ -1110,7 +1110,8 @@ get(rvariant<Ts...> const* v) noexcept
 
 template<class... Ts, class Compare = std::equal_to<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator==(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+[[nodiscard]] constexpr bool operator==(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
     if (v.index() != w.index()) return false;
     return detail::compare_relops<Compare>(v, w);
@@ -1118,7 +1119,8 @@ template<class... Ts, class Compare = std::equal_to<>>
 
 template<class... Ts, class Compare = std::not_equal_to<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator!=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+[[nodiscard]] constexpr bool operator!=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
     if (v.index() != w.index()) return true;
     return detail::compare_relops<Compare>(v, w);
@@ -1126,7 +1128,8 @@ template<class... Ts, class Compare = std::not_equal_to<>>
 
 template<class... Ts, class Compare = std::less<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+[[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
     auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
     auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
@@ -1137,7 +1140,8 @@ template<class... Ts, class Compare = std::less<>>
 
 template<class... Ts, class Compare = std::greater<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+[[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
     auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
     auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
@@ -1148,7 +1152,8 @@ template<class... Ts, class Compare = std::greater<>>
 
 template<class... Ts, class Compare = std::less_equal<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+[[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
     auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
     auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
@@ -1159,7 +1164,8 @@ template<class... Ts, class Compare = std::less_equal<>>
 
 template<class... Ts, class Compare = std::greater_equal<>>
     requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+[[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
     auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
     auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
