@@ -1445,7 +1445,7 @@ Unless otherwise noted, the class template `temp_ns::recursive_wrapper` and rele
 * -- The class name is `recursive_wrapper`.
 * -- `std::indirect` and `temp_ns::recursive_wrapper` are distinguishable in type level.
 
-NOTE: `temp_ns::recursive_wrapper` is designed to be *NOT* a type alias of `std::indirect` because such a declaration would not satisfy the characteristics described above.
+WARNING: `temp_ns::recursive_wrapper` is *not* a type alias of `std::indirect` and does *not* publicly derive from it.
 
 NOTE: Although `std::indirect` is a {cpp}26 feature, `temp_ns::recursive_wrapper` can be used in {cpp}23.
 
