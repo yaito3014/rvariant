@@ -299,7 +299,7 @@ TEST_CASE("rvariant.io", "[recursive]")
     }
 }
 
-TEST_CASE("rvariant formatter")
+TEST_CASE("rvariant formatter (char)")
 {
     CHECK(std::format("{}", yk::rvariant<int, double>{42}) == "42");
     CHECK(std::format("{}", yk::rvariant<int, double>{3.14}) == "3.14");
@@ -318,9 +318,33 @@ TEST_CASE("rvariant formatter")
     }
 }
 
-TEST_CASE("rvariant formatter", "[recursive]")
+TEST_CASE("rvariant formatter (wchar_t)")
+{
+    CHECK(std::format(L"{}", yk::rvariant<int, double>{42}) == L"42");
+    CHECK(std::format(L"{}", yk::rvariant<int, double>{3.14}) == L"3.14");
+
+    {
+        using V = yk::rvariant<int, double>;
+        constexpr auto spec = yk::make_format_spec_for<V>(L"{:04d}", L"{:.1f}");
+        {
+            V v(42);
+            CHECK(std::format(L"pre{}post", yk::format_by(spec, v)) == L"pre0042post");
+        }
+        {
+            V v(3.14);
+            CHECK(std::format(L"pre{}post", yk::format_by(spec, v)) == L"pre3.1post");
+        }
+    }
+}
+
+TEST_CASE("rvariant formatter (char)", "[recursive]")
 {
     CHECK(std::format("{}", yk::rvariant<yk::recursive_wrapper<int>>{42}) == "42");
+}
+
+TEST_CASE("rvariant formatter (wchar_t)", "[recursive]")
+{
+    CHECK(std::format(L"{}", yk::rvariant<yk::recursive_wrapper<int>>{42}) == L"42");
 }
 
 } // unit_test

@@ -3,6 +3,7 @@
 
 #include <yk/rvariant/rvariant.hpp>
 #include <yk/core/io.hpp>
+#include <yk/format_traits.hpp>
 
 #include <format>
 // ReSharper disable once CppUnusedIncludeDirective
@@ -76,10 +77,10 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v)
 
 namespace detail {
 
-template<class T>
+template<class charT, class T>
 struct format_spec_overload
 {
-    using fmt_type = std::format_string<T const&>;
+    using fmt_type = std::basic_format_string<charT, T const&>;
     fmt_type fmt;
 
     [[nodiscard]] constexpr fmt_type const& operator()(std::in_place_type_t<T>) const noexcept
@@ -91,11 +92,12 @@ struct format_spec_overload
 template<class... Fs>
 struct format_spec : Fs...
 {
+    static_assert(sizeof...(Fs) > 0);
     using Fs::operator()...;
 };
 
-template<class... Ts>
-using format_spec_t = format_spec<format_spec_overload<Ts>...>;
+template<class charT, class... Ts>
+using format_spec_t = format_spec<format_spec_overload<charT, Ts>...>;
 
 template<class FormatSpec, class... Ts>
 struct format_by_proxy
@@ -106,40 +108,40 @@ struct format_by_proxy
     // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 };
 
-template<class Variant>
+template<class charT, class Variant>
 struct make_format_spec_for_impl;
 
-template<class... Ts>
-struct make_format_spec_for_impl<rvariant<Ts...>>
+template<class charT, class... Ts>
+struct make_format_spec_for_impl<charT, rvariant<Ts...>>
 {
-    using spec_type = format_spec_t<Ts...>;
+    using spec_type = format_spec_t<charT, Ts...>;
 
-    [[nodiscard]] static consteval format_spec_t<Ts...>
-    apply(std::format_string<Ts const&> const&... fmts) noexcept
+    [[nodiscard]] static consteval spec_type
+    apply(std::basic_format_string<charT, Ts const&> const&... fmts) noexcept
     {
-        return format_spec{format_spec_overload<Ts>{fmts}...};
+        return format_spec{format_spec_overload<charT, Ts>{fmts}...};
     }
 };
 
 }  // detail
 
 
-template<class... Ts>
-[[nodiscard]] consteval detail::format_spec_t<Ts...>
-make_format_spec(std::format_string<Ts const&> const&... fmts) noexcept
+template<class charT, class... Ts>
+[[nodiscard]] consteval detail::format_spec_t<charT, Ts...>
+make_format_spec(std::basic_format_string<charT, Ts const&> const&... fmts) noexcept
 {
-    return detail::format_spec{detail::format_spec_overload<Ts>{fmts}...};
+    return detail::format_spec{detail::format_spec_overload<charT, Ts>{fmts}...};
 }
 
 template<class Variant, class... Fmts>
-[[nodiscard]] consteval typename detail::make_format_spec_for_impl<Variant>::spec_type
+[[nodiscard]] consteval typename detail::make_format_spec_for_impl<select_char_t<Fmts...>, Variant>::spec_type
 make_format_spec_for(Fmts const&... fmts) noexcept
 {
-    return detail::make_format_spec_for_impl<Variant>::apply(fmts...);
+    return detail::make_format_spec_for_impl<select_char_t<Fmts...>, Variant>::apply(fmts...);
 }
 
 template<class FormatSpec, class... Ts>
-[[nodiscard]] detail::format_by_proxy<FormatSpec, Ts...>
+[[nodiscard]] constexpr detail::format_by_proxy<FormatSpec, Ts...>
 format_by(FormatSpec&& fspec YK_LIFETIMEBOUND, rvariant<Ts...> const& var YK_LIFETIMEBOUND)
 {
     return detail::format_by_proxy<FormatSpec, Ts...>{
@@ -158,13 +160,14 @@ void format_by(FormatSpec&&, rvariant<Ts...> const&&) = delete; // dangling
 
 namespace std {
 
-template<class F, class... Ts>
-struct formatter<yk::detail::format_by_proxy<F, Ts...>>
+template<class FormatSpec, class... Ts, class charT>
+struct formatter<yk::detail::format_by_proxy<FormatSpec, Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
 {
-    static constexpr std::format_parse_context::const_iterator parse(std::format_parse_context& ctx)
+    static constexpr typename std::basic_format_parse_context<charT>::const_iterator
+    parse(std::basic_format_parse_context<charT>& ctx)
     {
         if (ctx.begin() == ctx.end()) return ctx.begin();
-        if (*ctx.begin() == '}') return ctx.begin();
+        if (*ctx.begin() == ::yk::format_traits<charT>::brace_close) return ctx.begin();
         throw std::format_error(
             "format_by only accepts empty format spec; use "
             "`make_format_spec` for full controls."
@@ -172,14 +175,14 @@ struct formatter<yk::detail::format_by_proxy<F, Ts...>>
     }
 
     template<class OutIt>
-    static OutIt format(yk::detail::format_by_proxy<F, Ts...> const& proxy, std::basic_format_context<OutIt, char>& ctx)
+    static OutIt format(yk::detail::format_by_proxy<FormatSpec, Ts...> const& proxy, std::basic_format_context<OutIt, charT>& ctx)
     {
         return yk::visit(
             [&]<class T>(T const& alt) {
-                return std::vformat_to(
+                return std::format_to(
                     ctx.out(),
-                    std::invoke(proxy.fspec, std::in_place_type<T>).get(),
-                    std::make_format_args(alt)
+                    std::invoke(proxy.fspec, std::in_place_type<T>),
+                    alt
                 );
             },
             proxy.v
@@ -187,14 +190,15 @@ struct formatter<yk::detail::format_by_proxy<F, Ts...>>
     }
 };
 
-template<class... Ts>
-    requires (std::formattable<yk::unwrap_recursive_t<Ts>, char> && ...)
-struct formatter<yk::rvariant<Ts...>>
+template<class... Ts, class charT>
+    requires (std::formattable<yk::unwrap_recursive_t<Ts>, charT> && ...)
+struct formatter<yk::rvariant<Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
 {
-    static constexpr std::format_parse_context::const_iterator parse(std::format_parse_context& ctx)
+    static constexpr typename std::basic_format_parse_context<charT>::const_iterator
+    parse(std::basic_format_parse_context<charT>& ctx)
     {
         if (ctx.begin() == ctx.end()) return ctx.begin();
-        if (*ctx.begin() == '}') return ctx.begin();
+        if (*ctx.begin() == ::yk::format_traits<charT>::brace_close) return ctx.begin();
         throw std::format_error(
             "rvariant itself only accepts empty format spec `{}`; use "
             "`format_by` or manually dispatch alternatives in `visit` "
@@ -203,9 +207,18 @@ struct formatter<yk::rvariant<Ts...>>
     }
 
     template<class OutIt>
-    static OutIt format(yk::rvariant<Ts...> const& var, std::basic_format_context<OutIt, char>& ctx)
+    static OutIt format(yk::rvariant<Ts...> const& var, std::basic_format_context<OutIt, charT>& ctx)
     {
-        return yk::visit([&]<class T>(T const& alt) { return std::format_to(ctx.out(), "{}", alt); }, var);
+        return yk::visit(
+            [&]<class T>(T const& alt) {
+                return std::format_to(
+                    ctx.out(),
+                    ::yk::format_traits<charT>::template brace_full<T const&>,
+                    alt
+                );
+            },
+            var
+        );
     }
 };
 
