@@ -273,7 +273,11 @@ constexpr bool raw_visit_noexcept = false;
 
 template<class Visitor, class Storage, std::size_t... Is>
 constexpr bool raw_visit_noexcept<Visitor, Storage, std::index_sequence<Is...>> = std::conjunction_v<
-    std::is_nothrow_invocable<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>,
+    std::conditional_t<
+        std::remove_cvref_t<Storage>::never_valueless,
+        std::true_type,
+        std::is_nothrow_invocable<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>
+    >,
     std::is_nothrow_invocable<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>...
 >;
 
@@ -286,6 +290,19 @@ using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visit
     noexcept(raw_visit_noexcept<Visitor, Storage>);
 
 template<class Visitor, class Storage, std::size_t... Is>
+    requires (std::remove_cvref_t<Storage>::never_valueless)
+struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
+{
+    static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
+    static_assert(std::is_reference_v<Storage>, "Storage must be one of: &, const&, &&, const&&");
+
+    static constexpr raw_visit_function_ptr<Visitor, Storage> value[] = {
+        &raw_visit_dispatch<Is, Visitor, Storage>...
+    };
+};
+
+template<class Visitor, class Storage, std::size_t... Is>
+    requires (!std::remove_cvref_t<Storage>::never_valueless)
 struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
 {
     static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
@@ -303,7 +320,7 @@ raw_visit(Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-f
     noexcept(raw_visit_noexcept<Visitor, forward_storage_t<Variant>>)
 {
     constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, forward_storage_t<Variant>>::value;
-    auto&& f = table[v.index() + 1];
+    auto&& f = table[valueless_bias<std::remove_cvref_t<Variant>::never_valueless>(v.index())];
     return std::invoke(f, std::forward<Visitor>(vis), forward_storage<Variant>(v));
 }
 

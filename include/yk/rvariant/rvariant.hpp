@@ -268,7 +268,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     {
         using Storage = decltype(std::forward<Self>(self).storage());
         constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, Storage>::value;
-        auto&& f = table[self.index_ + 1];
+        auto&& f = table[valueless_bias<storage_type::never_valueless>(self.index_)];
         return std::invoke(f, std::forward<Visitor>(vis), std::forward<Self>(self).storage());
     }
 
