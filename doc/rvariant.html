@@ -2188,7 +2188,7 @@ constexpr explicit(<span class="see-below">see below</span>) recursive_wrapper(U
 <p>&#8201;&#8212;&#8201;<code>std::is_default_constructible_v&lt;Allocator&gt;</code> is <code>true</code>, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_convertible_v&lt;U, T&gt;</code> is <code>true</code>, or the expression <code>T x[] = {std::forward&lt;U&gt;(u)}</code> (for an imaginary variable <code>x</code>) is valid in unevaluated context</span>. (<em>Note:</em> This prevents recursive instantiation of <code>std::is_constructible</code>, even for recursive types, while preserving SFINAE-friendliness.)</p>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_convertible_v&lt;U, T&gt;</code> is <code>true</code>, or the expression <code>T x[] = {std::forward&lt;U&gt;(u)}</code> (for an imaginary variable <code>x</code>) is well-formed in unevaluated context</span>. (<em>Note:</em> This prevents recursive instantiation of <code>std::is_constructible</code>, even for recursive types, while preserving SFINAE-friendliness.)</p>
 </li>
 </ul>
 </div>
