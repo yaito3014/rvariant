@@ -101,9 +101,9 @@ s| May be valueless?
 s| Exception safety
 | Basic exception safety
 | Basic exception safety
-| [.good]#Strong exception safety# +
+| Strong exception safety +
 https://www.boost.org/doc/libs/{boost-version}/doc/html/variant/design.html#variant.design.never-empty.heap-backup-solution[(Temporary heap backup)]
-| [.good]#Strong exception safety# +
+| Strong exception safety +
 https://www.boost.org/doc/libs/{boost-version}/libs/variant2/doc/html/variant2.html#design_strong_exception_safety[(Double storage)]
 
 s| Flexible construction +
