@@ -1019,7 +1019,7 @@ constexpr {see-below} const&& pass:quotes[_GET_](rvariant<Ts...> const&& v); // 
 +
 *_Preconditions:_* `v.index()` is `I`.
 +
-*_Returns:_* `o`, where `o` denotes a reference to the object stored in `v`, if the type of the expression's receiver is a specialization of `{recursive_wrapper}`; otherwise, returns `{UNWRAP_RECURSIVE}(o)`.
+*_Returns:_* [.underline]#`o`, where `o` denotes a reference to the object stored in `v`, if the type of the expression's receiver is a specialization of `{recursive_wrapper}`; otherwise, returns `{UNWRAP_RECURSIVE}(o)`#.
 
 
 [,cpp,subs="+macros,+attributes"]
@@ -1297,7 +1297,7 @@ std::println("{}", temp_ns::rvariant<int, double>(42)); // prints pass:quotes[`4
 [none]
 ** -- The format specifier must be empty, otherwise `std::format_error` is thrown, and
 ** -- if `v.valueless_by_exception()` is `true`, `std::bad_variant_access` is thrown, and
-** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type<Ts\...[proxy.v.index()]>), {UNWRAP_RECURSIVE}(_GET_<proxy.v.index()>(proxy.v)))`, with `Ts` being the template parameter pack of the type of `proxy.v`.
+** -- the output is done as if by calling `std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type<Ts\...[proxy.v.index()]>), {UNWRAP_RECURSIVE}(_GET_<proxy.v.index()>(proxy.v)))`, with `Ts` being the template parameter pack of the cv-unqualified non-reference type of `proxy.v`.
 ** _Example:_
 +
 [,cpp,subs="+macros,+attributes"]
@@ -1354,7 +1354,7 @@ Let `charT` denote `_select-char-t_<Fmts\...>`.
 +
 Let `charT` denote `_select-char-t_<Fmts\...>`.
 +
-*_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`, with `Ts` being the template parameter pack of `std::remove_cvref_t<Variant>`.
+*_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`, with `Ts` being the template parameter pack of the cv-unqualified non-reference type for `Variant`.
 
 
 [,cpp,subs="+macros,+attributes"]

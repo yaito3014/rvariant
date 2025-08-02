@@ -1573,7 +1573,7 @@ constexpr <span class="see-below">see below</span> const&amp;&amp; <em>GET</em>(
 <p><strong><em>Preconditions:</em></strong> <code>v.index()</code> is <code>I</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Returns:</em></strong> <code>o</code>, where <code>o</code> denotes a reference to the object stored in <code>v</code>, if the type of the expression&#8217;s receiver is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>; otherwise, returns <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>.</p>
+<p><strong><em>Returns:</em></strong> <span class="underline"><code>o</code>, where <code>o</code> denotes a reference to the object stored in <code>v</code>, if the type of the expression&#8217;s receiver is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>; otherwise, returns <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code></span>.</p>
 </div>
 </li>
 </ul>
@@ -1949,7 +1949,7 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 <p>&#8201;&#8212;&#8201;if <code>v.valueless_by_exception()</code> is <code>true</code>, <code>std::bad_variant_access</code> is thrown, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type&lt;Ts...[proxy.v.index()]&gt;), <em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(<em>GET</em>&lt;proxy.v.index()&gt;(proxy.v)))</code>, with <code>Ts</code> being the template parameter pack of the type of <code>proxy.v</code>.</p>
+<p>&#8201;&#8212;&#8201;the output is done as if by calling <code>std::format_to(fmt_ctx.out(), proxy.v_fmt(std::in_place_type&lt;Ts...[proxy.v.index()]&gt;), <em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(<em>GET</em>&lt;proxy.v.index()&gt;(proxy.v)))</code>, with <code>Ts</code> being the template parameter pack of the cv-unqualified non-reference type of <code>proxy.v</code>.</p>
 </li>
 <li>
 <p><em>Example:</em></p>
@@ -2021,7 +2021,7 @@ constexpr <em>variant_format_string</em>&lt;<span class="see-below">see below</s
 <p>Let <code>charT</code> denote <code><em>select-char-t</em>&lt;Fmts...&gt;</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Returns:</em></strong> <code><em>variant_format_string</em>&lt;charT, Ts...&gt;{std::forward&lt;Fmts&gt;(fmts)...}</code>, with <code>Ts</code> being the template parameter pack of <code>std::remove_cvref_t&lt;Variant&gt;</code>.</p>
+<p><strong><em>Returns:</em></strong> <code><em>variant_format_string</em>&lt;charT, Ts...&gt;{std::forward&lt;Fmts&gt;(fmts)...}</code>, with <code>Ts</code> being the template parameter pack of the cv-unqualified non-reference type for <code>Variant</code>.</p>
 </div>
 </li>
 </ul>
