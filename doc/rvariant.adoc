@@ -32,9 +32,17 @@ Yaito Kakeyama; Nana Sakisaka
 [,cpp,subs="+macros,+attributes"]
 ----
 // A common pattern for representing recursive ASTs using recursive variants.
-struct BinaryExpr; enum class Op;
-using Expr = temp_ns::rvariant<int, double, temp_ns::recursive_wrapper<BinaryExpr>>;
-struct BinaryExpr { Expr lhs, rhs; Op op; };
+struct BinaryExpr;
+using Expr = temp_ns::<<rvariant.rvariant,rvariant>><int, double, temp_ns::<<rvariant.recursive,recursive_wrapper>><BinaryExpr>>;
+enum class Op;
+struct BinaryExpr { Expr lhs, rhs; Op op{}; };
+
+Expr expr{BinaryExpr{Expr{42}, Expr{3.14}}};
+expr.visit(temp_ns::overloaded{
+    [](int const&) { /* ... */ },
+    [](double const&) { /* ... */ },
+    [](BinaryExpr const&) { /* ... */ },
+});
 ----
 
 
@@ -205,13 +213,6 @@ ab<<rvariant.mod,.emplace>><0>(123);
 
 // <<rvariant.assign,assignment>>
 ab = AB{123};
-
-// recursive types
-{
-    struct BinaryExpr; enum class Op;
-    using Expr = temp_ns::rvariant<int, double, temp_ns::<<rvariant.recursive,recursive_wrapper>><BinaryExpr>>;
-    struct BinaryExpr { Expr lhs, rhs; Op op; };
-}
 
 A& a = temp_ns::<<rvariant.get,get>><0>(ab);
 A& a = temp_ns::get<A>(ab);

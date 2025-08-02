@@ -295,9 +295,17 @@ li p:has(+ .ulist) {
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">// A common pattern for representing recursive ASTs using recursive variants.
-struct BinaryExpr; enum class Op;
-using Expr = temp_ns::rvariant&lt;int, double, temp_ns::recursive_wrapper&lt;BinaryExpr&gt;&gt;;
-struct BinaryExpr { Expr lhs, rhs; Op op; };</code></pre>
+struct BinaryExpr;
+using Expr = temp_ns::<a href="#rvariant.rvariant">rvariant</a>&lt;int, double, temp_ns::<a href="#rvariant.recursive">recursive_wrapper</a>&lt;BinaryExpr&gt;&gt;;
+enum class Op;
+struct BinaryExpr { Expr lhs, rhs; Op op{}; };
+
+Expr expr{BinaryExpr{Expr{42}, Expr{3.14}}};
+expr.visit(temp_ns::overloaded{
+    [](int const&amp;) { /* ... */ },
+    [](double const&amp;) { /* ... */ },
+    [](BinaryExpr const&amp;) { /* ... */ },
+});</code></pre>
 </div>
 </div>
 </div>
@@ -518,13 +526,6 @@ ab<a href="#rvariant.mod">.emplace</a>&lt;0&gt;(123);
 
 // <a href="#rvariant.assign">assignment</a>
 ab = AB{123};
-
-// recursive types
-{
-    struct BinaryExpr; enum class Op;
-    using Expr = temp_ns::rvariant&lt;int, double, temp_ns::<a href="#rvariant.recursive">recursive_wrapper</a>&lt;BinaryExpr&gt;&gt;;
-    struct BinaryExpr { Expr lhs, rhs; Op op; };
-}
 
 A&amp; a = temp_ns::<a href="#rvariant.get">get</a>&lt;0&gt;(ab);
 A&amp; a = temp_ns::get&lt;A&gt;(ab);

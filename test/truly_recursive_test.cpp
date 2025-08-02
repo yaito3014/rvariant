@@ -91,6 +91,19 @@ TEST_CASE("truly recursive", "[wrapper][recursive]")
         STATIC_CHECK(Expr{42}.visit(vis) == 0);
         STATIC_CHECK(Expr{SubExpr{Expr{42}}}.visit(vis) == 1);
     }
+    {
+        struct BinaryExpr;
+        using Expr = yk::rvariant<int, double, yk::recursive_wrapper<BinaryExpr>>;
+        enum class Op;
+        struct BinaryExpr { Expr lhs, rhs; Op op{}; };
+
+        Expr expr{BinaryExpr{Expr{42}, Expr{3.14}}};
+        expr.visit(yk::overloaded{
+            [](int const&) { /* ... */ },
+            [](double const&) { /* ... */ },
+            [](BinaryExpr const&) { /* ... */ },
+        });
+    }
 }
 
 #ifdef _MSC_VER
