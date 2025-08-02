@@ -1344,17 +1344,17 @@ constexpr {variant-format-string}<{see-below}> variant_format_for(Fmts&&... fmts
 ----
 
 [.candidates]
-* [.candidate]#1)# *_Mandates:_* `std::is_convertible_v<Fmts~_i_~, _select-char-t_<Fmts\...>>` is `true` for all _i_, and `sizeof\...(Ts) > 0` is `true`.
+* [.candidate]#1)# *_Mandates:_* `std::is_convertible_v<Fmts~_i_~, std::basic_format_string<__select-char-t__<Fmts\...>, Ts~_i_~ const&>>` is `true` for all _i_, and `sizeof\...(Ts) > 0` is `true`.
 +
 Let `charT` denote `_select-char-t_<Fmts\...>`.
 +
 *_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`.
 
-* [.candidate]#2)# *_Mandates:_* `std::is_convertible_v<Fmts~_i_~, _select-char-t_<Fmts\...>>` is `true` for all _i_, and `std::remove_cvref_t<Variant>` is a specialization of `rvariant`.
+* [.candidate]#2)# *_Mandates:_* `std::is_convertible_v<Fmts~_i_~, std::basic_format_string<__select-char-t__<Fmts\...>, Ts~_i_~ const&>>` is `true` for all _i_, with `Ts` being the template parameter pack of cv-unqualified non-reference type for `Variant`. Such substitution is valid only if `std::remove_cvref_t<Variant>` is a specialization of `rvariant`.
 +
 Let `charT` denote `_select-char-t_<Fmts\...>`.
 +
-*_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`, with `Ts` being the template parameter pack of the cv-unqualified non-reference type for `Variant`.
+*_Returns:_* `{variant-format-string}<charT, Ts\...>{std::forward<Fmts>(fmts)\...}`.
 
 
 [,cpp,subs="+macros,+attributes"]

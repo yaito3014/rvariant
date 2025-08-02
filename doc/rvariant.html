@@ -2007,7 +2007,7 @@ constexpr <em>variant_format_string</em>&lt;<span class="see-below">see below</s
 <div class="ulist candidates">
 <ul>
 <li>
-<p><span class="candidate">1)</span> <strong><em>Mandates:</em></strong> <code>std::is_convertible_v&lt;Fmts<sub><em>i</em></sub>, <em>select-char-t</em>&lt;Fmts...&gt;&gt;</code> is <code>true</code> for all <em>i</em>, and <code>sizeof...(Ts) &gt; 0</code> is <code>true</code>.</p>
+<p><span class="candidate">1)</span> <strong><em>Mandates:</em></strong> <code>std::is_convertible_v&lt;Fmts<sub><em>i</em></sub>, std::basic_format_string&lt;<em>select-char-t</em>&lt;Fmts...&gt;, Ts<sub><em>i</em></sub> const&amp;&gt;&gt;</code> is <code>true</code> for all <em>i</em>, and <code>sizeof...(Ts) &gt; 0</code> is <code>true</code>.</p>
 <div class="paragraph">
 <p>Let <code>charT</code> denote <code><em>select-char-t</em>&lt;Fmts...&gt;</code>.</p>
 </div>
@@ -2016,12 +2016,12 @@ constexpr <em>variant_format_string</em>&lt;<span class="see-below">see below</s
 </div>
 </li>
 <li>
-<p><span class="candidate">2)</span> <strong><em>Mandates:</em></strong> <code>std::is_convertible_v&lt;Fmts<sub><em>i</em></sub>, <em>select-char-t</em>&lt;Fmts...&gt;&gt;</code> is <code>true</code> for all <em>i</em>, and <code>std::remove_cvref_t&lt;Variant&gt;</code> is a specialization of <code>rvariant</code>.</p>
+<p><span class="candidate">2)</span> <strong><em>Mandates:</em></strong> <code>std::is_convertible_v&lt;Fmts<sub><em>i</em></sub>, std::basic_format_string&lt;<em>select-char-t</em>&lt;Fmts...&gt;, Ts<sub><em>i</em></sub> const&amp;&gt;&gt;</code> is <code>true</code> for all <em>i</em>, with <code>Ts</code> being the template parameter pack of cv-unqualified non-reference type for <code>Variant</code>. Such substitution is valid only if <code>std::remove_cvref_t&lt;Variant&gt;</code> is a specialization of <code>rvariant</code>.</p>
 <div class="paragraph">
 <p>Let <code>charT</code> denote <code><em>select-char-t</em>&lt;Fmts...&gt;</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Returns:</em></strong> <code><em>variant_format_string</em>&lt;charT, Ts...&gt;{std::forward&lt;Fmts&gt;(fmts)...}</code>, with <code>Ts</code> being the template parameter pack of the cv-unqualified non-reference type for <code>Variant</code>.</p>
+<p><strong><em>Returns:</em></strong> <code><em>variant_format_string</em>&lt;charT, Ts...&gt;{std::forward&lt;Fmts&gt;(fmts)...}</code>.</p>
 </div>
 </li>
 </ul>
