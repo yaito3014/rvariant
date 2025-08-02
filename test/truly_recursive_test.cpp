@@ -83,6 +83,13 @@ TEST_CASE("truly recursive", "[wrapper][recursive]")
 
         STATIC_REQUIRE(std::is_constructible_v<Expr, int>);
         CHECK_NOTHROW(Expr{42});
+
+        constexpr auto vis = yk::overloaded{
+            [](int const&)     { return 0; },
+            [](SubExpr const&) { return 1; },
+        };
+        STATIC_CHECK(Expr{42}.visit(vis) == 0);
+        STATIC_CHECK(Expr{SubExpr{Expr{42}}}.visit(vis) == 1);
     }
 }
 
