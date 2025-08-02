@@ -1459,7 +1459,7 @@ Effectively overrides only the ones listed below; rest are the same as `std::ind
 constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper();pass:quotes[[.candidate\]#// 1#]
 
 template<class U = T>
-constexpr explicit({see-below}) recursive_wrapper(U&& x) noexcept({see-below});pass:quotes[[.candidate\]#// 2#]
+constexpr explicit({see-below}) recursive_wrapper(U&& u) noexcept({see-below});pass:quotes[[.candidate\]#// 2#]
 ----
 
 [.candidates]
@@ -1472,7 +1472,7 @@ constexpr explicit({see-below}) recursive_wrapper(U&& x) noexcept({see-below});p
 ** -- `std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>` is `false`, and
 ** -- `std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>` is `false`, and
 ** -- `std::is_default_constructible_v<Allocator>` is `true`, and
-** -- [.underline]#`std::is_convertible_v<U, T>` is `true`, or `T` can be aggregate-initialized by `U` in unevaluated context#. (_Note:_ This prevents recursive instantiation of `std::is_constructible`, even for recursive types, while preserving SFINAE-friendliness.)
+** -- [.underline]#`std::is_convertible_v<U, T>` is `true`, or the expression `T x[] = {std::forward<U>(u)}` (for an imaginary variable `x`) is valid in unevaluated context#. (_Note:_ This prevents recursive instantiation of `std::is_constructible`, even for recursive types, while preserving SFINAE-friendliness.)
 --
 +
 *_Effects:_* Equivalent to the `std::indirect` counterpart. ^link:pass:[https://eel.is/c++draft/indirect.ctor#lib:indirect,constructor______][[spec\]]^

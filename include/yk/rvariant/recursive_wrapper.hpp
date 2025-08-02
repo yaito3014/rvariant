@@ -72,9 +72,9 @@ public:
                 core::is_aggregate_initializable_v<T, U>
             )
     constexpr explicit(!std::is_convertible_v<U, T>)
-    recursive_wrapper(U&& x)
-        noexcept(noexcept(base_type(std::forward<U>(x))))
-        : base_type(std::forward<U>(x))
+    recursive_wrapper(U&& u)
+        noexcept(noexcept(base_type(std::forward<U>(u))))
+        : base_type(std::forward<U>(u))
     {}
 
     template<class U = T>
@@ -82,9 +82,9 @@ public:
             (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>) &&
             (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>) &&
             std::is_constructible_v<T, U>
-    constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, U&& x)
-        noexcept(noexcept(base_type(std::allocator_arg, a, std::forward<U>(x))))
-        : base_type(std::allocator_arg, a, std::forward<U>(x))
+    constexpr explicit recursive_wrapper(std::allocator_arg_t, Allocator const& a, U&& u)
+        noexcept(noexcept(base_type(std::allocator_arg, a, std::forward<U>(u))))
+        : base_type(std::allocator_arg, a, std::forward<U>(u))
     {}
 
     template<class... Us>

@@ -2162,7 +2162,7 @@ Although <code>std::indirect</code> is a C&#43;&#43;26 feature, <code>temp_ns::r
 <pre class="highlightjs highlight"><code class="language-cpp hljs" data-lang="cpp">constexpr <span class="underline">/* not explicit */</span> recursive_wrapper();<span class="candidate">// 1</span>
 
 template&lt;class U = T&gt;
-constexpr explicit(<span class="see-below">see below</span>) recursive_wrapper(U&amp;&amp; x) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 2</span></code></pre>
+constexpr explicit(<span class="see-below">see below</span>) recursive_wrapper(U&amp;&amp; u) noexcept(<span class="see-below">see below</span>);<span class="candidate">// 2</span></code></pre>
 </div>
 </div>
 <div class="ulist candidates">
@@ -2186,7 +2186,7 @@ constexpr explicit(<span class="see-below">see below</span>) recursive_wrapper(U
 <p>&#8201;&#8212;&#8201;<code>std::is_default_constructible_v&lt;Allocator&gt;</code> is <code>true</code>, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_convertible_v&lt;U, T&gt;</code> is <code>true</code>, or <code>T</code> can be aggregate-initialized by <code>U</code> in unevaluated context</span>. (<em>Note:</em> This prevents recursive instantiation of <code>std::is_constructible</code>, even for recursive types, while preserving SFINAE-friendliness.)</p>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_convertible_v&lt;U, T&gt;</code> is <code>true</code>, or the expression <code>T x[] = {std::forward&lt;U&gt;(u)}</code> (for an imaginary variable <code>x</code>) is valid in unevaluated context</span>. (<em>Note:</em> This prevents recursive instantiation of <code>std::is_constructible</code>, even for recursive types, while preserving SFINAE-friendliness.)</p>
 </li>
 </ul>
 </div>
