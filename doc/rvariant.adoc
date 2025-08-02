@@ -642,9 +642,11 @@ include::_std-variant-proxy.adoc[]
 +
 *_Constraints:_*
 +
+--
 [none]
 ** -- [.underline]#`std::is_same_v<rvariant<Us\...>, rvariant>` is `false`, and#
 ** -- [.underline]#`{subset_of}<rvariant<Us\...>, rvariant>` is `true`.#
+--
 +
 *_Effects:_* If `w` holds a value, initializes the `rvariant` to hold the [.underline]#alternative corresponding to that of# `w` and direct-initializes the contained value with `_GET_<j>(w)`, where `j` is `w.index()`. Otherwise, initializes the `rvariant` to not hold a value.
 +
@@ -888,19 +890,16 @@ constexpr rvariant<Us...> subset() && noexcept({see-below});pass:quotes[[.candid
 
 * [.candidate]#4)# Equivalent to the overload #3, except:
 +
+--
 [none]
 ** -- Citation of _flexible copy constructor_ is replaced with _flexible move constructor_.
+--
 +
 *_Mandates:_* `std::is_move_constructible_v[.underline]##<U~_j_~>##` is `true` for all [.underline]#_j_, where `U~_j_~` be the _j_^th^ type in `Us`#.
 +
 *_Effects:_* `_GET_&lt;__i__&gt;(*this)` is replaced with `_GET_&lt;__i__&gt;(std::move(*this))`.
 +
-*_Remarks:_*
-+
---
-[none]
-** -- `std::is_nothrow_constructible_v<rvariant<Us\...>, rvariant const&>` is replaced with `std::is_nothrow_constructible_v<rvariant<Us\...>, rvariant&&>`.
---
+*_Remarks:_* `std::is_nothrow_constructible_v<rvariant<Us\...>, rvariant const&>` is replaced with `std::is_nothrow_constructible_v<rvariant<Us\...>, rvariant&&>`.
 
 
 [[rvariant.swap]]
