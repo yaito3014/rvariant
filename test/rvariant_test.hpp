@@ -4,36 +4,80 @@
 #include "yk/rvariant/rvariant.hpp"
 #include "yk/format_traits.hpp"
 
+#include <catch2/catch_test_macros.hpp>
+
 #include <iosfwd>
+#include <string>
 #include <compare>
 #include <functional>
 #include <exception>
 #include <utility>
 #include <format>
 
+#define YK_REQUIRE_STATIC_NOTHROW(...) \
+    STATIC_REQUIRE(noexcept(__VA_ARGS__)); \
+    REQUIRE_NOTHROW(__VA_ARGS__)
+
+#define YK_CHECK_STATIC_NOTHROW(...) \
+    STATIC_CHECK(noexcept(__VA_ARGS__)); \
+    CHECK_NOTHROW(__VA_ARGS__)
+
 namespace unit_test {
 
-namespace MC_Thrower_ADL_guard {
-
-struct MC_Thrower
+struct SMF_Logger
 {
+    std::string log;
+    SMF_Logger() { log += "DC "; }
+    SMF_Logger(SMF_Logger const&) { log += "CC "; }
+    SMF_Logger& operator=(SMF_Logger const&) { log += "CA "; return *this; }
+    SMF_Logger(SMF_Logger&&) noexcept(false) { log += "MC "; }
+    SMF_Logger& operator=(SMF_Logger&&) noexcept(false) { log += "MA "; return *this; }
+};
+
+namespace Thrower_ADL_guard {
+
+namespace detail {
+
+struct Thrower_base
+{
+private:
     struct non_throwing_t {};
     struct throwing_t {};
     struct potentially_throwing_t {};
+
+public:
+    struct exception {}; // NOT derived from std::exception
 
     static constexpr non_throwing_t non_throwing{};
     static constexpr throwing_t throwing{};
     static constexpr potentially_throwing_t potentially_throwing{};
 
-    MC_Thrower() = default;
-    MC_Thrower(MC_Thrower const&) = default;
-    MC_Thrower(MC_Thrower&&) noexcept(false) { throw std::exception{}; }
-    MC_Thrower& operator=(MC_Thrower const&) = default;
-    MC_Thrower& operator=(MC_Thrower&&) = default;
+    Thrower_base() = default;
+    Thrower_base(non_throwing_t) noexcept {}
+    Thrower_base(throwing_t) noexcept(false) { throw exception{}; }  // NOLINT(hicpp-exception-baseclass)
+    Thrower_base(potentially_throwing_t) noexcept(false) {}
 
-    MC_Thrower(non_throwing_t) noexcept {}
-    MC_Thrower(throwing_t) noexcept(false) { throw std::exception{}; }
-    MC_Thrower(potentially_throwing_t) noexcept(false) {}
+    Thrower_base& operator=(non_throwing_t) noexcept { return *this; }
+    Thrower_base& operator=(throwing_t) noexcept(false) { throw exception{}; }  // NOLINT(hicpp-exception-baseclass)
+    Thrower_base& operator=(potentially_throwing_t) noexcept(false) { return *this; }
+};
+
+} // detail
+
+struct Non_Thrower : detail::Thrower_base
+{};
+
+struct MC_Thrower : detail::Thrower_base
+{
+public:
+    using MC_Thrower::Thrower_base::Thrower_base;
+    using MC_Thrower::Thrower_base::operator=;
+
+    MC_Thrower() noexcept : Thrower_base() {}
+    MC_Thrower(MC_Thrower const&) noexcept : Thrower_base() {}
+    MC_Thrower(MC_Thrower&&) noexcept(false) : Thrower_base() { throw exception{}; }  // NOLINT(hicpp-exception-baseclass)
+    MC_Thrower& operator=(MC_Thrower const&) noexcept { return *this; }
+    MC_Thrower& operator=(MC_Thrower&&) noexcept { return *this; }
 
     friend bool operator==(MC_Thrower const&, MC_Thrower const&) noexcept { return true; }
     friend auto operator<=>(MC_Thrower const&, MC_Thrower const&) noexcept { return std::strong_ordering::equal; }
@@ -41,9 +85,11 @@ struct MC_Thrower
 
 std::ostream& operator<<(std::ostream&, MC_Thrower const&);
 
-} // MC_Thrower_ADL_guard
+} // Thrower_ADL_guard
 
-using MC_Thrower_ADL_guard::MC_Thrower;
+using Thrower_ADL_guard::Non_Thrower;
+using Thrower_ADL_guard::MC_Thrower;
+
 
 template<class... Ts, class... Args>
 [[nodiscard]] constexpr yk::rvariant<Ts..., MC_Thrower> make_valueless(Args&&... args)

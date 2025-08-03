@@ -31,6 +31,80 @@ TEST_CASE("make_valueless", "[detail]")
     STATIC_CHECK(!std::remove_cvref_t<decltype(valueless)>::never_valueless);
 }
 
+TEST_CASE("never_valueless", "[detail]")
+{
+    struct BadType
+    {
+        BadType(BadType&&) noexcept {}  // NOLINT(modernize-use-equals-default)
+        BadType(BadType const&) noexcept {}  // NOLINT(modernize-use-equals-default)
+
+        BadType() = default;
+        BadType& operator=(BadType const&) = default;
+        BadType& operator=(BadType&&) = default;
+    };
+    STATIC_REQUIRE(!yk::detail::is_never_valueless_v<BadType>);
+    STATIC_REQUIRE(!yk::rvariant<BadType>::never_valueless);
+
+    // Test many minimal trait combinations for variant to be never_valueless.
+    {
+        struct S
+        {
+            S(S const&) = delete;
+            S& operator=(S const&) = delete;
+
+            S(S&&) = default;
+            S& operator=(S&&) = default;
+        };
+        static_assert(!std::is_trivially_copy_constructible_v<S>);
+        static_assert(!std::is_trivially_copy_assignable_v<S>);
+        static_assert( std::is_trivially_move_constructible_v<S>);
+        static_assert( std::is_trivially_move_assignable_v<S>);
+
+        STATIC_REQUIRE(yk::detail::is_never_valueless_v<S>);
+        STATIC_REQUIRE(yk::rvariant<S>::never_valueless);
+        STATIC_REQUIRE(!yk::rvariant<S, BadType>::never_valueless);
+    }
+    {
+        // strange type, but...
+        struct S
+        {
+            S(S const&) = default;
+            S& operator=(S const&) = default;
+
+            S(S&&) = delete;
+            S& operator=(S&&) = delete;
+        };
+        static_assert( std::is_trivially_copy_constructible_v<S>);
+        static_assert( std::is_trivially_copy_assignable_v<S>);
+        static_assert(!std::is_trivially_move_constructible_v<S>);
+        static_assert(!std::is_trivially_move_assignable_v<S>);
+
+        STATIC_REQUIRE(yk::detail::is_never_valueless_v<S>);
+        STATIC_REQUIRE(yk::rvariant<S>::never_valueless);
+        STATIC_REQUIRE(!yk::rvariant<S, BadType>::never_valueless);
+    }
+    {
+        // strange type, but...
+        struct S
+        {
+            S(S const&) = delete;
+            S& operator=(S const&) = default;
+
+            S(S&&) = default;
+            S& operator=(S&&) = delete;
+        };
+        static_assert(!std::is_trivially_copy_constructible_v<S>);
+        static_assert( std::is_trivially_copy_assignable_v<S>);
+        static_assert( std::is_trivially_move_constructible_v<S>);
+        static_assert(!std::is_trivially_move_assignable_v<S>);
+
+        STATIC_REQUIRE(yk::detail::is_never_valueless_v<S>);
+        STATIC_REQUIRE(yk::rvariant<S>::never_valueless);
+        STATIC_REQUIRE(!yk::detail::is_never_valueless_v<yk::rvariant<S>>); // wow https://eel.is/c++draft/variant.assign#5
+        STATIC_REQUIRE(!yk::rvariant<S, BadType>::never_valueless);
+    }
+}
+
 TEST_CASE("storage", "[detail]")
 {
     // Test cases for this type is VERY important; some compilers misunderstand relevant type traits
@@ -416,6 +490,260 @@ TEST_CASE("rvariant.rvariant.general", "[wrapper]")
     //yk::rvariant<yk::recursive_wrapper<int>, yk::recursive_wrapper<int, MyAllocator>>{}; // hard error
 }
 
+TEST_CASE("special member function resolution")
+{
+    {
+        struct NCC : SMF_Logger
+        {
+            NCC() = default;
+            NCC(NCC const&) = delete;
+            NCC& operator=(NCC const&) = default;
+            NCC(NCC&&) = default;
+            NCC& operator=(NCC&&) = default;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NCC>);
+        STATIC_REQUIRE(!std::is_copy_constructible_v<NCC>);
+        STATIC_REQUIRE( std::is_copy_assignable_v<NCC>);
+        STATIC_REQUIRE( std::is_move_constructible_v<NCC>);
+        STATIC_REQUIRE( std::is_move_assignable_v<NCC>);
+
+        using V_NCC = yk::rvariant<NCC>;
+        V_NCC temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NCC>);
+        CHECK(yk::get<0>(V_NCC{}).log == "DC ");
+        STATIC_CHECK(!std::is_copy_constructible_v<V_NCC>);
+        STATIC_CHECK(!std::is_copy_assignable_v<V_NCC>); // strengthened; https://eel.is/c++draft/variant.assign#5
+        STATIC_CHECK( std::is_move_constructible_v<V_NCC>);
+        CHECK(yk::get<0>(V_NCC{std::move(temp)}).log == "MC "); // construction from xvalue
+        STATIC_CHECK( std::is_move_assignable_v<V_NCC>);
+        CHECK(yk::get<0>(V_NCC{} = V_NCC{}).log == "DC MA ");
+    }
+    {
+        struct NMC : SMF_Logger
+        {
+            NMC() = default;
+            NMC(NMC const&) = default;
+            NMC& operator=(NMC const&) = default;
+            NMC(NMC&&) = delete;
+            NMC& operator=(NMC&&) = default;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NMC>);
+        STATIC_REQUIRE( std::is_copy_constructible_v<NMC>);
+        STATIC_REQUIRE( std::is_copy_assignable_v<NMC>);
+        STATIC_REQUIRE(!std::is_move_constructible_v<NMC>);
+        STATIC_REQUIRE( std::is_move_assignable_v<NMC>);
+
+        using V_NMC = yk::rvariant<NMC>;
+        V_NMC temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NMC>);
+        CHECK(yk::get<0>(V_NMC{}).log == "DC ");
+        STATIC_CHECK( std::is_copy_constructible_v<V_NMC>);
+        CHECK(yk::get<0>(V_NMC{temp}).log == "CC ");
+        STATIC_CHECK( std::is_copy_assignable_v<V_NMC>);
+        CHECK(yk::get<0>(V_NMC{} = temp).log == "DC CA ");
+        STATIC_CHECK( std::is_move_constructible_v<V_NMC>); // falls back to CC; https://eel.is/c++draft/variant.ctor#10
+        CHECK(yk::get<0>(V_NMC{std::move(temp)}).log == "CC ");
+        STATIC_CHECK( std::is_move_assignable_v<V_NMC>);
+        CHECK(yk::get<0>(V_NMC{} = V_NMC{}).log == "DC CA "); // falls back to CA; https://eel.is/c++draft/variant.assign#7
+    }
+
+    {
+        struct NCA : SMF_Logger
+        {
+            NCA() = default;
+            NCA(NCA const&) = default;
+            NCA& operator=(NCA const&) = delete;
+            NCA(NCA&&) = default;
+            NCA& operator=(NCA&&) = default;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NCA>);
+        STATIC_REQUIRE( std::is_copy_constructible_v<NCA>);
+        STATIC_REQUIRE(!std::is_copy_assignable_v<NCA>);
+        STATIC_REQUIRE( std::is_move_constructible_v<NCA>);
+        STATIC_REQUIRE( std::is_move_assignable_v<NCA>);
+
+        using V_NCA = yk::rvariant<NCA>;
+        V_NCA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NCA>);
+        CHECK(yk::get<0>(V_NCA{}).log == "DC ");
+        STATIC_CHECK( std::is_copy_constructible_v<V_NCA>);
+        CHECK(yk::get<0>(V_NCA{temp}).log == "CC ");
+        STATIC_CHECK(!std::is_copy_assignable_v<V_NCA>);
+        STATIC_CHECK( std::is_move_constructible_v<V_NCA>);
+        CHECK(yk::get<0>(V_NCA{std::move(temp)}).log == "MC "); // construction from xvalue
+        STATIC_CHECK( std::is_move_assignable_v<V_NCA>);
+        CHECK(yk::get<0>(V_NCA{} = V_NCA{}).log == "DC MA ");
+    }
+    {
+        struct NMA : SMF_Logger
+        {
+            NMA() = default;
+            NMA(NMA const&) = default;
+            NMA& operator=(NMA const&) = default;
+            NMA(NMA&&) = default;
+            NMA& operator=(NMA&&) = delete;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NMA>);
+        STATIC_REQUIRE( std::is_copy_constructible_v<NMA>);
+        STATIC_REQUIRE( std::is_copy_assignable_v<NMA>);
+        STATIC_REQUIRE( std::is_move_constructible_v<NMA>);
+        STATIC_REQUIRE(!std::is_move_assignable_v<NMA>);
+
+        using V_NMA = yk::rvariant<NMA>;
+        V_NMA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NMA>);
+        CHECK(yk::get<0>(V_NMA{}).log == "DC ");
+        STATIC_CHECK( std::is_copy_constructible_v<V_NMA>);
+        CHECK(yk::get<0>(V_NMA{temp}).log == "CC ");
+        STATIC_CHECK( std::is_copy_assignable_v<V_NMA>);
+        CHECK(yk::get<0>(V_NMA{} = temp).log == "DC CA ");
+        STATIC_CHECK( std::is_move_constructible_v<V_NMA>);
+        CHECK(yk::get<0>(V_NMA{std::move(temp)}).log == "MC "); // construction from xvalue
+        STATIC_CHECK( std::is_move_assignable_v<V_NMA>); // falls back to CA; https://eel.is/c++draft/variant.assign#7
+        CHECK(yk::get<0>(V_NMA{} = V_NMA{}).log == "DC CA ");
+    }
+
+    {
+        struct NCC_NCA : SMF_Logger
+        {
+            NCC_NCA() = default;
+            NCC_NCA(NCC_NCA const&) = delete;
+            NCC_NCA& operator=(NCC_NCA const&) = delete;
+            NCC_NCA(NCC_NCA&&) = default;
+            NCC_NCA& operator=(NCC_NCA&&) = default;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NCC_NCA>);
+        STATIC_REQUIRE(!std::is_copy_constructible_v<NCC_NCA>);
+        STATIC_REQUIRE(!std::is_copy_assignable_v<NCC_NCA>);
+        STATIC_REQUIRE( std::is_move_constructible_v<NCC_NCA>);
+        STATIC_REQUIRE( std::is_move_assignable_v<NCC_NCA>);
+
+        using V_NCC_NCA = yk::rvariant<NCC_NCA>;
+        V_NCC_NCA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NCC_NCA>);
+        CHECK(yk::get<0>(V_NCC_NCA{}).log == "DC ");
+        STATIC_CHECK(!std::is_copy_constructible_v<V_NCC_NCA>);
+        STATIC_CHECK(!std::is_copy_assignable_v<V_NCC_NCA>);
+        STATIC_CHECK( std::is_move_constructible_v<V_NCC_NCA>);
+        CHECK(yk::get<0>(V_NCC_NCA{std::move(temp)}).log == "MC "); // construction from xvalue
+        STATIC_CHECK( std::is_move_assignable_v<V_NCC_NCA>);
+        CHECK(yk::get<0>(V_NCC_NCA{} = V_NCC_NCA{}).log == "DC MA ");
+    }
+    {
+        struct NMC_NMA : SMF_Logger
+        {
+            NMC_NMA() = default;
+            NMC_NMA(NMC_NMA const&) = default;
+            NMC_NMA& operator=(NMC_NMA const&) = default;
+            NMC_NMA(NMC_NMA&&) = delete;
+            NMC_NMA& operator=(NMC_NMA&&) = delete;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NMC_NMA>);
+        STATIC_REQUIRE( std::is_copy_constructible_v<NMC_NMA>);
+        STATIC_REQUIRE( std::is_copy_assignable_v<NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_constructible_v<NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_assignable_v<NMC_NMA>);
+
+        using V_NMC_NMA = yk::rvariant<NMC_NMA>;
+        V_NMC_NMA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NMC_NMA>);
+        CHECK(yk::get<0>(V_NMC_NMA{}).log == "DC ");
+        STATIC_CHECK( std::is_copy_constructible_v<V_NMC_NMA>);
+        CHECK(yk::get<0>(V_NMC_NMA{temp}).log == "CC ");
+        STATIC_CHECK( std::is_copy_assignable_v<V_NMC_NMA>);
+        CHECK(yk::get<0>(V_NMC_NMA{} = temp).log == "DC CA ");
+        STATIC_CHECK( std::is_move_constructible_v<V_NMC_NMA>); // falls back to CC; https://eel.is/c++draft/variant.ctor#10
+        CHECK(yk::get<0>(V_NMC_NMA{std::move(temp)}).log == "CC "); // construction from xvalue
+        STATIC_CHECK( std::is_move_assignable_v<V_NMC_NMA>); // falls back to CA; https://eel.is/c++draft/variant.assign#7
+        CHECK(yk::get<0>(V_NMC_NMA{} = V_NMC_NMA{}).log == "DC CA ");
+    }
+
+    {
+        struct NCC_NMC_NMA : SMF_Logger
+        {
+            NCC_NMC_NMA() = default;
+            NCC_NMC_NMA(NCC_NMC_NMA const&) = delete;
+            NCC_NMC_NMA& operator=(NCC_NMC_NMA const&) = default;
+            NCC_NMC_NMA(NCC_NMC_NMA&&) = delete;
+            NCC_NMC_NMA& operator=(NCC_NMC_NMA&&) = delete;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NCC_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_copy_constructible_v<NCC_NMC_NMA>);
+        STATIC_REQUIRE( std::is_copy_assignable_v<NCC_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_constructible_v<NCC_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_assignable_v<NCC_NMC_NMA>);
+
+        using V_NCC_NMC_NMA = yk::rvariant<NCC_NMC_NMA>;
+        V_NCC_NMC_NMA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NCC_NMC_NMA>);
+        CHECK(yk::get<0>(V_NCC_NMC_NMA{}).log == "DC ");
+        STATIC_CHECK(!std::is_copy_constructible_v<V_NCC_NMC_NMA>);
+        STATIC_CHECK(!std::is_copy_assignable_v<V_NCC_NMC_NMA>); // strengthened; https://eel.is/c++draft/variant.assign#5
+        STATIC_CHECK(!std::is_move_constructible_v<V_NCC_NMC_NMA>); // falls back to CC(deleted)
+        STATIC_CHECK(!std::is_move_assignable_v<V_NCC_NMC_NMA>); // falls back to CA(deleted)
+    }
+    {
+        struct NCA_NMC_NMA : SMF_Logger
+        {
+            NCA_NMC_NMA() = default;
+            NCA_NMC_NMA(NCA_NMC_NMA const&) = default;
+            NCA_NMC_NMA& operator=(NCA_NMC_NMA const&) = delete;
+            NCA_NMC_NMA(NCA_NMC_NMA&&) = delete;
+            NCA_NMC_NMA& operator=(NCA_NMC_NMA&&) = delete;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NCA_NMC_NMA>);
+        STATIC_REQUIRE( std::is_copy_constructible_v<NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_copy_assignable_v<NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_constructible_v<NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_assignable_v<NCA_NMC_NMA>);
+
+        using V_NMC_NMA = yk::rvariant<NCA_NMC_NMA>;
+        V_NMC_NMA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NMC_NMA>);
+        CHECK(yk::get<0>(V_NMC_NMA{}).log == "DC ");
+        STATIC_CHECK( std::is_copy_constructible_v<V_NMC_NMA>);
+        CHECK(yk::get<0>(V_NMC_NMA{temp}).log == "CC ");
+        STATIC_CHECK(!std::is_copy_assignable_v<V_NMC_NMA>);
+        STATIC_CHECK( std::is_move_constructible_v<V_NMC_NMA>); // falls back to CC; https://eel.is/c++draft/variant.ctor#10
+        CHECK(yk::get<0>(V_NMC_NMA{std::move(temp)}).log == "CC "); // construction from xvalue
+        STATIC_CHECK(!std::is_move_assignable_v<V_NMC_NMA>); // falls back to CA(deleted)
+    }
+
+    {
+        struct NCC_NCA_NMC_NMA : SMF_Logger
+        {
+            NCC_NCA_NMC_NMA() = default;
+            NCC_NCA_NMC_NMA(NCC_NCA_NMC_NMA const&) = delete;
+            NCC_NCA_NMC_NMA(NCC_NCA_NMC_NMA&&) = delete;
+            NCC_NCA_NMC_NMA& operator=(NCC_NCA_NMC_NMA const&) = delete;
+            NCC_NCA_NMC_NMA& operator=(NCC_NCA_NMC_NMA&&) = delete;
+        };
+        STATIC_REQUIRE( std::is_default_constructible_v<NCC_NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_copy_constructible_v<NCC_NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_constructible_v<NCC_NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_copy_assignable_v<NCC_NCA_NMC_NMA>);
+        STATIC_REQUIRE(!std::is_move_assignable_v<NCC_NCA_NMC_NMA>);
+
+        using V_NCC_NCA_NMC_NMA = yk::rvariant<NCC_NCA_NMC_NMA>;
+        V_NCC_NCA_NMC_NMA temp;
+
+        STATIC_CHECK( std::is_default_constructible_v<V_NCC_NCA_NMC_NMA>);
+        CHECK(yk::get<0>(V_NCC_NCA_NMC_NMA{}).log == "DC ");
+        STATIC_CHECK(!std::is_copy_constructible_v<V_NCC_NCA_NMC_NMA>);
+        STATIC_CHECK(!std::is_move_constructible_v<V_NCC_NCA_NMC_NMA>);
+        STATIC_CHECK(!std::is_copy_assignable_v<V_NCC_NCA_NMC_NMA>);
+        STATIC_CHECK(!std::is_move_assignable_v<V_NCC_NCA_NMC_NMA>);
+    }
+}
+
 TEST_CASE("default construction")
 {
     {
@@ -462,7 +790,7 @@ TEST_CASE("default construction")
     {
         yk::rvariant<int> var;
         STATIC_REQUIRE(std::is_nothrow_default_constructible_v<yk::rvariant<int>>);
-        CHECK_FALSE(var.valueless_by_exception());
+        REQUIRE(var.valueless_by_exception() == false);
         CHECK(var.index() == 0);
     }
     {
@@ -498,7 +826,7 @@ TEST_CASE("copy construction")
         STATIC_REQUIRE(std::is_trivially_copy_constructible_v<yk::rvariant<int>>);
         yk::rvariant<int, double> a;
         yk::rvariant<int, double> b(a);
-        CHECK_FALSE(b.valueless_by_exception());
+        REQUIRE(b.valueless_by_exception() == false);
         CHECK(b.index() == 0);
     }
 
@@ -538,7 +866,7 @@ TEST_CASE("copy construction")
     {
         yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         yk::rvariant<int, MC_Thrower> a(valueless);
-        CHECK(a.valueless_by_exception());
+        CHECK(a.valueless_by_exception() == true);
     }
 }
 
@@ -548,7 +876,7 @@ TEST_CASE("move construction")
         STATIC_REQUIRE(std::is_trivially_move_constructible_v<yk::rvariant<int>>);
         yk::rvariant<int, double> a;
         yk::rvariant<int, double> b(std::move(a));
-        CHECK_FALSE(b.valueless_by_exception());
+        REQUIRE(b.valueless_by_exception() == false);
         CHECK(b.index() == 0);
     }
     {
@@ -585,7 +913,7 @@ TEST_CASE("move construction")
     {
         yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         yk::rvariant<int, MC_Thrower> a(std::move(valueless));
-        CHECK(a.valueless_by_exception());
+        CHECK(a.valueless_by_exception() == true);
     }
 }
 
@@ -593,13 +921,13 @@ TEST_CASE("generic construction")
 {
     {
         yk::rvariant<int, float> var = 42;
-        REQUIRE_FALSE(var.valueless_by_exception());
-        REQUIRE(var.index() == 0);
+        REQUIRE(var.valueless_by_exception() == false);
+        CHECK(var.index() == 0);
     }
     {
         yk::rvariant<int, float> var = 3.14f;
-        REQUIRE_FALSE(var.valueless_by_exception());
-        REQUIRE(var.index() == 1);
+        REQUIRE(var.valueless_by_exception() == false);
+        CHECK(var.index() == 1);
     }
 }
 
@@ -607,13 +935,13 @@ TEST_CASE("in_place_index construction")
 {
     {
         yk::rvariant<int, float> var(std::in_place_index<0>, 42);
-        REQUIRE_FALSE(var.valueless_by_exception());
-        REQUIRE(var.index() == 0);
+        REQUIRE(var.valueless_by_exception() == false);
+        CHECK(var.index() == 0);
     }
     {
         yk::rvariant<int, float> var(std::in_place_index<1>, 3.14f);
-        REQUIRE_FALSE(var.valueless_by_exception());
-        REQUIRE(var.index() == 1);
+        REQUIRE(var.valueless_by_exception() == false);
+        CHECK(var.index() == 1);
     }
     {
         yk::rvariant<std::vector<int>> var(std::in_place_index<0>, {3, 1, 4});
@@ -624,13 +952,13 @@ TEST_CASE("in_place_type construction")
 {
     {
         yk::rvariant<int, float> var(std::in_place_type<int>, 42);
-        REQUIRE_FALSE(var.valueless_by_exception());
-        REQUIRE(var.index() == 0);
+        REQUIRE(var.valueless_by_exception() == false);
+        CHECK(var.index() == 0);
     }
     {
         yk::rvariant<int, float> var(std::in_place_type<float>, 3.14f);
-        REQUIRE_FALSE(var.valueless_by_exception());
-        REQUIRE(var.index() == 1);
+        REQUIRE(var.valueless_by_exception() == false);
+        CHECK(var.index() == 1);
     }
     {
         yk::rvariant<std::vector<int>> var(std::in_place_type<std::vector<int>>, {3, 1, 4});
@@ -645,9 +973,9 @@ TEST_CASE("copy assignment")
     // trivial case
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
-        REQUIRE_NOTHROW(a = b);  // different alternative
+        YK_REQUIRE_STATIC_NOTHROW(a = b);  // different alternative
         REQUIRE(a.index() == 1);
-        REQUIRE_NOTHROW(a = b);  // same alternative
+        YK_REQUIRE_STATIC_NOTHROW(a = b);  // same alternative
         REQUIRE(a.index() == 1);
     }
 
@@ -662,8 +990,8 @@ TEST_CASE("copy assignment")
             S& operator=(S&&) noexcept(false) { throw std::exception{}; }
         };
         yk::rvariant<S, int> a = 42, b;
-        REQUIRE_NOTHROW(a = b);  // different alternative; use copy constructor
-        REQUIRE_NOTHROW(a = b);  // same alternative; directly use copy assignment
+        YK_REQUIRE_STATIC_NOTHROW(a = b);  // different alternative; use copy constructor
+        YK_REQUIRE_STATIC_NOTHROW(a = b);  // same alternative; directly use copy assignment
     }
     {
         struct S
@@ -682,7 +1010,7 @@ TEST_CASE("copy assignment")
         yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         yk::rvariant<int, MC_Thrower> a;
         a = valueless;
-        CHECK(a.valueless_by_exception());
+        CHECK(a.valueless_by_exception() == true);
     }
 
     // NOLINTEND(modernize-use-equals-default)
@@ -693,12 +1021,12 @@ TEST_CASE("move assignment")
     // trivial case
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
-        REQUIRE_NOTHROW(a = std::move(b));  // different alternative
+        YK_REQUIRE_STATIC_NOTHROW(a = std::move(b));  // different alternative
         REQUIRE(a.index() == 1);
     }
     {
         yk::rvariant<int, float> a = 42, b = 33 - 4;
-        REQUIRE_NOTHROW(a = std::move(b));  // same alternative
+        YK_REQUIRE_STATIC_NOTHROW(a = std::move(b));  // same alternative
         REQUIRE(a.index() == 0);
     }
 
@@ -714,12 +1042,12 @@ TEST_CASE("move assignment")
         };
         {
             yk::rvariant<S, int> a = 42, b;
-            CHECK_NOTHROW(a = std::move(b));  // different alternative; use move constructor
+            YK_CHECK_STATIC_NOTHROW(a = std::move(b));  // different alternative; use move constructor
             CHECK(a.index() == 0);
         }
         {
             yk::rvariant<S, int> a, b;
-            CHECK_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
+            YK_CHECK_STATIC_NOTHROW(a = std::move(b));  // same alternative; directly use move assignment
             CHECK(a.index() == 0);
         }
     }
@@ -728,7 +1056,7 @@ TEST_CASE("move assignment")
         yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
         yk::rvariant<int, MC_Thrower> a;
         a = std::move(valueless);
-        CHECK(a.valueless_by_exception());
+        CHECK(a.valueless_by_exception() == true);
     }
 }
 
@@ -747,27 +1075,23 @@ TEST_CASE("generic assignment")
 
     {
         yk::rvariant<int, MC_Thrower> a;
-        try {
-            a = MC_Thrower::non_throwing;
-        } catch(...) {  // NOLINT(bugprone-empty-catch)
-        }
-        CHECK(!a.valueless_by_exception());
+        REQUIRE_THROWS_AS(a = MC_Thrower{}, MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == false);
     }
     {
         yk::rvariant<int, MC_Thrower> a;
-        try {
-            a = MC_Thrower::throwing;
-        } catch(...) {  // NOLINT(bugprone-empty-catch)
-        }
-        CHECK(!a.valueless_by_exception());
+        YK_REQUIRE_STATIC_NOTHROW(a = MC_Thrower::non_throwing);
+        CHECK(a.valueless_by_exception() == false);
     }
     {
         yk::rvariant<int, MC_Thrower> a;
-        try {
-            a = MC_Thrower::potentially_throwing;
-        } catch(...) {  // NOLINT(bugprone-empty-catch)
-        }
-        CHECK(a.valueless_by_exception());
+        REQUIRE_THROWS_AS(a = MC_Thrower::throwing, MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<int, MC_Thrower> a;
+        REQUIRE_THROWS_AS(a = MC_Thrower::potentially_throwing, MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == true);
     }
 }
 
@@ -781,8 +1105,8 @@ TEST_CASE("emplace")
 
     {
         yk::rvariant<int> a = 42;
-        REQUIRE_NOTHROW(a.emplace<int>(12));
-        REQUIRE_NOTHROW(a.emplace<0>(12));
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<int>(12));
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<0>(12));
     }
     {
         yk::rvariant<std::vector<int>> a;
@@ -792,33 +1116,110 @@ TEST_CASE("emplace")
     {
         yk::rvariant<int, float> a = 42;
         a.emplace<1>(3.14f);
-        REQUIRE(a.index() == 1);
+        CHECK(a.index() == 1);
     }
 
+    // ReSharper disable CppStaticAssertFailure
+
+    // non type-changing
+    STATIC_REQUIRE(yk::rvariant<Non_Thrower>::never_valueless);
+    {
+        yk::rvariant<Non_Thrower> a;
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<0>(Non_Thrower{}));
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<Non_Thrower> a;
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<0>(Non_Thrower::non_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<Non_Thrower> a;
+        REQUIRE_THROWS_AS(a.emplace<0>(Non_Thrower::throwing), Non_Thrower::exception);
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<Non_Thrower> a;
+        REQUIRE_NOTHROW(a.emplace<0>(Non_Thrower::potentially_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+
+    // type-changing
+    STATIC_REQUIRE(std::is_nothrow_move_constructible_v<Non_Thrower>);
+    STATIC_REQUIRE(yk::rvariant<int, Non_Thrower>::never_valueless);
+    {
+        yk::rvariant<int, Non_Thrower> a;
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<1>(Non_Thrower{}));
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<int, Non_Thrower> a;
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<1>(Non_Thrower::non_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<int, Non_Thrower> a;
+        REQUIRE_THROWS_AS(a.emplace<1>(Non_Thrower::throwing), Non_Thrower::exception);
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<int, Non_Thrower> a;
+        REQUIRE_NOTHROW(a.emplace<1>(Non_Thrower::potentially_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+
+    // non type-changing
+    STATIC_REQUIRE(!std::is_nothrow_move_constructible_v<MC_Thrower>);
+    STATIC_REQUIRE(!yk::rvariant<MC_Thrower>::never_valueless);
     {
         yk::rvariant<MC_Thrower> a;
-        try {
-            a.emplace<0>(MC_Thrower::non_throwing);
-        } catch(...) {  // NOLINT(bugprone-empty-catch)
-        }
-        CHECK(!a.valueless_by_exception());
+        REQUIRE_THROWS_AS(a.emplace<0>(MC_Thrower{}), MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == true);
     }
     {
         yk::rvariant<MC_Thrower> a;
-        try {
-            a.emplace<0>(MC_Thrower::throwing);
-        } catch(...) {  // NOLINT(bugprone-empty-catch)
-        }
-        CHECK(!a.valueless_by_exception());
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<0>(MC_Thrower::non_throwing));
+        CHECK(a.valueless_by_exception() == false);
     }
     {
         yk::rvariant<MC_Thrower> a;
-        try {
-            a.emplace<0>(MC_Thrower::potentially_throwing);
-        } catch(...) {  // NOLINT(bugprone-empty-catch)
-        }
-        CHECK(a.valueless_by_exception());
+        REQUIRE_THROWS_AS(a.emplace<0>(MC_Thrower::throwing), MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == true);
     }
+    {
+        yk::rvariant<MC_Thrower> a;
+        REQUIRE_NOTHROW(a.emplace<0>(MC_Thrower::potentially_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+
+    // type-changing
+    STATIC_REQUIRE(!std::is_nothrow_move_constructible_v<MC_Thrower>);
+    STATIC_REQUIRE(!yk::rvariant<int, MC_Thrower>::never_valueless);
+    {
+        yk::rvariant<int, MC_Thrower> a;
+        REQUIRE_THROWS_AS(a.emplace<1>(MC_Thrower{}), MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == true);
+    }
+    {
+        yk::rvariant<int, MC_Thrower> a;
+        YK_REQUIRE_STATIC_NOTHROW(a.emplace<1>(MC_Thrower::non_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+    {
+        yk::rvariant<int, MC_Thrower> a;
+        REQUIRE_THROWS_AS(a.emplace<1>(MC_Thrower::throwing), MC_Thrower::exception);
+        CHECK(a.valueless_by_exception() == true);
+    }
+    {
+        yk::rvariant<int, MC_Thrower> a;
+        REQUIRE_NOTHROW(a.emplace<1>(MC_Thrower::potentially_throwing));
+        CHECK(a.valueless_by_exception() == false);
+    }
+
+    STATIC_REQUIRE(yk::detail::is_never_valueless_v<yk::recursive_wrapper<int>>);
+    STATIC_REQUIRE(yk::rvariant<yk::recursive_wrapper<int>>::never_valueless);
+
+    // ReSharper restore CppStaticAssertFailure
 }
 
 namespace {
@@ -833,13 +1234,13 @@ TEST_CASE("swap")
     {
         STATIC_REQUIRE(yk::core::is_trivially_swappable_v<int>);
         yk::rvariant<int> a = 33, b = 4;
-        REQUIRE_NOTHROW(a.swap(b));
+        YK_REQUIRE_STATIC_NOTHROW(a.swap(b));
         CHECK(yk::get<0>(a) == 4);
         CHECK(yk::get<0>(b) == 33);
     }
     {
         yk::rvariant<int, float> a = 42, b = 3.14f;
-        REQUIRE_NOTHROW(a.swap(b));
+        YK_REQUIRE_STATIC_NOTHROW(a.swap(b));
         CHECK(yk::get<1>(a) == 3.14f);
         CHECK(yk::get<0>(b) == 42);
     }
@@ -869,7 +1270,7 @@ TEST_CASE("swap")
         static_assert((yk::variant_size_v<V> * yk::variant_size_v<V>) >= yk::detail::visit_instantiation_limit);
 
         V a{std::in_place_type<just_index<10>>}, b{std::in_place_type<just_index<20>>};
-        REQUIRE_NOTHROW(a.swap(b));
+        YK_REQUIRE_STATIC_NOTHROW(a.swap(b));
         CHECK(yk::holds_alternative<just_index<20>>(a));
         CHECK(yk::holds_alternative<just_index<10>>(b));
     }

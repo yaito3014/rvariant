@@ -9,6 +9,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
+# Don't remove this; required for ABI compatibility
+target_compile_features(Catch2 PUBLIC cxx_std_23)
+set_target_properties(Catch2 PROPERTIES CXX_EXTENSIONS OFF)
+
+# ---------------------------------------
+
 add_executable(
     yk_rvariant_test
 
@@ -29,10 +35,8 @@ add_executable(
 
 target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp)
 
-# Don't remove this; required for ABI compatibility
-target_compile_features(Catch2 PUBLIC cxx_std_23)
-
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
+set_target_properties(yk_rvariant_test PROPERTIES CXX_EXTENSIONS OFF)
 
 if(MSVC)
     target_compile_options(

@@ -52,8 +52,50 @@ template<bool NeverValueless>
     }
 }
 
+// Any non type-changing operation
+//   => never becomes valueless (delegates to underlying type's exception safety)
+//
+// Construction
+//   => no need to consider type traits, because lifetime never starts on exception
+//
+// Assignment (type-changing & RHS is not valueless)
+//   => valueless iff move constructor throws
+//
+// Emplace (if VT(Args...) is throwing)
+//   rvariant tmp(std::in_place_index<I>, std::forward<Args>(args)...);
+//   *this = std::move(tmp);
+//        ^^^ needs to be NOT observable on user's part, as per "Effects" https://eel.is/c++draft/variant.mod#7
+//                       ^^^^^^^^^^^^^^
+//                           if type-changing: VT is trivially move constructible
+//                       if NOT type-changing: VT is trivially move assignable
+//                                    ... and trivially destructible.
+// So the final condition is:
+//    move constructor is noexcept && (<= discarded; weaker than triviality)
+//    trivially move constructible &&
+//    trivially move assignable &&
+//    trivially destructible.
+//
+// Note that "move" operation can fall back to "copy" if "move" is
+// non-trivial AND "copy" is trivial.
+//
+// Furthermore, we have modified the spec for `.emplace` so that
+// `recursive_wrapper` can be always treated as never_valueless part,
+// so we include that optimization for PoC.
 template<class... Ts>
-struct is_never_valueless : std::conjunction<std::is_nothrow_move_constructible<Ts>...> {};
+struct is_never_valueless
+    : std::conjunction<
+        std::disjunction<
+            core::is_ttp_specialization_of<Ts, recursive_wrapper>,
+            std::conjunction<
+                std::is_trivially_destructible<Ts>,
+                std::disjunction<std::is_trivially_move_constructible<Ts>, std::is_trivially_copy_constructible<Ts>>,
+                std::disjunction<std::is_trivially_move_assignable<Ts>, std::is_trivially_copy_assignable<Ts>>
+            >
+        >...
+    >
+{
+    static_assert(sizeof...(Ts) > 0);
+};
 
 template<class... Ts>
 constexpr bool is_never_valueless_v = is_never_valueless<Ts...>::value;
@@ -65,7 +107,7 @@ struct variadic_union<true, T, Ts...>
     static_assert(true == std::conjunction_v<std::is_trivially_destructible<T>, std::is_trivially_destructible<Ts>...>);
 
     static constexpr std::size_t size = sizeof...(Ts) + 1;
-    static constexpr bool never_valueless = is_never_valueless_v<Ts...>;
+    static constexpr bool never_valueless = is_never_valueless_v<T, Ts...>;
 
     // no active member
     // ReSharper disable once CppPossiblyUninitializedMember
@@ -115,7 +157,7 @@ struct variadic_union<false, T, Ts...>
     static_assert(false == std::conjunction_v<std::is_trivially_destructible<T>, std::is_trivially_destructible<Ts>...>);
 
     static constexpr std::size_t size = sizeof...(Ts) + 1;
-    static constexpr bool never_valueless = is_never_valueless_v<Ts...>;
+    static constexpr bool never_valueless = is_never_valueless_v<T, Ts...>;
 
     // no active member
     // ReSharper disable once CppPossiblyUninitializedMember

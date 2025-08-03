@@ -5,6 +5,7 @@ project(rvariant LANGUAGES CXX)
 add_library(rvariant INTERFACE)
 
 target_compile_features(rvariant INTERFACE cxx_std_23)
+set_target_properties(rvariant PROPERTIES CXX_EXTENSIONS OFF)
 
 if(MSVC)
     target_compile_options(rvariant INTERFACE /Zc:preprocessor /permissive-)

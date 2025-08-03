@@ -801,17 +801,21 @@ constexpr variant_alternative_t<I, rvariant<Ts...>>&
 [.candidates]
 :spec-url: https://eel.is/c++draft/variant.mod
 
-* [.candidate]#1)# *_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`.#
+* [.candidate]#1)# [.underline]#Let `VT` denote `{recursive_wrapper}<T, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT` denote `T`.#
 +
-*_Constraints:_* `std::is_constructible_v<T, Args\...>` is `true`, and `T` occurs exactly once in [.underline]#`{unwrap_recursive_t}<Ts>`#.
+*_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`.#
++
+*_Constraints:_* `std::is_constructible_v<[.underline]##VT##, Args\...>` is `true`, and `T` occurs exactly once in [.underline]#`{unwrap_recursive_t}<Ts>`#.
 +
 *_Effects:_* Equivalent to: +
 pass:quotes[&nbsp;&nbsp;]`return emplace<__I__>(std::forward<Args>(args)\...);` +
 where `_I_` is the zero-based index of `T` in [.underline]#`{unwrap_recursive_t}<Ts>`#.
 
-* [.candidate]#2)# *_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`.#
+* [.candidate]#2)# [.underline]#Let `VT` denote `{recursive_wrapper}<T, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT` denote `T`.#
 +
-*_Constraints:_* `std::is_constructible_v<T, std::initializer_list<U>&, Args\...>` is `true`, and `T` occurs exactly once in [.underline]#`{unwrap_recursive_t}<Ts>`#.
+*_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`.#
++
+*_Constraints:_* `std::is_constructible_v<[.underline]##VT##, std::initializer_list<U>&, Args\...>` is `true`, and `T` occurs exactly once in [.underline]#`{unwrap_recursive_t}<Ts>`#.
 +
 *_Effects:_* Equivalent to: +
 pass:quotes[&nbsp;&nbsp;]`return emplace<__I__>(il, std::forward<Args>(args)\...);` +
@@ -820,11 +824,14 @@ where `_I_` is the zero-based index of `T` in [.underline]#`{unwrap_recursive_t}
 * [.candidate]#3)# Equivalent to the `std::variant` counterpart, ^https://eel.is/c++draft/variant.mod[[spec\]]^ except:
 +
 *_Returns:_* [.underline]#Let `o` denote# a reference to the new contained value. [.underline]#Returns `{UNWRAP_RECURSIVE}(o)`.#
++
+*_Remarks:_* [.underline]#If `T~_I_~` is a specialization of `{recursive_wrapper}`, this function is permitted to construct an intermediate variable `tmp` as if by passing `std::forward<Args>(args)\...` to ``T~_I_~``'s constructor. Then `rvariant` direct-non-list-initializes the contained value of `T~_I_~` with the argument `std::move(tmp)`. (_Note:_ This allows optimization where `rvariant` can be assumed to become never valueless on certain cases.)#
 
 * [.candidate]#4)# Equivalent to the `std::variant` counterpart, ^https://eel.is/c++draft/variant.mod[[spec\]]^ except:
 +
 *_Returns:_* [.underline]#Let `o` denote# a reference to the new contained value. [.underline]#Returns `{UNWRAP_RECURSIVE}(o)`.#
-
++
+*_Remarks:_* [.underline]#If `T~_I_~` is a specialization of `{recursive_wrapper}`, this function is permitted to construct an intermediate variable `tmp` as if by passing `il, std::forward<Args>(args)\...` to ``T~_I_~``'s constructor. Then `rvariant` direct-non-list-initializes the contained value of `T~_I_~` with the argument `std::move(tmp)`. (_Note:_ This allows optimization where `rvariant` can be assumed to become never valueless on certain cases.)#
 
 [[rvariant.status]]
 === Value status [.slug]##<<rvariant.status,[rvariant.status]>>##

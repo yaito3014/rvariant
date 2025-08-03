@@ -251,6 +251,16 @@ TEST_CASE("flexible", "[flexible][wrapper]")
     STATIC_REQUIRE( std::is_constructible_v<yk::rvariant<X, RW_int, NonExistent>, yk::rvariant<X, RW_int>>);
 }
 
+TEST_CASE("ambiguous flexible", "[flexible]")
+{
+    {
+        struct A {};
+        struct B {};
+        using V = yk::rvariant<A, B, yk::rvariant<A, B>>;
+        V{yk::rvariant<A, B>{}}; // TODO
+    }
+}
+
 TEST_CASE("flexible copy construction", "[flexible]")
 {
     {

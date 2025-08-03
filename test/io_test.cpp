@@ -51,7 +51,7 @@ struct NonStreamable {};
 
 namespace unit_test {
 
-namespace MC_Thrower_ADL_guard {
+namespace Thrower_ADL_guard {
 
 std::ostream& operator<<(std::ostream& os, MC_Thrower const&)
 {
