@@ -1121,6 +1121,27 @@ TEST_CASE("emplace")
 
     // ReSharper disable CppStaticAssertFailure
 
+    struct BigType : Thrower_base
+    {
+        std::byte dummy[yk::detail::never_valueless_trivial_size_limit + 1];
+    };
+    STATIC_REQUIRE(!yk::detail::is_never_valueless_v<BigType>);
+
+    // non type-changing
+    STATIC_REQUIRE(!yk::rvariant<BigType>::never_valueless);
+    {
+        yk::rvariant<BigType> a;
+        REQUIRE_THROWS_AS(a.emplace<0>(BigType::throwing), BigType::exception);
+        CHECK(a.valueless_by_exception() == true);
+    }
+    // type-changing
+    STATIC_REQUIRE(!yk::rvariant<int, BigType>::never_valueless);
+    {
+        yk::rvariant<int, BigType> a;
+        REQUIRE_THROWS_AS(a.emplace<1>(BigType::throwing), BigType::exception);
+        CHECK(a.valueless_by_exception() == true);
+    }
+
     // non type-changing
     STATIC_REQUIRE(yk::rvariant<Non_Thrower>::never_valueless);
     {

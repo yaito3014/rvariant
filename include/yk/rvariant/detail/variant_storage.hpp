@@ -81,12 +81,17 @@ template<bool NeverValueless>
 // Furthermore, we have modified the spec for `.emplace` so that
 // `recursive_wrapper` can be always treated as never_valueless part,
 // so we include that optimization for PoC.
+
+// Additional size limit
+inline constexpr std::size_t never_valueless_trivial_size_limit = 256;
+
 template<class... Ts>
 struct is_never_valueless
     : std::conjunction<
         std::disjunction<
             core::is_ttp_specialization_of<Ts, recursive_wrapper>,
             std::conjunction<
+                std::bool_constant<sizeof(Ts) <= never_valueless_trivial_size_limit>,
                 std::is_trivially_destructible<Ts>,
                 std::disjunction<std::is_trivially_move_constructible<Ts>, std::is_trivially_copy_constructible<Ts>>,
                 std::disjunction<std::is_trivially_move_assignable<Ts>, std::is_trivially_copy_assignable<Ts>>

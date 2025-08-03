@@ -87,6 +87,7 @@ std::ostream& operator<<(std::ostream&, MC_Thrower const&);
 
 } // Thrower_ADL_guard
 
+using Thrower_ADL_guard::detail::Thrower_base;
 using Thrower_ADL_guard::Non_Thrower;
 using Thrower_ADL_guard::MC_Thrower;
 

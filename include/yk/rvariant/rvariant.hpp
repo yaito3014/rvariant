@@ -729,11 +729,16 @@ private:
                     std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...);
 
                 } else if constexpr (std::is_same_v<ThisAlt, T>) { // NOT type-changing
-                    if constexpr (std::is_trivially_move_assignable_v<T> || core::is_ttp_specialization_of_v<T, recursive_wrapper>) {
+                    if constexpr (
+                        (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_assignable_v<T>) ||
+                        core::is_ttp_specialization_of_v<T, recursive_wrapper>
+                    ) {
                         T tmp(std::forward<Args>(args)...); // may throw
                         static_assert(noexcept(alt = std::move(tmp)));
                         alt = std::move(tmp);
-                    } else if constexpr (std::is_trivially_copy_assignable_v<T>) { // strange type...
+                    } else if constexpr (
+                        sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_assignable_v<T>
+                    ) { // strange type...
                         T const tmp(std::forward<Args>(args)...); // may throw
                         static_assert(noexcept(alt = tmp));
                         alt = tmp;
@@ -747,13 +752,18 @@ private:
                     }
 
                 } else { // type-changing
-                    if constexpr (std::is_trivially_move_constructible_v<T> || core::is_ttp_specialization_of_v<T, recursive_wrapper>) {
+                    if constexpr (
+                        (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_constructible_v<T>) ||
+                        core::is_ttp_specialization_of_v<T, recursive_wrapper>
+                    ) {
                         T tmp(std::forward<Args>(args)...); // may throw
                         alt.~ThisAlt();
                         static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp))));
                         std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp)); // never throws
                         this->index_ = I;
-                    } else if constexpr (std::is_trivially_copy_constructible_v<T>) { // strange type...
+                    } else if constexpr (
+                        sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_constructible_v<T>
+                    ) { // strange type...
                         T const tmp(std::forward<Args>(args)...); // may throw
                         alt.~ThisAlt();
                         static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, tmp)));
