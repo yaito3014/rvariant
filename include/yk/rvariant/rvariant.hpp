@@ -195,11 +195,10 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     constexpr void _move_assign(rvariant_base&& rhs)
         noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
     {
-        std::move(rhs).raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, T&& rhs_alt)
+        std::move(rhs).raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T&& rhs_alt)
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
         {
             if constexpr (j == std::variant_npos) {
-                (void)rhs_alt;
                 visit_reset();
             } else {
                 static_assert(std::is_rvalue_reference_v<T&&>);
