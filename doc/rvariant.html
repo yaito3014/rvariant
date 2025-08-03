@@ -909,6 +909,13 @@ See also: spec of <a href="https://eel.is/c++draft/variant"><code>std::variant</
 </tr>
 </table>
 </div>
+<div class="ulist">
+<ul>
+<li>
+<p>Let <code>Us</code> denote the corresponding template parameter pack for each flexibility-related functions. Let <code>VT<sub><em>i</em></sub></code> denote <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T<sub><em>i</em></sub>, A&gt;</code> (for any type <code>A</code>) if such a specialization occurs anywhere in <code>Ts...</code>; otherwise, let <code>VT<sub><em>i</em></sub></code> denote <code>T<sub><em>i</em></sub></code>. Define <code>WT<sub><em>j</em></sub></code> analogously for the subject with types <code>Us...</code>, where <code>WT<sub><em>j</em></sub></code> refers to the <em>j</em><sup>th</sup> type in <code>Us</code>. The <span class="underline"><em>corresponding alternative</em></span> for <code>rvariant</code> is the first type for which <code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;WT<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="rvariant.ctor"><a class="anchor" href="#rvariant.ctor"></a>Constructors <span class="slug"><a href="#rvariant.ctor">[rvariant.ctor]</a></span></h3>
@@ -1041,20 +1048,26 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>, and</span></p>
+<p>&#8201;&#8212;&#8201;<code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>.</span></p>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::disjunction_v&lt;std::is_same&lt;rvariant&lt;Us...&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;&gt;...&gt;</code> is <code>false</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub> const&amp;&gt;</code> is <code>true</code> for all <em>j</em>.</span></p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> If <code>w</code> holds a value, initializes the <code>rvariant</code> to hold the <span class="underline">alternative corresponding to that of</span> <code>w</code> and direct-initializes the contained value with <code><em>GET</em>&lt;j&gt;(w)</code>, where <code>j</code> is <code>w.index()</code>. Otherwise, initializes the <code>rvariant</code> to not hold a value.</p>
+<p><strong><em>Effects:</em></strong> If <code>w</code> holds a value, initializes the <code>rvariant</code> to hold <span class="underline"><code>VT<sub><em>i</em></sub></code> (with <em>i</em> being the index of the alternative corresponding to that of <code>w</code>)</span> and direct-initializes the contained value with <code><em>GET</em>&lt;w.index()&gt;(w)</code>. Otherwise, initializes the <code>rvariant</code> to not hold a value.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Throws:</em></strong> Any exception thrown by direct-initializing any type in <span class="underline"><code>Us</code></span>.</p>
+<p><strong><em>Throws:</em></strong> Any exception thrown by direct-initializing any <span class="underline">alternative corresponding to that of <code>w</code></span>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
@@ -1062,10 +1075,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;Let <code>VT<sub><em>i</em></sub></code> denote <code><a href="#rvariant.recursive">recursive_wrapper</a>&lt;T<sub><em>i</em></sub>, A&gt;</code> (for any type <code>A</code>) if such a specialization occurs anywhere in <code>Ts...</code>; otherwise, let <code>VT<sub><em>i</em></sub></code> denote <code>T<sub><em>i</em></sub></code>. Define <code>WT<sub><em>j</em></sub></code> analogously for the subject with types <code>Us...</code>, where <code>WT<sub><em>j</em></sub></code> refers to the <em>j</em><sup>th</sup> type in <code>Us</code>. The <em>corresponding alternative</em> for <code>rvariant</code> is the first type for which <code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;VT<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;WT<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code>. The actual index is determined contextually.</p>
-</li>
-<li>
-<p>&#8201;&#8212;&#8201;This constructor <span class="underline">does not participate in overload resolution</span> unless <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
+<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <span class="underline"><code>std::is_nothrow_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub> const&amp;&gt;</code> for all <em>j</em>.</span></p>
 </li>
 </ul>
 </div>
@@ -1076,10 +1086,33 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>Equivalent to #9, except:</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> <code><em>GET</em>&lt;j&gt;(w)</code> is replaced with <code><em>GET</em>&lt;j&gt;(std::move(w))</code>.</p>
+<p><strong><em>Constraints:</em></strong></p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist none">
+<ul class="none">
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::disjunction_v&lt;std::is_same&lt;rvariant&lt;Us...&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;&gt;...&gt;</code> is <code>false</code>, and</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<code>std::is_constructible_v&lt;VT<sub><em>i</em></sub>, <span class="underline">WT<sub><em>j</em></sub>&amp;&amp;</span>&gt;</code> is <code>true</code> for all <em>j</em>.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 <div class="paragraph">
-<p><strong><em>Throws:</em></strong> Any exception thrown by move-constructing any type in <span class="underline"><code>Us</code></span>.</p>
+<p><strong><em>Effects:</em></strong> <code><em>GET</em>&lt;w.index()&gt;(w)</code> is replaced with <code><em>GET</em>&lt;w.index()&gt;(<span class="underline">std::move(w)</span>)</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong><em>Throws:</em></strong> Any exception thrown by <span class="underline">move-constructing</span> any alternative corresponding to that of <code>w</code>.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong></p>
@@ -1087,7 +1120,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_move_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
+<p>&#8201;&#8212;&#8201;The exception specification is equivalent to the logical <code>AND</code> of <code>std::is_nothrow_constructible_v&lt;VT<sub><em>i</em></sub>, <span class="underline">WT<sub><em>j</em></sub>&amp;&amp;</span>&gt;</code> for all <em>j</em>.</p>
 </li>
 </ul>
 </div>
@@ -1157,10 +1190,16 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <div class="ulist none">
 <ul class="none">
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>, and</span></p>
+<p>&#8201;&#8212;&#8201;<code>std::is_same_v&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>false</code>, and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>.</span></p>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::disjunction_v&lt;std::is_same&lt;rvariant&lt;Us...&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;&gt;...&gt;</code> is <code>false</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub> const&amp;&gt; &amp;&amp; std::is_assignable_v&lt;VT<sub><em>i</em></sub>&amp;, WT<sub><em>j</em></sub> const&amp;&gt;</code> is <code>true</code> for all <em>j</em>.</span></p>
 </li>
 </ul>
 </div>
@@ -1180,13 +1219,16 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;Otherwise, if <code>*this</code> holds a value but <code>rhs</code> does not, destroys the value contained in <code>*this</code> and sets <code>*this</code> to not hold a value.</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> <code>index()</code> is unchanged.)</span></p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds a value but <code>*this</code> does not, initializes <code>rvariant</code> to hold <span class="underline"><code>VT<sub><em>i</em></sub></code> (with <em>i</em> being the index of the alternative corresponding to that of <code>rhs</code>)</span> and direct-initializes the contained value with <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code>.</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if either <code>std::is_nothrow_copy_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>true</code> or <code>std::is_nothrow_move_constructible_v&lt;U<sub><em>j</em></sub>&gt;</code> is <code>false</code>, equivalent to <code>emplace<span class="underline">&lt;<em>i</em>&gt;</span>(<em>GET</em><<em>j</em>>(rhs))</code> <span class="underline">where <em>i</em> is the corresponding index that is determined according to the rules defined in <a href="#rvariant.ctor">the flexible copy constructor</a></span>.</p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <span class="underline"><code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;WT<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code></span>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> the left hand side is <code>T<sub><em>i</em></sub></code>, <em>not</em> <code>VT<sub><em>i</em></sub></code>. This ensures that the existing storage is reused even for <code>rvariant</code> with duplicate corresponding alternatives; i.e. <code>index()</code> is unchanged.)</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, equivalent to <code>operator=(<span class="underline">rvariant&lt;Us...&gt;</span>(rhs))</code>.</p>
+<p>&#8201;&#8212;&#8201;Otherwise, if either <code>std::is_nothrow_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub> const&amp;&gt;</code> is <code>true</code> or <code>std::is_nothrow_move_constructible_v&lt;VT<sub><em>i</em></sub>&gt;</code> is <code>false</code>, equivalent to <code>emplace<span class="underline">&lt;VT<sub><em>i</em></sub>&gt;</span>(<em>GET</em>&lt;<em>j</em>&gt;(rhs))</code>.</p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;Otherwise, equivalent to <code>emplace&lt;VT<sub><em>i</em></sub>&gt;(<span class="underline">VT<sub><em>i</em></sub></span>(<em>GET</em>&lt;<em>j</em>&gt;(rhs)))</code>.</p>
 </li>
 </ul>
 </div>
@@ -1199,7 +1241,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p><strong><em>Returns:</em></strong> <code>*this</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> This operator <span class="underline">does not participate in overload resolution</span> unless <code>std::is_copy_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span> && std::is_copy_assignable_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
+<p><strong><em>Remarks:</em></strong> The exception specification is equivalent to the logical <code>AND</code> of <span class="underline"><code>std::is_nothrow_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub> const&amp;&gt; &amp;&amp; std::is_nothrow_assignable_v&lt;VT<sub><em>i</em></sub>&amp;, WT<sub><em>j</em></sub> const&amp;&gt;</code> for all <em>j</em>.</span></p>
 </div>
 </li>
 <li>
@@ -1218,7 +1260,10 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;<span class="underline"><code><a href="#rvariant.flex">rvariant_set::subset_of</a>&lt;rvariant&lt;Us...&gt;, rvariant&gt;</code> is <code>true</code>, and</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;<code>std::is_move_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span> && std::is_move_assignable_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> is <code>true</code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::disjunction_v&lt;std::is_same&lt;rvariant&lt;Us...&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;Ts&gt;&gt;...&gt;</code> is <code>false</code>, and</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;<span class="underline"><code>std::is_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub>&amp;&amp;&gt; &amp;&amp; std::is_assignable_v&lt;VT<sub><em>i</em></sub>&amp;, WT<sub><em>j</em></sub>&amp;&amp;&gt;</code> is <code>true</code> for all <em>j</em>.</span></p>
 </li>
 </ul>
 </div>
@@ -1238,10 +1283,13 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;Otherwise, if <code>*this</code> holds a value but <code>rhs</code> does not, destroys the value contained in <code>*this</code> and sets <code>*this</code> to not hold a value.</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds the <span class="underline">alternative corresponding to that of</span> <code>*this</code>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> <code>index()</code> is unchanged.)</span></p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds a value but <code>*this</code> does not, initializes <code>rvariant</code> to hold <span class="underline"><code>VT<sub><em>i</em></sub></code> (with <em>i</em> being the index of the alternative corresponding to that of <code>rhs</code>)</span> and direct-initializes the contained value with <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code>.</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, equivalent to <code>emplace<span class="underline">&lt;<em>i</em>&gt;</span>(<em>GET</em><<em>j</em>>(std::move(rhs)))</code> <span class="underline">where <em>i</em> is the corresponding index that is determined according to the rules defined in <a href="#rvariant.ctor">the flexible move constructor</a></span>.</p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <span class="underline"><code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;WT<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code></span>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> the left hand side is <code>T<sub><em>i</em></sub></code>, <em>not</em> <code>VT<sub><em>i</em></sub></code>. This ensures that the existing storage is reused even for <code>rvariant</code> with duplicate corresponding alternatives; i.e. <code>index()</code> is unchanged.)</span></p>
+</li>
+<li>
+<p>&#8201;&#8212;&#8201;Otherwise, equivalent to <code>emplace<span class="underline">&lt;VT<sub><em>i</em></sub>&gt;</span>(<em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs)))</code>.</p>
 </li>
 </ul>
 </div>
@@ -1251,21 +1299,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p><strong><em>Returns:</em></strong> <code>*this</code>.</p>
 </div>
 <div class="paragraph">
-<p><strong><em>Remarks:</em></strong> The exception specification is equivalent to <code>std::is_nothrow_move_constructible_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span> && std::is_nothrow_move_assignable_v<span class="underline">&lt;U<sub><em>j</em></sub>&gt;</span></code> for all <span class="underline"><em>j</em>, where <code>U<sub><em>j</em></sub></code> be the <em>j</em><sup>th</sup> type in <code>Us</code></span>.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="ulist none">
-<ul class="none">
-<li>
-<p>&#8201;&#8212;&#8201;If an exception is throw during the call to <code>U<sub><em>j</em></sub></code>'s move construction (with <em>j</em> being <code>rhs.index()</code>), the <code>rvariant</code> will hold no value.</p>
-</li>
-<li>
-<p>&#8201;&#8212;&#8201;If an exception is thrown during the call to <code>U<sub><em>j</em></sub></code>'s move assignment, the state of the contained value is as defined by the exception safety guarantee of <code>U<sub><em>j</em></sub></code>'s move assignment; <code>index()</code> will be <span class="underline">the corresponding index determined according to the rules defined in <a href="#rvariant.ctor">the flexible move constructor</a>.</span></p>
-</li>
-</ul>
-</div>
-</div>
+<p><strong><em>Remarks:</em></strong> The exception specification is equivalent to the logical <code>AND</code> of <span class="underline"><code>std::is_nothrow_constructible_v&lt;VT<sub><em>i</em></sub>, WT<sub><em>j</em></sub>&amp;&amp;&gt; &amp;&amp; std::is_nothrow_assignable_v&lt;VT<sub><em>i</em></sub>&amp;, WT<sub><em>j</em></sub>&amp;&amp;&gt;</code> for all <em>j</em>.</span></p>
 </div>
 </li>
 </ul>

@@ -256,8 +256,33 @@ TEST_CASE("ambiguous flexible", "[flexible]")
     {
         struct A {};
         struct B {};
-        using V = yk::rvariant<A, B, yk::rvariant<A, B>>;
-        V{yk::rvariant<A, B>{}}; // TODO
+
+        {
+            using V = yk::rvariant<std::monostate, A, B, yk::rvariant<A, B>>;
+            // should call generic constructor
+            V v{yk::rvariant<A, B>{}};
+            CHECK(yk::holds_alternative<yk::rvariant<A, B>>(v) == true);
+        }
+        {
+            using V = yk::rvariant<std::monostate, A, B, yk::rvariant<A, B>, yk::rvariant<A, B>>;
+            // ill-formed; flexible constructor is not eligible, and
+            // generic constructor's imaginary function has ambiguous overload
+            STATIC_CHECK(!std::is_constructible_v<V, yk::rvariant<A, B>>);
+        }
+
+        {
+            using V = yk::rvariant<std::monostate, A, B, yk::rvariant<A, B>>;
+            // should call generic assignment operator
+            V v;
+            v = yk::rvariant<A, B>{};
+            CHECK(yk::holds_alternative<yk::rvariant<A, B>>(v) == true);
+        }
+        {
+            using V = yk::rvariant<std::monostate, A, B, yk::rvariant<A, B>, yk::rvariant<A, B>>;
+            // ill-formed; flexible assignment operator is not eligible, and
+            // generic assignment operator's imaginary function has ambiguous overload
+            STATIC_CHECK(!std::is_assignable_v<V&, yk::rvariant<A, B>>);
+        }
     }
 }
 

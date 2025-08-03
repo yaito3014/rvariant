@@ -1123,7 +1123,7 @@ TEST_CASE("emplace")
 
     struct BigType : Thrower_base
     {
-        std::byte dummy[yk::detail::never_valueless_trivial_size_limit + 1];
+        std::byte dummy[yk::detail::never_valueless_trivial_size_limit + 1]{};
     };
     STATIC_REQUIRE(!yk::detail::is_never_valueless_v<BigType>);
 
