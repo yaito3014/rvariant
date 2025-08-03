@@ -664,8 +664,6 @@ include::_std-variant-proxy.adoc[]
 
 * [.candidate]#10)# _Flexible move constructor_.
 +
-Equivalent to #9, except:
-+
 *_Constraints:_*
 +
 --
@@ -676,7 +674,7 @@ Equivalent to #9, except:
 ** -- `std::is_constructible_v<VT~_i_~, [.underline]#WT~_j_~&&#>` is `true` for all _j_.
 --
 +
-*_Effects:_* `_GET_<w.index()>(w)` is replaced with `_GET_<w.index()>([.underline]#std::move(w)#)`.
+*_Effects:_* If `w` holds a value, initializes the `rvariant` to hold `VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `w`) and direct-initializes the contained value with `_GET_<w.index()>([.underline]#std::move(w)#)`. Otherwise, initializes the `rvariant` to not hold a value.
 +
 *_Throws:_* Any exception thrown by [.underline]#move-constructing# any alternative corresponding to that of `w`.
 +

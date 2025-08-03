@@ -1083,9 +1083,6 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <li>
 <p><span class="candidate">10)</span> <em>Flexible move constructor</em>.</p>
 <div class="paragraph">
-<p>Equivalent to #9, except:</p>
-</div>
-<div class="paragraph">
 <p><strong><em>Constraints:</em></strong></p>
 </div>
 <div class="openblock">
@@ -1109,7 +1106,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 </div>
 </div>
 <div class="paragraph">
-<p><strong><em>Effects:</em></strong> <code><em>GET</em>&lt;w.index()&gt;(w)</code> is replaced with <code><em>GET</em>&lt;w.index()&gt;(<span class="underline">std::move(w)</span>)</code>.</p>
+<p><strong><em>Effects:</em></strong> If <code>w</code> holds a value, initializes the <code>rvariant</code> to hold <code>VT<sub><em>i</em></sub></code> (with <em>i</em> being the index of the alternative corresponding to that of <code>w</code>) and direct-initializes the contained value with <code><em>GET</em>&lt;w.index()&gt;(<span class="underline">std::move(w)</span>)</code>. Otherwise, initializes the <code>rvariant</code> to not hold a value.</p>
 </div>
 <div class="paragraph">
 <p><strong><em>Throws:</em></strong> Any exception thrown by <span class="underline">move-constructing</span> any alternative corresponding to that of <code>w</code>.</p>
