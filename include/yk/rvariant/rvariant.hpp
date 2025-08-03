@@ -1070,13 +1070,7 @@ private:
     {}
 
     template<class From, class To>
-    friend constexpr std::size_t detail::subset_reindex(std::size_t index) noexcept;
-
-    template<class W>
-    [[nodiscard]] static constexpr std::size_t subset_reindex_for(std::size_t index) noexcept
-    {
-        return detail::subset_reindex<W, rvariant>(index);
-    }
+    friend consteval std::size_t detail::subset_reindex(std::size_t index) noexcept;
 };
 
 // -------------------------------------------------

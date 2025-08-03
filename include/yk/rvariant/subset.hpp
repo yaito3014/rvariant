@@ -23,7 +23,7 @@ struct subset_reindex_impl<core::type_list<Ts...>, core::type_list<Us...>>
 };
 
 template<class From, class To>
-[[nodiscard]] constexpr std::size_t subset_reindex(std::size_t index) noexcept
+[[nodiscard]] consteval std::size_t subset_reindex(std::size_t index) noexcept
 {
     return subset_reindex_impl<typename From::unwrapped_types, typename To::unwrapped_types>::table[index];
 }
