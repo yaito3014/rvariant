@@ -165,10 +165,11 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>..., std::is_nothrow_copy_assignable<Ts>...>)
     {
     YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
-        rhs.raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T const& rhs_alt)
+        rhs.raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, T const& rhs_alt)
             noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>..., std::is_nothrow_copy_assignable<Ts>...>)
         {
             if constexpr (j == std::variant_npos) {
+                (void)rhs_alt;
                 visit_reset();
             } else {
                 if (index_ == j) {
@@ -194,12 +195,12 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     constexpr void _move_assign(rvariant_base&& rhs)
         noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
     {
-        std::move(rhs).raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, [[maybe_unused]] T&& rhs_alt)
+        std::move(rhs).raw_visit([this]<std::size_t j, class T>(std::in_place_index_t<j>, T&& rhs_alt)
             noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Ts>..., std::is_nothrow_move_assignable<Ts>...>)
         {
             if constexpr (j == std::variant_npos) {
+                (void)rhs_alt;
                 visit_reset();
-
             } else {
                 static_assert(std::is_rvalue_reference_v<T&&>);
                 if (index_ == j) {
@@ -223,6 +224,18 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         }
     }
     [[nodiscard]] constexpr std::size_t index() const noexcept { return static_cast<std::size_t>(index_); }
+
+    // internal
+    template<std::size_t I>
+    constexpr void destroy() noexcept
+    {
+        if constexpr (need_destructor_call) {
+            // ReSharper disable once CppTypeAliasNeverUsed
+            using T = core::pack_indexing_t<I, Ts...>;
+            auto&& alt = raw_get<I>(storage_);
+            alt.~T();
+        }
+    }
 
     // internal
     constexpr void visit_destroy() noexcept
@@ -283,6 +296,21 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
         visit_reset();
         std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
         index_ = static_cast<variant_index_t<sizeof...(Ts)>>(I);
+    }
+
+    template<std::size_t i, std::size_t j, class... Args>
+    constexpr void reset_construct(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<j, Ts...>, Args...>)
+    {
+        if constexpr (i != std::variant_npos) {
+            destroy<i>();
+            if constexpr (!std::is_nothrow_constructible_v<core::pack_indexing_t<j, Ts...>, Args...>) {
+                index_ = variant_npos<sizeof...(Ts)>;
+            }
+        }
+        static_assert(j != std::variant_npos);
+        std::construct_at(&storage_, std::in_place_index<j>, std::forward<Args>(args)...);
+        index_ = static_cast<variant_index_t<sizeof...(Ts)>>(j);
     }
 
     template<std::size_t I, class... Args>
@@ -448,10 +476,7 @@ public:
 
     YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
         this->raw_visit([this, &t]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt& this_alt)
-            noexcept(
-                std::is_nothrow_assignable_v<Tj&, T> &&
-                std::is_nothrow_constructible_v<Tj, T>
-            )
+            noexcept(std::is_nothrow_assignable_v<Tj&, T> && std::is_nothrow_constructible_v<Tj, T>)
         {
             if constexpr (i == j) {
                 this_alt = std::forward<T>(t);
@@ -461,20 +486,18 @@ public:
                 // TC(throw)    && MC(throw)    => A maybe valueless if | TC throws => yes | MC throws => yes |
                 // TC(throw)    && MC(noexcept) => B maybe valueless if | never |
                 if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
-                    //base_type::template reset_construct<j>(std::forward<T>(t)); // A
-
                     // strengthen this branch to provide never-valueless guarantee on certain conditions
                     if constexpr (std::is_nothrow_constructible_v<Tj, T>) {
                         // TC(noexcept); never valueless
-                        base_type::template reset_construct<j>(std::forward<T>(t));
+                        base_type::template reset_construct<i, j>(std::forward<T>(t));
                     } else {
                         // TC(throw) && MC(throw)
                         Tj tmp(std::forward<T>(t));
-                        base_type::template reset_construct<j>(std::move(tmp)); // valueless IFF MC throws
+                        base_type::template reset_construct<i, j>(std::move(tmp)); // valueless IFF MC throws
                     }
                 } else {
                     Tj tmp(std::forward<T>(t));
-                    base_type::template reset_construct<j>(std::move(tmp)); // B
+                    base_type::template reset_construct<i, j>(std::move(tmp)); // B
                 }
             }
         });
@@ -573,11 +596,11 @@ public:
                         this_alt = detail::forward_maybe_wrapped<ThisAlt>(wt);
 
                     } else if constexpr (std::is_nothrow_constructible_v<VT, WT const&> || !std::is_nothrow_move_constructible_v<VT>) {
-                        base_type::template reset_construct<VTi>(detail::forward_maybe_wrapped<VT>(wt));
+                        base_type::template reset_construct<i, VTi>(detail::forward_maybe_wrapped<VT>(wt));
 
                     } else {
                         VT tmp = detail::forward_maybe_wrapped<VT>(wt); // may throw
-                        base_type::template reset_construct<VTi>(std::move(tmp));
+                        base_type::template reset_construct<i, VTi>(std::move(tmp));
                     }
                 });
             }
@@ -628,7 +651,7 @@ public:
                         this_alt = detail::forward_maybe_wrapped<ThisAlt>(std::move(wt)); // NOLINT(bugprone-move-forwarding-reference)
 
                     } else {
-                        base_type::template reset_construct<VTi>(detail::forward_maybe_wrapped<VT>(std::move(wt)));  // NOLINT(bugprone-move-forwarding-reference)
+                        base_type::template reset_construct<i, VTi>(detail::forward_maybe_wrapped<VT>(std::move(wt)));  // NOLINT(bugprone-move-forwarding-reference)
                     }
                 });
             }
