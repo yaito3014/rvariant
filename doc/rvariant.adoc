@@ -156,7 +156,7 @@ In other words, the commonly seen advice like _"use std::unique_ptr if you want 
 
 If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g. inheritance or composition), such a specification could never be standardized.
 
-For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with key differences marked using [.underline]#underlines#.
+For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with key characteristics marked using [.underline]#underlines#.
 
 
 [[why-is-rvariant-proposed-to-boost-1]]
@@ -294,9 +294,6 @@ std::size_t _ = <<rvariant.hash,hash_value>>(ab); // compatibility with boost
 
 [[rvariant]]
 = Reference [.slug]##<<rvariant,[rvariant]>>##
-
-NOTE: [.underline]#Underlined texts# indicate important characteristics of ``rvariant``'s extensions, in contrast to the `std::variant` counterparts.
-
 
 [[rvariant.general]]
 == General [.slug]##<<rvariant.general,[rvariant.general]>>##
@@ -549,7 +546,7 @@ rvariant<
 ----
 --
 
-* Let `Us` denote the corresponding template parameter pack for each flexibility-related functions. Let `VT~_i_~` denote `{recursive_wrapper}<T~_i_~, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT~_i_~` denote `T~_i_~`. Define `WT~_j_~` analogously for the subject with types `Us\...`, where `WT~_j_~` refers to the _j_^th^ type in `Us`. The [.underline]#_corresponding alternative_# for `rvariant` is the first type for which `std::is_same_v<{unwrap_recursive_t}<VT~_i_~>, {unwrap_recursive_t}<WT~_j_~>>` is `true`.
+* Let `VT~_i_~` denote `{recursive_wrapper}<T~_i_~, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT~_i_~` denote `T~_i_~`. Let `U~_j_~` denote the _j_^th^ type of the template parameter pack having the name `Us` on each flexibility-related functions. [.underline]#The _corresponding alternative_ for `rvariant` is the first type for which `std::is_same_v<{unwrap_recursive_t}<VT~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#.
 
 
 [[rvariant.ctor]]
@@ -597,9 +594,9 @@ include::_std-variant-proxy.adoc[]
 +
 *_Postconditions:_* `holds_alternative[.underline]##<{unwrap_recursive_t}<T~_j_~>>##(*this)` is `true`.
 
-* [.candidate]#5)# [.underline]#Let `VT` denote `{recursive_wrapper}<T, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT` denote `T`.#
+* [.candidate]#5)# *_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`#.
 +
-*_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`.#
+[.underline]#Let `VT` denote `{recursive_wrapper}<T, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT` denote `T`#.
 +
 *_Constraints:_*
 +
@@ -617,9 +614,9 @@ include::_std-variant-proxy.adoc[]
 +
 *_Remarks:_*  If [.underline]#`VT`#'s selected constructor is a constexpr constructor, this constructor is a constexpr constructor.
 
-* [.candidate]#6)# [.underline]#Let `VT` denote `{recursive_wrapper}<T, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT` denote `T`.#
+* [.candidate]#6)# *_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`#.
 +
-*_Mandates:_* [.underline]#`T` is not a specialization of `{recursive_wrapper}`.#
+[.underline]#Let `VT` denote `{recursive_wrapper}<T, A>` (for any type `A`) if such a specialization occurs anywhere in `Ts\...`; otherwise, let `VT` denote `T`.#
 +
 *_Constraints:_*
 +
@@ -642,6 +639,8 @@ include::_std-variant-proxy.adoc[]
 
 * [.candidate]#9)# _Flexible copy constructor_.
 +
+[.underline]#Let `VT~_i_~` and `U~_j_~` denote the types defined in <<rvariant.rvariant.general,[rvariant.rvariant.general]>>#.
++
 *_Constraints:_*
 +
 --
@@ -649,7 +648,7 @@ include::_std-variant-proxy.adoc[]
 ** -- `std::is_same_v<rvariant<Us\...>, rvariant>` is `false`, and
 ** -- [.underline]#`{subset_of}<rvariant<Us\...>, rvariant>` is `true`, and#
 ** -- [.underline]#`std::disjunction_v<std::is_same<rvariant<Us\...>, {unwrap_recursive_t}<Ts>>\...>` is `false`, and#
-** -- [.underline]#`std::is_constructible_v<VT~_i_~, WT~_j_~ const&>` is `true` for all _j_.#
+** -- [.underline]#`std::is_constructible_v<VT~_i_~, U~_j_~ const&>` is `true` for all _j_.#
 --
 +
 *_Effects:_* If `w` holds a value, initializes the `rvariant` to hold [.underline]#`VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `w`)# and direct-initializes the contained value with `_GET_<w.index()>(w)`. Otherwise, initializes the `rvariant` to not hold a value.
@@ -659,10 +658,12 @@ include::_std-variant-proxy.adoc[]
 *_Remarks:_*
 +
 [none]
-** -- The exception specification is equivalent to the logical `AND` of [.underline]#`std::is_nothrow_constructible_v<VT~_i_~, WT~_j_~ const&>` for all _j_.#
+** -- The exception specification is equivalent to the logical `AND` of [.underline]#`std::is_nothrow_constructible_v<VT~_i_~, U~_j_~ const&>` for all _j_.#
 
 
 * [.candidate]#10)# _Flexible move constructor_.
++
+[.underline]#Let `VT~_i_~` and `U~_j_~` denote the types defined in <<rvariant.rvariant.general,[rvariant.rvariant.general]>>#.
 +
 *_Constraints:_*
 +
@@ -671,7 +672,7 @@ include::_std-variant-proxy.adoc[]
 ** -- `std::is_same_v<rvariant<Us\...>, rvariant>` is `false`, and
 ** -- `{subset_of}<rvariant<Us\...>, rvariant>` is `true`, and
 ** -- `std::disjunction_v<std::is_same<rvariant<Us\...>, {unwrap_recursive_t}<Ts>>\...>` is `false`, and
-** -- `std::is_constructible_v<VT~_i_~, [.underline]#WT~_j_~&&#>` is `true` for all _j_.
+** -- `std::is_constructible_v<VT~_i_~, [.underline]#U~_j_~&&#>` is `true` for all _j_.
 --
 +
 *_Effects:_* If `w` holds a value, initializes the `rvariant` to hold `VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `w`) and direct-initializes the contained value with `_GET_<w.index()>([.underline]#std::move(w)#)`. Otherwise, initializes the `rvariant` to not hold a value.
@@ -681,7 +682,7 @@ include::_std-variant-proxy.adoc[]
 *_Remarks:_*
 +
 [none]
-** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_constructible_v<VT~_i_~, [.underline]#WT~_j_~&&#>` for all _j_.
+** -- The exception specification is equivalent to the logical `AND` of `std::is_nothrow_constructible_v<VT~_i_~, [.underline]#U~_j_~&&#>` for all _j_.
 
 
 [[rvariant.dtor]]
@@ -732,6 +733,8 @@ include::_std-variant-proxy.adoc[]
 
 * [.candidate]#4)# _Flexible copy assignment operator_.
 +
+[.underline]#Let `VT~_i_~` and `U~_j_~` denote the types defined in <<rvariant.rvariant.general,[rvariant.rvariant.general]>>#.
++
 *_Constraints:_*
 +
 --
@@ -739,7 +742,7 @@ include::_std-variant-proxy.adoc[]
 ** -- `std::is_same_v<rvariant<Us\...>, rvariant>` is `false`, and
 ** -- [.underline]#`{subset_of}<rvariant<Us\...>, rvariant>` is `true`, and#
 ** -- [.underline]#`std::disjunction_v<std::is_same<rvariant<Us\...>, {unwrap_recursive_t}<Ts>>\...>` is `false`, and#
-** -- [.underline]#`std::is_constructible_v<VT~_i_~, WT~_j_~ const&> && std::is_assignable_v<VT~_i_~&, WT~_j_~ const&>` is `true` for all _j_.#
+** -- [.underline]#`std::is_constructible_v<VT~_i_~, U~_j_~ const&> && std::is_assignable_v<VT~_i_~&, U~_j_~ const&>` is `true` for all _j_.#
 --
 +
 *_Effects:_* Let _j_ be `rhs.index()`.
@@ -749,8 +752,8 @@ include::_std-variant-proxy.adoc[]
 ** -- If neither `*this` nor `rhs` holds a value, there is no effect.
 ** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
 ** -- Otherwise, if `rhs` holds a value but `*this` does not, initializes `rvariant` to hold [.underline]#`VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `rhs`)# and direct-initializes the contained value with [.underline]#`_GET_<__j__>(rhs)`.#
-** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<WT~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(rhs)`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e. `index()` is unchanged.)#
-** -- Otherwise, if either `std::is_nothrow_constructible_v<VT~_i_~, WT~_j_~ const&>` is `true` or `std::is_nothrow_move_constructible_v<VT~_i_~>` is `false`, equivalent to `emplace[.underline]##<VT~_i_~>##(_GET_<__j__>(rhs))`.
+** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(rhs)`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e. `index()` is unchanged.)#
+** -- Otherwise, if either `std::is_nothrow_constructible_v<VT~_i_~, U~_j_~ const&>` is `true` or `std::is_nothrow_move_constructible_v<VT~_i_~>` is `false`, equivalent to `emplace[.underline]##<VT~_i_~>##(_GET_<__j__>(rhs))`.
 ** -- Otherwise, equivalent to `emplace<VT~_i_~>([.underline]##VT~_i_~##(_GET_<__j__>(rhs)))`.
 --
 +
@@ -758,9 +761,11 @@ include::_std-variant-proxy.adoc[]
 +
 *_Returns:_* `*this`.
 +
-*_Remarks:_* The exception specification is equivalent to the logical `AND` of [.underline]#`std::is_nothrow_constructible_v<VT~_i_~, WT~_j_~ const&> && std::is_nothrow_assignable_v<VT~_i_~&, WT~_j_~ const&>` for all _j_.#
+*_Remarks:_* The exception specification is equivalent to the logical `AND` of [.underline]#`std::is_nothrow_constructible_v<VT~_i_~, U~_j_~ const&> && std::is_nothrow_assignable_v<VT~_i_~&, U~_j_~ const&>` for all _j_.#
 
 * [.candidate]#5)# _Flexible move assignment operator_.
++
+[.underline]#Let `VT~_i_~` and `U~_j_~` denote the types defined in <<rvariant.rvariant.general,[rvariant.rvariant.general]>>#.
 +
 *_Constraints:_*
 +
@@ -769,7 +774,7 @@ include::_std-variant-proxy.adoc[]
 ** -- [.underline]#`std::is_same_v<rvariant<Us\...>, rvariant>` is `false`,#
 ** -- [.underline]#`{subset_of}<rvariant<Us\...>, rvariant>` is `true`, and#
 ** -- [.underline]#`std::disjunction_v<std::is_same<rvariant<Us\...>, {unwrap_recursive_t}<Ts>>\...>` is `false`, and#
-** -- [.underline]#`std::is_constructible_v<VT~_i_~, WT~_j_~&&> && std::is_assignable_v<VT~_i_~&, WT~_j_~&&>` is `true` for all _j_.#
+** -- [.underline]#`std::is_constructible_v<VT~_i_~, U~_j_~&&> && std::is_assignable_v<VT~_i_~&, U~_j_~&&>` is `true` for all _j_.#
 --
 +
 *_Effects:_* Let _j_ be `rhs.index()`.
@@ -779,13 +784,13 @@ include::_std-variant-proxy.adoc[]
 ** -- If neither `*this` nor `rhs` holds a value, there is no effect.
 ** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
 ** -- Otherwise, if `rhs` holds a value but `*this` does not, initializes `rvariant` to hold [.underline]#`VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `rhs`)# and direct-initializes the contained value with [.underline]#`_GET_<__j__>(std::move(rhs))`.#
-** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<WT~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(std::move(rhs))`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e. `index()` is unchanged.)#
+** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(std::move(rhs))`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e. `index()` is unchanged.)#
 ** -- Otherwise, equivalent to `emplace[.underline]##<VT~_i_~>##(_GET_<__j__>(std::move(rhs)))`.
 --
 +
 *_Returns:_* `*this`.
 +
-*_Remarks:_* The exception specification is equivalent to the logical `AND` of [.underline]#`std::is_nothrow_constructible_v<VT~_i_~, WT~_j_~&&> && std::is_nothrow_assignable_v<VT~_i_~&, WT~_j_~&&>` for all _j_.#
+*_Remarks:_* The exception specification is equivalent to the logical `AND` of [.underline]#`std::is_nothrow_constructible_v<VT~_i_~, U~_j_~&&> && std::is_nothrow_assignable_v<VT~_i_~&, U~_j_~&&>` for all _j_.#
 
 
 [[rvariant.mod]]
