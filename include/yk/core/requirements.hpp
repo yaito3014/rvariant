@@ -45,6 +45,7 @@ concept Cpp17LessThanComparable =
 template<class T>
 concept Cpp17DefaultConstructible = requires {
     ::new(static_cast<void*>(nullptr)) T; // T t; is valid
+    ::new(static_cast<void*>(nullptr)) T{}; // T u{}; is valid
     T();
     T{};
 };
@@ -78,9 +79,9 @@ concept Cpp17CopyAssignable = Cpp17MoveAssignable<T> && requires {
 };
 
 // https://eel.is/c++draft/utility.requirements#tab:cpp17.destructible
-template<class T, class U = T>
-concept Cpp17Destructible = requires(U u) {
-    { u.~T() } noexcept;
+template<class T>
+concept Cpp17Destructible = (!std::is_array_v<T>) && std::is_object_v<T> && requires(T u) {
+    { u.~T() };
 };
 
 // https://eel.is/c++draft/swappable.requirements#5

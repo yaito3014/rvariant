@@ -324,7 +324,25 @@ TEST_CASE("Cpp17Destructible", "[core]")
         };
         STATIC_REQUIRE(std::is_destructible_v<S>);
         STATIC_REQUIRE(!std::is_nothrow_destructible_v<S>);
-        STATIC_REQUIRE(!yk::core::Cpp17Destructible<S>);
+        STATIC_REQUIRE(yk::core::Cpp17Destructible<S>); // noexcept(false) should still satisfy this, as long as the exception is not propagated
+
+        // Cpp17Destructible is NOT the same as std::destructible
+        STATIC_REQUIRE(!std::destructible<S>); // noexcept(false) is not satisfied
+    }
+    {
+        // https://eel.is/c++draft/utility.arg.requirements#tab:cpp17.destructible-row-3-column-1-note-3
+        // > Array types and non-object types are not Cpp17Destructible.
+
+        STATIC_REQUIRE(!yk::core::Cpp17Destructible<int[]>);
+        STATIC_REQUIRE(!yk::core::Cpp17Destructible<int[1]>);
+        STATIC_REQUIRE(!yk::core::Cpp17Destructible<void>);
+        STATIC_REQUIRE(!yk::core::Cpp17Destructible<int&>);
+
+        // Cpp17Destructible is NOT the same as std::destructible
+        STATIC_REQUIRE(!std::destructible<int[]>);
+        STATIC_REQUIRE( std::destructible<int[1]>);
+        STATIC_REQUIRE(!std::destructible<void>);
+        STATIC_REQUIRE( std::destructible<int&>);
     }
 }
 
