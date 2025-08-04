@@ -28,43 +28,10 @@ template<class From, class To>
     return subset_reindex_impl<typename From::unwrapped_types, typename To::unwrapped_types>::table[index];
 }
 
-template<class V, class W, template<class, class...> class MF>
-struct conjunction_for_impl;
-
-template<class... Ts, class... Us, template<class, class...> class MF>
-struct conjunction_for_impl<rvariant<Ts...>, rvariant<Us...> const&, MF> : std::conjunction<
-    MF<select_maybe_wrapped_t<unwrap_recursive_t<Us>, Ts...>, Us const&>...
->{};
-
-template<class... Ts, class... Us, template<class, class...> class MF>
-struct conjunction_for_impl<rvariant<Ts...>, rvariant<Us...>&&, MF> : std::conjunction<
-    MF<select_maybe_wrapped_t<unwrap_recursive_t<Us>, Ts...>, Us&&>...
->{};
-
-template<class... Ts, class... Us, template<class, class...> class MF>
-struct conjunction_for_impl<rvariant<Ts...>&, rvariant<Us...> const&, MF> : std::conjunction<
-    MF<select_maybe_wrapped_t<unwrap_recursive_t<Us>, Ts...>&, Us const&>...
->{};
-
-template<class... Ts, class... Us, template<class, class...> class MF>
-struct conjunction_for_impl<rvariant<Ts...>&, rvariant<Us...>&&, MF> : std::conjunction<
-    MF<select_maybe_wrapped_t<unwrap_recursive_t<Us>, Ts...>&, Us&&>...
->{};
-
 } // detail
 
 
 namespace rvariant_set {
-
-template<class V, class W, template<class, class...> class... MF>
-struct conjunction_for : std::conjunction<detail::conjunction_for_impl<V, W, MF>...>
-{
-    static_assert(sizeof...(MF) > 0);
-};
-
-template<class V, class W, template<class, class...> class... MF>
-constexpr bool conjunction_for_v = conjunction_for<V, W, MF...>::value;
-
 
 template<class W, class V>
 struct is_subset_of : std::false_type

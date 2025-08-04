@@ -265,38 +265,10 @@ template<std::size_t I, class Storage>
 using raw_get_t = decltype(raw_get<I>(std::declval<Storage>()));
 
 
-template<class Visitor, class Storage, class Is = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
-struct raw_visit_return_type_impl;
-
-template<class Visitor, class Storage, std::size_t I>
-struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I>>
-{
-    static_assert(
-        std::is_invocable_v<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
-        "The spec mandates that the Visitor accept all combinations of alternative types "
-        "(https://eel.is/c++draft/variant.visit#5)."
-    );
-
-    using type = std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>;
-};
-
-template<class Visitor, class Storage, std::size_t I, std::size_t... Is> requires (sizeof...(Is) > 0)
-struct raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<I, Is...>>
-    : raw_visit_return_type_impl<Visitor, Storage, std::index_sequence<Is...>>
-{
-    static_assert(
-        std::conjunction_v<std::is_same<
-            std::invoke_result_t<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>,
-            std::invoke_result_t<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>
-        >...>,
-        "The spec mandates that the Visitor return the same type and value category "
-        "for all combinations of alternative types (https://eel.is/c++draft/variant.visit#5)."
-    );
-};
-
 template<class Visitor, class Storage>
-using raw_visit_return_type = typename raw_visit_return_type_impl<Visitor, Storage>::type;
-
+using raw_visit_return_type = decltype(std::declval<Visitor>()(
+    std::declval<std::in_place_index_t<0>>(), std::declval<raw_get_t<0, Storage>>()
+));
 
 template<class Visitor, class Storage>
 constexpr raw_visit_return_type<Visitor, Storage>
