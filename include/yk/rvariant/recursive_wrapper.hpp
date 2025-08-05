@@ -8,6 +8,7 @@
 
 #include <yk/indirect.hpp>
 #include <yk/core/type_traits.hpp>
+#include <yk/core/hash.hpp>
 
 #include <compare>
 #include <initializer_list>

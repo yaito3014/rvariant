@@ -5,7 +5,7 @@
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
-#include <yk/core/type_traits.hpp>
+#include <yk/core/hash.hpp>
 
 #include <functional>
 #include <bit>
