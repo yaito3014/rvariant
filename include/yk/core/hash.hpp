@@ -6,18 +6,18 @@
 #include <type_traits>
 
 #if __cplusplus <= 202302L || (defined(_MSVC_STL_UPDATE) && _MSVC_STL_UPDATE < 202504L) || (defined(__GLIBCXX__) && __GLIBCXX__ < 20241201) || (defined(_LIBCPP_STD_VER) && _LIBCPP_STD_VER < 26)
-#define HAS_STD_HASH_IN_UTILITY 0
+#define YK_HAS_STD_HASH_IN_UTILITY 0
 #else
-#define HAS_STD_HASH_IN_UTILITY 1
+#define YK_HAS_STD_HASH_IN_UTILITY 1
 #endif
 
-#if HAS_STD_HASH_IN_UTILITY
+#if YK_HAS_STD_HASH_IN_UTILITY
 #include <utility> // required for hash declaration (in C++26 and later)
 #else
 #include <typeindex> // required for hash declaration
 #endif
 
-#undef HAS_STD_HASH_IN_UTILITY
+#undef YK_HAS_STD_HASH_IN_UTILITY
 
 namespace yk::core {
 
