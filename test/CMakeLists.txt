@@ -1,3 +1,10 @@
+# Copyright 2025 Yaito Kakeyama
+# Copyright 2025 Nana Sakisaka
+# Distributed under the Boost Software License, Version 1.0.
+# https://www.boost.org/LICENSE_1_0.txt
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 include(FetchContent)
 FetchContent_Declare(
     Catch2
@@ -7,9 +14,69 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(yk_rvariant_test test.cpp)
+# Don't remove this; required for ABI compatibility
+target_compile_features(Catch2 PUBLIC cxx_std_23)
+set_target_properties(Catch2 PROPERTIES CXX_EXTENSIONS OFF)
+
+# ---------------------------------------
+
+add_executable(
+    yk_rvariant_test
+
+    # Independent Polyfill
+    indirect_test.cpp
+
+    # Independent language core / exposition-only utils
+    core_test.cpp
+
+    # Main library
+    rvariant_test.cpp
+    many_alternatives_32_test.cpp
+    get_visit_test.cpp
+    flexible_test.cpp
+    recursive_wrapper_test.cpp
+    truly_recursive_test.cpp
+    io_test.cpp
+)
+
+target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp)
 
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
+set_target_properties(yk_rvariant_test PROPERTIES CXX_EXTENSIONS OFF)
+
+if(MSVC)
+    target_compile_options(
+        Catch2
+            PUBLIC /fsanitize=address
+            PRIVATE /MP /analyze-
+    )
+    target_link_options(
+        Catch2
+            PUBLIC /INCREMENTAL:NO # required for ASan
+    )
+
+    target_compile_definitions(
+        yk_rvariant_test
+            PUBLIC UNICODE _UNICODE
+    )
+
+    target_compile_options(
+        yk_rvariant_test
+            PUBLIC
+                /MP /utf-8 /W4 /analyze /analyze:external-
+    )
+else()
+    target_compile_options(
+        yk_rvariant_test
+            PUBLIC
+                -Wall -Wextra -pedantic -fsanitize=undefined,address
+    )
+    target_link_options(
+        yk_rvariant_test
+            PUBLIC
+                -fsanitize=undefined,address
+    )
+endif()
 
 target_link_libraries(
     yk_rvariant_test

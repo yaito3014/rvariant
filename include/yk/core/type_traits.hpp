@@ -1,0 +1,375 @@
+﻿#ifndef YK_CORE_TYPE_TRAITS_HPP
+#define YK_CORE_TYPE_TRAITS_HPP
+
+// Copyright 2025 Nana Sakisaka
+// Copyright 2025 Yaito Kakeyama
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
+// ReSharper disable once CppUnusedIncludeDirective
+#include <yk/core/config.hpp>
+#include <yk/core/requirements.hpp>
+
+#include <type_traits>
+#include <utility> // required for misc utilities AND also for hash declaration (in C++26 and later)
+
+#if (defined(_MSC_VER) && _MSVC_LANG <= 202302L) || (!defined(_MSC_VER) && __cplusplus <= 202302L)
+#include <typeindex> // required for hash declaration
+#endif
+
+namespace yk::core {
+
+template<class T, template<class...> class TT>
+struct is_ttp_specialization_of : std::false_type {};
+
+template<template<class...> class TT, class... Ts>
+struct is_ttp_specialization_of<TT<Ts...>, TT> : std::true_type {};
+
+template<class T, template<class...> class TT>
+inline constexpr bool is_ttp_specialization_of_v = is_ttp_specialization_of<T, TT>::value;
+
+
+template<class T, template<auto...> class TT>
+struct is_nttp_specialization_of : std::false_type {};
+
+template<template<auto...> class TT, auto... Ts>
+struct is_nttp_specialization_of<TT<Ts...>, TT> : std::true_type {};
+
+template<class T, template<auto...> class TT>
+inline constexpr bool is_nttp_specialization_of_v = is_nttp_specialization_of<T, TT>::value;
+
+
+template<class... Ts>
+struct type_list {};
+
+
+template<std::size_t I, class... Ts>
+struct pack_indexing;
+
+template<std::size_t I, class... Ts>
+using pack_indexing_t = typename pack_indexing<I, Ts...>::type;
+
+template<class T, class... Ts>
+struct pack_indexing<0, T, Ts...> { using type = T; };
+
+template<std::size_t I, class T, class... Ts>
+struct pack_indexing<I, T, Ts...> : pack_indexing<I - 1, Ts...> {};
+
+
+template<std::size_t I, auto... Ns>
+struct npack_indexing;
+
+template<auto N, auto... Ns>
+struct npack_indexing<0, N, Ns...> : std::integral_constant<std::size_t, N> {};
+
+template<std::size_t I, auto N, auto... Ns>
+struct npack_indexing<I, N, Ns...> : npack_indexing<I - 1, Ns...> {};
+
+template<std::size_t I, auto... Ns>
+constexpr auto npack_indexing_v = npack_indexing<I, Ns...>::value;
+
+
+inline constexpr std::size_t find_npos = static_cast<std::size_t>(-1);
+
+template<std::size_t I, class T, class... Ts>
+struct find_index_impl
+    : std::integral_constant<std::size_t, find_npos>
+{};
+
+template<std::size_t I, class T, class U, class... Us>
+struct find_index_impl<I, T, U, Us...>
+    : std::conditional_t<
+        std::is_same_v<T, U>,
+        std::integral_constant<std::size_t, I>,
+        find_index_impl<I + 1, T, Us...>
+    >
+{};
+
+template<class T, class List>
+struct find_index;
+
+template<class T, template<class...> class TT, class... Ts>
+struct find_index<T, TT<Ts...>> : find_index_impl<0, T, Ts...> {};
+
+template<class T, class List>
+inline constexpr std::size_t find_index_v = find_index<T, List>::value;
+
+
+template<class T, class... Ts>
+struct is_in : std::disjunction<std::is_same<T, Ts>...> {};
+
+template<class T, class... Ts>
+inline constexpr bool is_in_v = is_in<T, Ts...>::value;
+
+
+template<template<class A, class B> class F, class U, class... Ts>
+struct disjunction_for : std::disjunction<F<U, Ts>...> {};
+
+template<template<class A, class B> class F, class U, class... Ts>
+inline constexpr bool disjunction_for_v = disjunction_for<F, U, Ts...>::value;
+
+template<template<class A, class B> class F, class U, class... Ts>
+struct conjunction_for : std::conjunction<F<U, Ts>...> {};
+
+template<template<class A, class B> class F, class U, class... Ts>
+inline constexpr bool conjunction_for_v = conjunction_for<F, U, Ts...>::value;
+
+
+template<bool Found, class T, class... Us>
+struct exactly_once_impl : std::bool_constant<Found> {};
+
+template<class T, class U, class... Us>
+struct exactly_once_impl<false, T, U, Us...>
+    : exactly_once_impl<std::is_same_v<T, U>, T, Us...> {};
+
+template<class T, class U, class... Us>
+struct exactly_once_impl<true, T, U, Us...>
+    : std::conditional_t<std::is_same_v<T, U>, std::false_type, exactly_once_impl<true, T, Us...>> {};
+
+template<class T, class List>
+struct exactly_once;
+
+template<class T, template<class...> class TT, class... Ts>
+struct exactly_once<T, TT<Ts...>> : exactly_once_impl<false, T, Ts...>
+{
+    static_assert(sizeof...(Ts) > 0);
+};
+
+template<class T, class List>
+inline constexpr bool exactly_once_v = exactly_once<T, List>::value;
+
+
+// Provides definition equivalent to MSVC's STL for semantic compatibility
+namespace detail::has_ADL_swap_detail {
+
+#if defined(__clang__) || defined(__EDG__)
+void swap() = delete; // poison pill
+#else
+void swap();
+#endif
+
+template<class, class = void> struct has_ADL_swap : std::false_type {};
+template<class T> struct has_ADL_swap<T, std::void_t<decltype(swap(std::declval<T&>(), std::declval<T&>()))>> : std::true_type {};
+
+} // detail::has_ADL_swap_detail
+
+
+template<class T>
+struct is_trivially_swappable : std::conjunction<
+    std::is_trivially_destructible<T>,
+    std::is_trivially_move_constructible<T>,
+    std::is_trivially_move_assignable<T>,
+    // std::is_swappable cannot be used for this purpose because it assumes `using std::swap`
+    std::negation<detail::has_ADL_swap_detail::has_ADL_swap<T>>
+>
+{};
+template<> struct is_trivially_swappable<std::byte> : std::true_type {};
+
+template<class T>
+constexpr bool is_trivially_swappable_v = is_trivially_swappable<T>::value;
+
+
+namespace detail {
+
+template<std::size_t I, class Ti>
+struct aggregate_initialize_tag
+{
+    static constexpr std::size_t index = I;
+    using type = Ti;
+};
+
+// This version works better than MSVC's, does not break IntelliSense or ReSharper
+template<std::size_t I, class Ti>
+struct aggregate_initialize_overload
+{
+    using TiA = Ti[];
+
+    // https://eel.is/c++draft/dcl.init.general#14
+    // https://eel.is/c++draft/dcl.init.list#3.4
+    // https://eel.is/c++draft/dcl.init.aggr#3
+
+    template<class T>
+    auto operator()(Ti, T&&) -> aggregate_initialize_tag<I, Ti>
+        requires requires(T&& t) { { TiA{std::forward<T>(t)} }; } // emulate `Ti x[] = {std::forward<T>(t)};`
+    {
+        return {}; // silence MSVC warning
+    }
+};
+
+template<class Is, class... Ts>
+struct aggregate_initialize_fun;
+
+// Imaginary function FUN of https://eel.is/c++draft/variant#ctor-14
+template<std::size_t... Is, class... Ts>
+struct aggregate_initialize_fun<std::index_sequence<Is...>, Ts...>
+    : aggregate_initialize_overload<Is, Ts>...
+{
+    using aggregate_initialize_overload<Is, Ts>::operator()...;
+};
+
+template<class... Ts>
+using aggregate_initialize_fun_for = aggregate_initialize_fun<std::index_sequence_for<Ts...>, Ts...>;
+
+template<class Enabled, class T, class... Ts>
+struct aggregate_initialize_resolution {};
+
+template<class T, class... Ts>
+struct aggregate_initialize_resolution<
+    std::void_t<decltype(aggregate_initialize_fun_for<Ts...>{}(std::declval<T>(), std::declval<T>()))>, T, Ts...
+> {
+    using tag = decltype(aggregate_initialize_fun_for<Ts...>{}(std::declval<T>(), std::declval<T>()));
+    using type = typename tag::type;
+    static constexpr std::size_t index = tag::index;
+};
+
+} // detail
+
+template<class T, class... Ts>
+using aggregate_initialize_resolution_t = typename detail::aggregate_initialize_resolution<void, T, Ts...>::type;
+
+template<class T, class... Ts>
+constexpr std::size_t aggregate_initialize_resolution_index = detail::aggregate_initialize_resolution<void, T, Ts...>::index;
+
+
+template<class T, class U, class Enabled = void>
+struct is_aggregate_initializable : std::false_type {};
+
+template<class T, class U>
+struct is_aggregate_initializable<T, U, std::void_t<decltype(
+    std::declval<detail::aggregate_initialize_overload<0, T>>()(std::declval<U>(), std::declval<U>())
+)>> : std::true_type
+{};
+
+template<class T, class U>
+constexpr bool is_aggregate_initializable_v = is_aggregate_initializable<T, U>::value;
+
+
+// https://eel.is/c++draft/function.objects.general
+template<class F, class... Args>
+struct is_function_object : std::false_type {};
+
+template<class F, class... Args>
+constexpr bool is_function_object_v = is_function_object<F, Args...>::value;
+
+template<class F, class... Args>
+    requires
+        (std::is_pointer_v<F> && std::is_function_v<std::remove_pointer_t<F>>) ||
+        (std::is_class_v<F> && requires(F f) {
+            { f(std::declval<Args>()...) };
+        })
+struct is_function_object<F, Args...> : std::true_type {};
+
+
+namespace detail {
+
+template<class Key>
+struct Cpp17Hash_convertible_to_Key
+{
+    // ReSharper disable once CppFunctionIsNotImplemented
+    operator Key();
+    // ReSharper disable once CppFunctionIsNotImplemented
+    operator Key const() const;
+};
+
+// https://eel.is/c++draft/hash.requirements
+template<class H>
+struct Cpp17Hash_impl : std::false_type
+{
+    static_assert(is_ttp_specialization_of_v<H, std::hash>);
+};
+
+template<class Key>
+    requires
+        is_function_object_v<std::hash<Key>, Key> &&
+        is_function_object_v<std::hash<Key>, Key const> &&
+        is_function_object_v<std::hash<Key> const, Key> &&
+        is_function_object_v<std::hash<Key> const, Key const> &&
+        Cpp17CopyConstructible<std::hash<Key>> && Cpp17Destructible<std::hash<Key>> &&
+        requires {
+            { std::declval<std::hash<Key>      >()(std::declval<Cpp17Hash_convertible_to_Key<Key>      >()) } -> std::same_as<std::size_t>;
+            { std::declval<std::hash<Key>      >()(std::declval<Cpp17Hash_convertible_to_Key<Key> const>()) } -> std::same_as<std::size_t>;
+            { std::declval<std::hash<Key> const>()(std::declval<Cpp17Hash_convertible_to_Key<Key>      >()) } -> std::same_as<std::size_t>;
+            { std::declval<std::hash<Key> const>()(std::declval<Cpp17Hash_convertible_to_Key<Key> const>()) } -> std::same_as<std::size_t>;
+            { std::declval<std::hash<Key>      >()(std::declval<Key&>()) } -> std::same_as<std::size_t>;
+            { std::declval<std::hash<Key> const>()(std::declval<Key&>()) } -> std::same_as<std::size_t>;
+        }
+struct Cpp17Hash_impl<std::hash<Key>> : std::true_type
+{
+    static_assert(!std::is_const_v<Key> && !std::is_reference_v<Key>);
+};
+
+} // detail
+
+template<class H>
+concept Cpp17Hash = detail::Cpp17Hash_impl<H>::value;
+
+// "disabled" version, https://eel.is/c++draft/unord.hash#4
+template<class Key>
+struct is_hash_enabled : std::false_type
+{
+    static_assert(!is_ttp_specialization_of_v<Key, std::hash>);
+    static_assert(requires { typename std::hash<Key>; }, "Specialization of `hash` should exist; https://eel.is/c++draft/unord.hash#note-2");
+
+private:
+    using H = std::hash<Key>;
+    static_assert(!std::is_default_constructible_v<H>);
+    static_assert(!std::is_copy_constructible_v<H>);
+    static_assert(!std::is_move_constructible_v<H>);
+    static_assert(!std::is_copy_assignable_v<H>);
+    static_assert(!std::is_move_assignable_v<H>);
+    static_assert(!is_function_object_v<H, Key>);
+    static_assert(!is_function_object_v<H, Key const>);
+    static_assert(!is_function_object_v<H const, Key>);
+    static_assert(!is_function_object_v<H const, Key const>);
+};
+
+// "enabled" version, https://eel.is/c++draft/unord.hash#5
+template<class Key>
+    requires
+        requires { typename std::hash<Key>; } &&
+        Cpp17Hash<std::hash<Key>> &&
+        Cpp17DefaultConstructible<std::hash<Key>> &&
+        Cpp17CopyAssignable<std::hash<Key>> &&
+        Cpp17Swappable<std::hash<Key>>
+struct is_hash_enabled<Key> : std::true_type
+{
+    static_assert(!is_ttp_specialization_of_v<Key, std::hash>);
+};
+
+template<class Key>
+constexpr bool is_hash_enabled_v = is_hash_enabled<Key>::value;
+
+
+template<class T, class Enabled = void>
+struct is_nothrow_hashable : std::false_type
+{
+    static_assert(
+        !std::is_const_v<T> && !std::is_volatile_v<T> && !std::is_reference_v<T>,
+        "Although the standard has no restriction on hashing potentially "
+        "cv-qualified and/or reference types, we intentionally disallow "
+        "them in our metafunction to prevent error-prone instantiations."
+    );
+
+    static_assert(is_hash_enabled_v<T>, "is_nothrow_hashable must be used only after proper overload resolution in SFINAE-friendly context");
+};
+
+template<class T>
+struct is_nothrow_hashable<T, std::void_t<decltype(std::hash<T>{}(std::declval<T const&>()))>>
+    : std::bool_constant<noexcept(std::hash<T>{}(std::declval<T const&>()))>
+{
+    static_assert(
+        !std::is_const_v<T> && !std::is_volatile_v<T> && !std::is_reference_v<T>,
+        "Although the standard has no restriction on hashing potentially "
+        "cv-qualified and/or reference types, we intentionally disallow "
+        "them in our metafunction to prevent error-prone instantiations."
+    );
+
+    static_assert(is_hash_enabled_v<T>, "is_nothrow_hashable must be used only after proper overload resolution in SFINAE-friendly context");
+};
+
+template<class T>
+constexpr bool is_nothrow_hashable_v = is_nothrow_hashable<T>::value;
+
+} // yk::core
+
+#endif
