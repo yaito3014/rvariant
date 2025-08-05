@@ -462,6 +462,19 @@ TEST_CASE("forward_storage", "[detail]")
     // NOLINTEND(performance-move-const-arg)
 }
 
+TEST_CASE("variant_index_t", "[detail]")
+{
+    // NOLINTBEGIN(modernize-use-integer-sign-comparison)
+    STATIC_REQUIRE(static_cast<std::size_t>(static_cast<yk::detail::variant_index_t<126>>(-1)) == std::variant_npos);
+    STATIC_REQUIRE(static_cast<std::size_t>(static_cast<yk::detail::variant_index_t<127>>(-1)) == std::variant_npos);
+    STATIC_REQUIRE(static_cast<std::size_t>(static_cast<yk::detail::variant_index_t<128>>(-1)) == std::variant_npos);
+    // NOLINTEND(modernize-use-integer-sign-comparison)
+
+    STATIC_REQUIRE(yk::detail::valueless_bias<false>(static_cast<yk::detail::variant_index_t<126>>(125)) == 126);
+    STATIC_REQUIRE(yk::detail::valueless_bias<false>(static_cast<yk::detail::variant_index_t<127>>(126)) == 127);
+    STATIC_REQUIRE(yk::detail::valueless_bias<false>(static_cast<yk::detail::variant_index_t<128>>(127)) == 128);
+}
+
 // --------------------------------------------
 
 TEST_CASE("helper class")
@@ -1243,13 +1256,6 @@ TEST_CASE("emplace")
     // ReSharper restore CppStaticAssertFailure
 }
 
-namespace {
-
-template<std::size_t I>
-struct just_index {};
-
-} // anonymous
-
 TEST_CASE("swap")
 {
     {
@@ -1280,20 +1286,6 @@ TEST_CASE("swap")
         REQUIRE_NOTHROW(a.swap(b));
         CHECK(yk::holds_alternative<S>(a));
         CHECK(yk::holds_alternative<int>(b));
-    }
-    {
-        using V = yk::rvariant<
-            just_index<0>, just_index<1>, just_index<2>, just_index<3>, just_index<4>, just_index<5>, just_index<6>, just_index<7>,
-            just_index<8>, just_index<9>, just_index<10>, just_index<11>, just_index<12>, just_index<13>, just_index<14>, just_index<15>,
-            just_index<16>, just_index<17>, just_index<18>, just_index<19>, just_index<20>, just_index<21>, just_index<22>, just_index<23>,
-            just_index<24>, just_index<25>, just_index<26>, just_index<27>, just_index<28>, just_index<29>, just_index<30>, just_index<31>
-        >;
-        static_assert((yk::variant_size_v<V> * yk::variant_size_v<V>) >= yk::detail::visit_instantiation_limit);
-
-        V a{std::in_place_type<just_index<10>>}, b{std::in_place_type<just_index<20>>};
-        YK_REQUIRE_STATIC_NOTHROW(a.swap(b));
-        CHECK(yk::holds_alternative<just_index<20>>(a));
-        CHECK(yk::holds_alternative<just_index<10>>(b));
     }
 
     {

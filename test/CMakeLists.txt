@@ -26,6 +26,7 @@ add_executable(
 
     # Main library
     rvariant_test.cpp
+    many_alternatives_32_test.cpp
     get_visit_test.cpp
     flexible_test.cpp
     recursive_wrapper_test.cpp

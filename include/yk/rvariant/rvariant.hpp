@@ -966,6 +966,13 @@ public:
     template<class Variant>
     friend constexpr detail::forward_storage_t<Variant>&& detail::forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept;
 
+    template<class Variant, class Visitor>
+    friend constexpr detail::raw_visit_return_type<Visitor, detail::forward_storage_t<Variant>>
+    detail::raw_visit(Variant&&, Visitor&&) noexcept(detail::raw_visit_noexcept<Visitor, detail::forward_storage_t<Variant>>);  // NOLINT(clang-diagnostic-microsoft-exception-spec)
+
+    template<class R, class V, std::size_t... n>
+    friend struct detail::visit_impl;
+
 private:
     // hack: reduce compile error by half on unrelated overloads
     template<std::same_as<detail::valueless_t> Valueless>

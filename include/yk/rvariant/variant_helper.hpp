@@ -6,7 +6,6 @@
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/core/type_traits.hpp>
 
-#include <limits>
 #include <utility>
 #include <type_traits>
 #include <cstdint>
@@ -16,29 +15,32 @@ namespace yk {
 
 namespace detail {
 
-template <std::size_t VariantSize>
-struct variant_index_selector {
-    using type = std::size_t;
+template<std::size_t VariantSize>
+struct variant_index_selector
+{
+    using type = int;
+};
+
+template<std::size_t VariantSize>
+    requires (VariantSize <= static_cast<std::size_t>(static_cast<unsigned char>(-1) / 2))
+struct variant_index_selector<VariantSize>
+{
+    using type = signed char;
 };
 
 template <std::size_t VariantSize>
-    requires ((0 < VariantSize) && (VariantSize <= std::numeric_limits<std::int8_t>::max()))
-struct variant_index_selector<VariantSize> {
-    using type = std::int8_t;
+    requires (static_cast<std::size_t>(static_cast<unsigned char>(-1) / 2) < VariantSize && VariantSize <= static_cast<std::size_t>(static_cast<unsigned short>(-1) / 2))
+struct variant_index_selector<VariantSize>
+{
+    using type = short;
 };
 
-template <std::size_t VariantSize>
-    requires ((std::numeric_limits<std::int8_t>::max() < VariantSize) && (VariantSize <= std::numeric_limits<std::int16_t>::max()))
-struct variant_index_selector<VariantSize> {
-    using type = std::int16_t;
-};
-
-template <std::size_t VariantSize>
+template<std::size_t VariantSize>
 using variant_index_t = typename variant_index_selector<VariantSize>::type;
 
 // Intentionally defined in the `detail` to avoid confusion with `std::variant_npos`.
 // Equals to std::variant_npos by definition
-template <std::size_t VariantSize>
+template<std::size_t VariantSize>
 inline constexpr variant_index_t<VariantSize> variant_npos = static_cast<variant_index_t<VariantSize>>(-1);
 
 template<std::size_t I, class T>

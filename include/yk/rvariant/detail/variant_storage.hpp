@@ -32,23 +32,23 @@ template<class... Ts>
 using make_variadic_union_t = variadic_union<std::conjunction_v<std::is_trivially_destructible<Ts>...>, Ts...>;
 
 
-template<bool NeverValueless>
-[[nodiscard]] constexpr std::size_t valueless_bias(std::size_t i) noexcept
+template<bool NeverValueless, class T>
+[[nodiscard]] constexpr std::size_t valueless_bias(T i) noexcept
 {
     if constexpr (NeverValueless) {
         return i;
     } else {
-        return i + 1;
+        return ++i;
     }
 }
 
-template<bool NeverValueless>
-[[nodiscard]] constexpr std::size_t valueless_unbias(std::size_t i) noexcept
+template<bool NeverValueless, class T>
+[[nodiscard]] constexpr std::size_t valueless_unbias(T i) noexcept
 {
     if constexpr (NeverValueless) {
         return i;
     } else {
-        return i - 1;
+        return --i;
     }
 }
 
@@ -65,7 +65,7 @@ template<bool NeverValueless>
 //   rvariant tmp(std::in_place_index<I>, std::forward<Args>(args)...);
 //   *this = std::move(tmp);
 //        ^^^ needs to be NOT observable on user's part, as per "Effects" https://eel.is/c++draft/variant.mod#7
-//                       ^^^^^^^^^^^^^^
+//                        ^^^^^^^^^^^^^^
 //                           if type-changing: VT is trivially move constructible
 //                       if NOT type-changing: VT is trivially move assignable
 //                                    ... and trivially destructible.
@@ -339,7 +339,7 @@ raw_visit(Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-f
     noexcept(raw_visit_noexcept<Visitor, forward_storage_t<Variant>>)
 {
     constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, forward_storage_t<Variant>>::value;
-    auto&& f = table[valueless_bias<std::remove_cvref_t<Variant>::never_valueless>(v.index())];
+    auto&& f = table[valueless_bias<std::remove_cvref_t<Variant>::never_valueless>(v.index_)];
     return std::invoke(f, std::forward<Visitor>(vis), forward_storage<Variant>(v));
 }
 
@@ -552,7 +552,7 @@ private:
     [[nodiscard]] static constexpr std::size_t
     get_impl(std::index_sequence<Stride...>, RuntimeIndex... index) noexcept
     {
-        return ((Stride * detail::valueless_bias<NeverValueless>(index)) + ... + 0);
+        return ((Stride * detail::valueless_bias<NeverValueless>(index)) + ...);
     }
 
     static constexpr std::size_t Ns_i_max = sizeof...(Ns) - 1;
@@ -612,7 +612,7 @@ struct visit_impl<
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
             std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...
-        >::get(vars.index()...);
+        >::get(vars.index_...);
 
         constexpr auto const& table = VisitTable::table;
         auto const& f = table[flat_i];
