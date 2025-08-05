@@ -1,6 +1,11 @@
 ﻿#ifndef YK_RVARIANT_VARIANT_HELPER_HPP
 #define YK_RVARIANT_VARIANT_HELPER_HPP
 
+// Copyright 2025 Yaito Kakeyama
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
 // Utilities related to [rvariant.helper], [rvariant.recursive.helper]
 
 #include <yk/rvariant/detail/rvariant_fwd.hpp>

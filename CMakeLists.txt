@@ -1,3 +1,8 @@
+# Copyright 2025 Yaito Kakeyama
+# Copyright 2025 Nana Sakisaka
+# Distributed under the Boost Software License, Version 1.0.
+# https://www.boost.org/LICENSE_1_0.txt
+
 cmake_minimum_required(VERSION 3.23)
 
 project(rvariant LANGUAGES CXX)

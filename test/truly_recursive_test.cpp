@@ -1,4 +1,9 @@
-﻿#include "yk/rvariant/recursive_wrapper.hpp"
+﻿// Copyright 2025 Yaito Kakeyama
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
+#include "yk/rvariant/recursive_wrapper.hpp"
 #include "yk/rvariant/rvariant.hpp"
 
 #include <catch2/catch_test_macros.hpp>

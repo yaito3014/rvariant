@@ -1,6 +1,10 @@
 ﻿#ifndef YK_FORMAT_TRAITS_HPP
 #define YK_FORMAT_TRAITS_HPP
 
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
 #include <format>
 #include <type_traits>
 

@@ -1,6 +1,11 @@
 ﻿#ifndef YK_RVARIANT_SUBSET_HPP
 #define YK_RVARIANT_SUBSET_HPP
 
+// Copyright 2025 Yaito Kakeyama
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/variant_helper.hpp>
 #include <yk/core/type_traits.hpp>

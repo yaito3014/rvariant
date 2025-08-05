@@ -1,6 +1,10 @@
 ﻿#ifndef YK_RVARIANT_DETAIL_VARIANT_REQUIREMENTS_HPP
 #define YK_RVARIANT_DETAIL_VARIANT_REQUIREMENTS_HPP
 
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 
 #include <yk/core/type_traits.hpp>

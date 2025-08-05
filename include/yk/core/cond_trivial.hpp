@@ -1,6 +1,11 @@
 ﻿#ifndef YK_CORE_COND_TRIVIAL_HPP
 #define YK_CORE_COND_TRIVIAL_HPP
 
+// Copyright 2025 Nana Sakisaka
+// Copyright 2025 Yaito Kakeyama
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
 #include <type_traits>
 
 namespace yk::core {

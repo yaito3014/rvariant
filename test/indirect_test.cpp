@@ -1,4 +1,9 @@
-﻿#include "yk/indirect.hpp"
+﻿// Copyright 2025 Yaito Kakeyama
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
+#include "yk/indirect.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

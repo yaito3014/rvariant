@@ -1,4 +1,9 @@
-﻿#include "rvariant_test.hpp"
+﻿// Copyright 2025 Yaito Kakeyama
+// Copyright 2025 Nana Sakisaka
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
+
+#include "rvariant_test.hpp"
 
 #include "yk/rvariant/rvariant.hpp"
 #include "yk/rvariant/recursive_wrapper.hpp"
