@@ -8,6 +8,7 @@
 
 #include <yk/core/library.hpp>
 #include <yk/core/type_traits.hpp>
+#include <yk/core/hash.hpp>
 
 #include <compare>
 #include <memory>
