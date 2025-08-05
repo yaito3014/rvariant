@@ -4,7 +4,6 @@
 // https://www.boost.org/LICENSE_1_0.txt
 
 #include "yk/core/type_traits.hpp"
-#include "yk/core/hash.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
