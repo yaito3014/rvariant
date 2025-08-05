@@ -141,12 +141,14 @@ struct variadic_union<true, T, Ts...>
     variadic_union& operator=(variadic_union&&)      requires((!std::conjunction_v<std::is_trivially_move_assignable<T>, std::is_trivially_move_assignable<Ts>...>)) = delete;
 #endif
 
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     template<class... Args>
         requires std::is_constructible_v<T, Args...> // required for not confusing some compilers
     constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
         : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant.ctor#3
     {}
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     template<std::size_t I, class... Args>
         requires (I != 0) && std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>
@@ -187,12 +189,14 @@ struct variadic_union<false, T, Ts...>
     variadic_union& operator=(variadic_union&&)      requires((!std::conjunction_v<std::is_trivially_move_assignable<T>, std::is_trivially_move_assignable<Ts>...>)) = delete;
 #endif
 
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     template<class... Args>
         requires std::is_constructible_v<T, Args...> // required for not confusing some compilers
     constexpr explicit variadic_union(std::in_place_index_t<0>, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
         : first(std::forward<Args>(args)...) // value-initialize; https://eel.is/c++draft/variant.ctor#3
     {}
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     template<std::size_t I, class... Args>
         requires (I != 0) && std::is_constructible_v<make_variadic_union_t<Ts...>, std::in_place_index_t<I - 1>, Args...>

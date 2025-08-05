@@ -644,6 +644,7 @@ private:
             base_type::template reset_construct_never_valueless<I>(std::forward<Args>(args)...);
 
         } else {
+        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
             this->raw_visit([&, this]<std::size_t old_i, class T_old_i>(std::in_place_index_t<old_i>, T_old_i& t_old_i)
                 noexcept(std::is_nothrow_constructible_v<T, Args...>)
             {
@@ -710,6 +711,7 @@ private:
                     }
                 }
             });
+        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         }
         return detail::unwrap_recursive(detail::raw_get<I>(storage()));
     }

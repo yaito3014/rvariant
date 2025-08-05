@@ -37,6 +37,9 @@ add_executable(
     recursive_wrapper_test.cpp
     truly_recursive_test.cpp
     io_test.cpp
+
+    # Benchmark
+    benchmark.cpp
 )
 
 target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp)
@@ -44,15 +47,20 @@ target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp
 target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
 set_target_properties(yk_rvariant_test PROPERTIES CXX_EXTENSIONS OFF)
 
+# TODO: conditionally enable ASan on non-benchmark tests
+# NEEDS TO BE FIXED BEFORE THE PR MERGE!!!
+
 if(MSVC)
     target_compile_options(
         Catch2
-            PUBLIC /fsanitize=address
-            PRIVATE /MP /analyze-
+            PUBLIC
+                # /fsanitize=address
+            PRIVATE
+                /MP /analyze-
     )
     target_link_options(
         Catch2
-            PUBLIC /INCREMENTAL:NO # required for ASan
+            PUBLIC # /INCREMENTAL:NO # required for ASan
     )
 
     target_compile_definitions(
@@ -69,12 +77,13 @@ else()
     target_compile_options(
         yk_rvariant_test
             PUBLIC
-                -Wall -Wextra -pedantic -fsanitize=undefined,address
+                -Wall -Wextra -pedantic
+                # -fsanitize=undefined,address
     )
     target_link_options(
         yk_rvariant_test
             PUBLIC
-                -fsanitize=undefined,address
+                # -fsanitize=undefined,address
     )
 endif()
 
