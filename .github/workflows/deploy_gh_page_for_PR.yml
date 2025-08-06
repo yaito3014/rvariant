@@ -22,7 +22,7 @@ jobs:
       id-token: write
 
     environment:
-      name: github-pages
+      name: github-pages-${{ github.event.number }}
       url: ${{ steps.deployment.outputs.page_url }}${{ github.event.number }}/rvariant.html
 
     runs-on: ubuntu-latest
