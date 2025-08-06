@@ -11,7 +11,8 @@ jobs:
     container: asciidoctor/docker-asciidoctor:latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
+      - name: Build AsciiDoc
+        run: |
           apk update && apk add tar
           asciidoctor -D public/${{ github.ref_name }} doc/rvariant.adoc
       - uses: actions/upload-pages-artifact@v3
