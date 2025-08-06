@@ -10,9 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: |
+          mkdir -p public/${{ github.ref_name }}
+          cp -r doc/* public/${{ github.ref_name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: doc/
+          path: public/
 
   deploy:
     needs: upload
@@ -23,7 +26,7 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}rvariant.html
+      url: ${{ steps.deployment.outputs.page_url }}${{ github.ref_name }}/rvariant.html
 
     runs-on: ubuntu-latest
     steps:
