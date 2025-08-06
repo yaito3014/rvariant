@@ -5,6 +5,8 @@ on: pull_request
 jobs:
   check-changes:
     runs-on: ubuntu-latest
+    outputs:
+      src-changed: ${{ steps.changes.outputs.src }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -16,30 +18,23 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    if: ${{ needs.check-changes.outputs.src == 'true' }}
+    needs: check-changes
+    permissions:
+      contents: write
+    if: ${{ needs.check-changes.outputs.src-changed == 'true' }}
     container: asciidoctor/docker-asciidoctor:latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: public
       - name: Build AsciiDoc
         run: |
-          apk update && apk add tar
           asciidoctor -D public/pull/${{ github.event.number }} doc/rvariant.adoc
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: public/
-
-  deploy:
-    needs: build
-
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages-${{ github.event.number }}
-      url: ${{ steps.deployment.outputs.page_url }}pull/${{ github.event.number }}/rvariant.html
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment
+          cd public
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions[bot]
+          git add .
+          git commit -m "Update rvariant.html"
+          git push
