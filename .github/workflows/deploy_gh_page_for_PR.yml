@@ -16,6 +16,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: ${{ needs.check-changes.outputs.src == 'true' }}
     container: asciidoctor/docker-asciidoctor:latest
     steps:
@@ -33,23 +35,3 @@ jobs:
           git add .
           git commit -m "Update rvariant.html"
           git push
-          apk update && apk add tar
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: public/
-
-  deploy:
-    needs: build
-
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages-${{ github.event.number }}
-      url: ${{ steps.deployment.outputs.page_url }}pull/${{ github.event.number }}/rvariant.html
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment

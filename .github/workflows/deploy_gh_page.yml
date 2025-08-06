@@ -17,7 +17,7 @@ jobs:
             src:
               - doc/*
 
-  build:
+  build-and-commit:
     needs: check-changes
     permissions:
       contents: write
@@ -39,23 +39,3 @@ jobs:
           git add .
           git commit -m "Update rvariant.html"
           git push
-          apk update && apk add tar
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: public/
-
-  deploy:
-    needs: build
-
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}${{ github.ref_name }}/rvariant.html
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment
