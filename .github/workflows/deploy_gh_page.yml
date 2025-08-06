@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc/
+
+  deploy-for-PR:
+    needs: upload
+    if: github.event_name == 'pull_request'
+
+    environment:
+      name: github-pages-${{ github.event.pull_request.id }}
+      url: ${{ steps.deployment.outputs.page_url }}/${{ github.event.pull_request.id }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
+
+  deploy:
+    needs: upload
+    if: github.event_name == 'push'
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
