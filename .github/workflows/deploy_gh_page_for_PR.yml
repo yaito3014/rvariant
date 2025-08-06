@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          asciidoctor -D public/pull/${{ github.event.number }} rvariant.adoc
+          asciidoctor -D public/pull/${{ github.event.number }} doc/rvariant.adoc
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public/
