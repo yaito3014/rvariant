@@ -35,11 +35,27 @@ namespace detail {
 template<class... Ts>
 struct rvariant_base
 {
+private:
     static constexpr bool need_destructor_call = !std::conjunction_v<std::is_trivially_destructible<Ts>...>;
 
-public:
+protected:
     using storage_type = make_variadic_union_t<Ts...>;
     static constexpr bool never_valueless = storage_type::never_valueless;
+
+    template<class Self>
+    using like_rvariant_t = std::conditional_t<
+        std::is_rvalue_reference_v<Self&&>,
+        std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            rvariant<Ts...> const,
+            rvariant<Ts...>
+        >&&,
+        std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            rvariant<Ts...> const,
+            rvariant<Ts...>
+        >&
+    >;
 
     // internal constructor; this is not the same as the most derived class' default constructor (which uses T0)
     constexpr rvariant_base() noexcept
@@ -274,6 +290,94 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         });
     }
 
+    // -----------------------------------------------------------
+
+    template<std::size_t I, class... Args>
+        requires std::is_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>
+    constexpr variant_alternative_t<I, rvariant<Ts...>>&
+    emplace_impl(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
+    {
+        static_assert(I < sizeof...(Ts));
+        using T = core::pack_indexing_t<I, Ts...>;
+        if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
+            this->template reset_construct_never_valueless<I>(std::forward<Args>(args)...);
+
+        } else {
+        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
+            this->raw_visit([&, this]<std::size_t old_i, class T_old_i>(std::in_place_index_t<old_i>, T_old_i& t_old_i)
+                noexcept(std::is_nothrow_constructible_v<T, Args...>)
+            {
+                static_assert(!std::is_reference_v<T_old_i>);
+                static_assert(!std::is_const_v<T_old_i>);
+
+                if constexpr (old_i == std::variant_npos) {
+                    (void)t_old_i;
+                    this->template construct_on_valueless<I>(std::forward<Args>(args)...);
+
+                } else if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
+                    t_old_i.~T_old_i();
+                    static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
+                    std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...);
+
+                } else if constexpr (std::is_same_v<T_old_i, T>) { // NOT type-changing
+                    if constexpr (
+                        (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_assignable_v<T>) ||
+                        core::is_ttp_specialization_of_v<T, recursive_wrapper>
+                    ) {
+                        T tmp(std::forward<Args>(args)...); // may throw
+                        static_assert(noexcept(t_old_i = std::move(tmp)));
+                        t_old_i = std::move(tmp);
+                    } else if constexpr (
+                        sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_assignable_v<T>
+                    ) { // strange type...
+                        T const tmp(std::forward<Args>(args)...); // may throw
+                        static_assert(noexcept(t_old_i = tmp));
+                        t_old_i = tmp;
+                    } else {
+                        static_assert(!rvariant_base::never_valueless);
+                        t_old_i.~T_old_i();
+                        this->index_ = detail::variant_npos<sizeof...(Ts)>;
+                        static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
+                        std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...); // may throw
+                        this->index_ = old_i;
+                    }
+
+                } else { // type-changing
+                    if constexpr (
+                        (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_constructible_v<T>) ||
+                        core::is_ttp_specialization_of_v<T, recursive_wrapper>
+                    ) {
+                        T tmp(std::forward<Args>(args)...); // may throw
+                        t_old_i.~T_old_i();
+                        static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp))));
+                        std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp)); // never throws
+                        this->index_ = I;
+                    } else if constexpr (
+                        sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_constructible_v<T>
+                    ) { // strange type...
+                        T const tmp(std::forward<Args>(args)...); // may throw
+                        t_old_i.~T_old_i();
+                        static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, tmp)));
+                        std::construct_at(&this->storage(), std::in_place_index<I>, tmp); // never throws
+                        this->index_ = I;
+                    } else {
+                        static_assert(!rvariant_base::never_valueless);
+                        t_old_i.~T_old_i();
+                        this->index_ = detail::variant_npos<sizeof...(Ts)>;
+                        static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...)));
+                        std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...); // may throw
+                        this->index_ = I;
+                    }
+                }
+            });
+        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
+        }
+        return detail::unwrap_recursive(detail::raw_get<I>(this->storage()));
+    }
+
+    // -----------------------------------------------------------
+
     [[nodiscard]] constexpr storage_type &       storage() &       noexcept { return storage_; }
     [[nodiscard]] constexpr storage_type const&  storage() const&  noexcept { return storage_; }
     [[nodiscard]] constexpr storage_type &&      storage() &&      noexcept { return std::move(storage_); }
@@ -357,7 +461,6 @@ class rvariant : private detail::rvariant_base_t<Ts...>
     using base_type::reset;
 
 public:
-    using base_type::never_valueless;
     using base_type::valueless_by_exception;
     using base_type::index;
 
@@ -631,92 +734,6 @@ public:
         return this->template emplace<detail::select_maybe_wrapped_index<T, Ts...>>(il, std::forward<Args>(args)...);
     }
 
-private:
-    template<std::size_t I, class... Args>
-        requires std::is_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>
-    constexpr variant_alternative_t<I, rvariant>&
-    emplace_impl(Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
-    {
-        static_assert(I < sizeof...(Ts));
-        using T = core::pack_indexing_t<I, Ts...>;
-        if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
-            base_type::template reset_construct_never_valueless<I>(std::forward<Args>(args)...);
-
-        } else {
-        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
-            this->raw_visit([&, this]<std::size_t old_i, class T_old_i>(std::in_place_index_t<old_i>, T_old_i& t_old_i)
-                noexcept(std::is_nothrow_constructible_v<T, Args...>)
-            {
-                static_assert(!std::is_reference_v<T_old_i>);
-                static_assert(!std::is_const_v<T_old_i>);
-
-                if constexpr (old_i == std::variant_npos) {
-                    (void)t_old_i;
-                    this->template construct_on_valueless<I>(std::forward<Args>(args)...);
-
-                } else if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
-                    t_old_i.~T_old_i();
-                    static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
-                    std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...);
-
-                } else if constexpr (std::is_same_v<T_old_i, T>) { // NOT type-changing
-                    if constexpr (
-                        (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_assignable_v<T>) ||
-                        core::is_ttp_specialization_of_v<T, recursive_wrapper>
-                    ) {
-                        T tmp(std::forward<Args>(args)...); // may throw
-                        static_assert(noexcept(t_old_i = std::move(tmp)));
-                        t_old_i = std::move(tmp);
-                    } else if constexpr (
-                        sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_assignable_v<T>
-                    ) { // strange type...
-                        T const tmp(std::forward<Args>(args)...); // may throw
-                        static_assert(noexcept(t_old_i = tmp));
-                        t_old_i = tmp;
-                    } else {
-                        static_assert(!base_type::never_valueless);
-                        t_old_i.~T_old_i();
-                        this->index_ = detail::variant_npos<sizeof...(Ts)>;
-                        static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
-                        std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...); // may throw
-                        this->index_ = old_i;
-                    }
-
-                } else { // type-changing
-                    if constexpr (
-                        (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_constructible_v<T>) ||
-                        core::is_ttp_specialization_of_v<T, recursive_wrapper>
-                    ) {
-                        T tmp(std::forward<Args>(args)...); // may throw
-                        t_old_i.~T_old_i();
-                        static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp))));
-                        std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp)); // never throws
-                        this->index_ = I;
-                    } else if constexpr (
-                        sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_constructible_v<T>
-                    ) { // strange type...
-                        T const tmp(std::forward<Args>(args)...); // may throw
-                        t_old_i.~T_old_i();
-                        static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, tmp)));
-                        std::construct_at(&this->storage(), std::in_place_index<I>, tmp); // never throws
-                        this->index_ = I;
-                    } else {
-                        static_assert(!base_type::never_valueless);
-                        t_old_i.~T_old_i();
-                        this->index_ = detail::variant_npos<sizeof...(Ts)>;
-                        static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...)));
-                        std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...); // may throw
-                        this->index_ = I;
-                    }
-                }
-            });
-        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
-        }
-        return detail::unwrap_recursive(detail::raw_get<I>(storage()));
-    }
-
-public:
     template<std::size_t I, class... Args>
         requires std::is_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>
     constexpr variant_alternative_t<I, rvariant>&
@@ -904,23 +921,6 @@ public:
         }
     }
 
-private:
-    template<class Self>
-    using like_rvariant_t = std::conditional_t<
-        std::is_rvalue_reference_v<Self&&>,
-        std::conditional_t<
-            std::is_const_v<std::remove_reference_t<Self>>,
-            rvariant const,
-            rvariant
-        >&&,
-        std::conditional_t<
-            std::is_const_v<std::remove_reference_t<Self>>,
-            rvariant const,
-            rvariant
-        >&
-    >;
-
-public:
     // NOLINTBEGIN(cppcoreguidelines-missing-std-forward)
     // ReSharper disable CppCStyleCast
 
@@ -928,18 +928,30 @@ public:
     // <https://eel.is/c++draft/variant.visit#lib:visit,variant_>
     template<int = 0, class Self, class Visitor>
     constexpr decltype(auto) visit(this Self&& self, Visitor&& vis)
-        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self)))
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        )))
     {
-        return yk::visit(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self);
+        return yk::visit(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        );
     }
 
     // Member `.visit<R>(...)`
     // <https://eel.is/c++draft/variant.visit#lib:visit,variant__>
     template<class R, class Self, class Visitor>
     constexpr R visit(this Self&& self, Visitor&& vis)
-        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit<R>(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self)))
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit<R>(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        )))
     {
-        return yk::visit<R>(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self);
+        return yk::visit<R>(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        );
     }
 
     // ReSharper restore CppCStyleCast
@@ -971,6 +983,12 @@ public:
 
     template<class Variant>
     friend constexpr detail::forward_storage_t<Variant>&& detail::forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept;
+
+    template<class Variant, class T>
+    friend constexpr std::size_t detail::valueless_bias(T) noexcept;
+
+    template<class Variant, class T>
+    friend constexpr std::size_t detail::valueless_unbias(T) noexcept;
 
     template<class Variant, class Visitor>
     friend constexpr detail::raw_visit_return_type<Visitor, detail::forward_storage_t<Variant>>
@@ -1174,8 +1192,8 @@ template<class... Ts, class Compare = std::less<>>
 [[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
     if (vi < wi) return true;
     if (vi > wi) return false;
     return detail::compare_relops<Compare>(v, w);
@@ -1186,8 +1204,8 @@ template<class... Ts, class Compare = std::greater<>>
 [[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
     if (vi > wi) return true;
     if (vi < wi) return false;
     return detail::compare_relops<Compare>(v, w);
@@ -1198,8 +1216,8 @@ template<class... Ts, class Compare = std::less_equal<>>
 [[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
     if (vi < wi) return true;
     if (vi > wi) return false;
     return detail::compare_relops<Compare>(v, w);
@@ -1210,8 +1228,8 @@ template<class... Ts, class Compare = std::greater_equal<>>
 [[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
     noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
 {
-    auto const vi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>::never_valueless>(w.index());
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
     if (vi > wi) return true;
     if (vi < wi) return false;
     return detail::compare_relops<Compare>(v, w);

@@ -47,10 +47,30 @@ template<bool NeverValueless, class T>
     }
 }
 
+template<class Variant, class T>
+[[nodiscard]] constexpr std::size_t valueless_bias(T i) noexcept
+{
+    if constexpr (std::remove_cvref_t<Variant>::never_valueless) {
+        return i;
+    } else {
+        return ++i;
+    }
+}
+
 template<bool NeverValueless, class T>
 [[nodiscard]] constexpr std::size_t valueless_unbias(T i) noexcept
 {
     if constexpr (NeverValueless) {
+        return i;
+    } else {
+        return --i;
+    }
+}
+
+template<class Variant, class T>
+[[nodiscard]] constexpr std::size_t valueless_unbias(T i) noexcept
+{
+    if constexpr (std::remove_cvref_t<Variant>::never_valueless) {
         return i;
     } else {
         return --i;
@@ -731,7 +751,7 @@ template<class... Variants>
 using make_OverloadSeq = core::seq_cartesian_product<
     std::index_sequence,
     std::make_index_sequence<
-        detail::valueless_bias<std::remove_cvref_t<detail::as_variant_t<Variants>>::never_valueless>(
+        detail::valueless_bias<detail::as_variant_t<Variants>>(
             yk::variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>> // aka `n`
         )
     >...
