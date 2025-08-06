@@ -42,12 +42,12 @@ jobs:
             version: 14
             executable: g++-14
           - name: Clang
-            version: 19
-            executable: clang++-19
+            version: 21
+            executable: clang++-21
             cxxflags: -stdlib=libc++
           - name: Clang
-            version: 20
-            executable: clang++-20
+            version: 22
+            executable: clang++-22
             cxxflags: -stdlib=libc++
           - name: MSVC
             version: v142
@@ -80,7 +80,8 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x ./llvm.sh
-          sudo ./llvm.sh ${{ matrix.compiler.version }} all
+          sudo ./llvm.sh ${{ matrix.compiler.version }}
+          sudo apt-get install -y libc++-${{ matrix.compiler.version }}-dev libc++abi-${{ matrix.compiler.version }}-dev
 
       - name: Setup GCC
         if: matrix.compiler.name == 'GCC'
