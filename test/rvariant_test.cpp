@@ -1698,7 +1698,7 @@ TEST_CASE("rvariant.hash")
         CHECK(do_hash(yk::rvariant<int>(42)) == hash_value(yk::rvariant<int>(42)));
     }
     {
-        struct NonExistent;
+        struct NonExistent {};
         STATIC_REQUIRE(!yk::core::is_hash_enabled_v<NonExistent>);
         STATIC_REQUIRE(!yk::core::is_hash_enabled_v<yk::rvariant<NonExistent>>);
     }
