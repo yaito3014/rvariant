@@ -58,7 +58,7 @@ constexpr int visit_strategy =
 
 
 template<class Visitor, class Storage>
-using raw_visit_return_type = decltype(std::declval<Visitor>()(
+using raw_visit_result_t = decltype(std::declval<Visitor>()(
     std::declval<std::in_place_index_t<0>>(), std::declval<raw_get_t<0, Storage>>()
 ));
 
@@ -78,7 +78,11 @@ struct raw_visit_noexcept
 
     static constexpr bool value = std::conditional_t<
         !std::remove_cvref_t<Storage>::never_valueless && I == 0,
-        std::type_identity<std::is_nothrow_invocable<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>>,
+        std::type_identity<std::is_nothrow_invocable<
+            Visitor,
+            std::in_place_index_t<std::variant_npos>,
+            decltype(std::forward_like<Storage>(std::declval<valueless_t>()))
+        >>,
         lazy_invoke<Storage>
     >::type::value;
 };
@@ -94,8 +98,8 @@ constexpr bool raw_visit_noexcept_all<Visitor, Storage, std::index_sequence<Is..
 
 
 template<std::size_t I, class Visitor, class Storage>
-constexpr raw_visit_return_type<Visitor, Storage>
-raw_visit_dispatch(Visitor&& vis, Storage&& storage)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+constexpr raw_visit_result_t<Visitor, Storage>
+do_raw_visit(Visitor&& vis, Storage&& storage)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     noexcept(raw_visit_noexcept<I, Visitor, Storage>::value)
 {
     if constexpr (!std::remove_cvref_t<Storage>::never_valueless && I == 0) {
@@ -109,7 +113,7 @@ raw_visit_dispatch(Visitor&& vis, Storage&& storage)  // NOLINT(cppcoreguideline
 
 
 template<class Visitor, class Storage>
-using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visitor&&, Storage&&)
+using raw_visit_function_ptr = raw_visit_result_t<Visitor, Storage>(*) (Visitor&&, Storage&&)
     noexcept(raw_visit_noexcept_all<Visitor, Storage>);
 
 template<class Visitor, class Storage, class Seq = std::make_index_sequence<detail::valueless_bias<Storage>(std::remove_cvref_t<Storage>::size)>>
@@ -121,19 +125,73 @@ struct raw_visit_table<Visitor, Storage, std::index_sequence<Is...>>
     static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
     static_assert(std::is_reference_v<Storage>, "Storage must be one of: &, const&, &&, const&&");
 
-    static constexpr raw_visit_function_ptr<Visitor, Storage> value[] = {
-        &raw_visit_dispatch<Is, Visitor, Storage>...
+    static constexpr raw_visit_function_ptr<Visitor, Storage> table[] = {
+        &do_raw_visit<Is, Visitor, Storage>...
     };
 };
 
+// --------------------------------------------
+
+template<int Strategy>
+struct raw_visit_dispatch;
+
+template<>
+struct raw_visit_dispatch<-1>
+{
+    template<std::size_t N, class Visitor, class Storage>
+    [[nodiscard]] static constexpr raw_visit_result_t<Visitor, Storage>
+    apply(std::size_t const i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&& storage)
+        noexcept(raw_visit_noexcept_all<Visitor, Storage>)
+    {
+        constexpr auto const& table = raw_visit_table<Visitor&&, Storage>::table;
+        auto const& f = table[i];
+        return std::invoke(f, std::forward<Visitor>(vis), std::forward<Storage>(storage));
+    }
+};
+
+#define YK_RAW_VISIT_CASE(n) \
+    case (n): \
+        if constexpr ((n) < N) { \
+            return detail::do_raw_visit<(n)>(std::forward<Visitor>(vis), std::forward<Storage>(storage)); \
+        } else std::unreachable(); [[fallthrough]]
+
+#define YK_RAW_VISIT_DISPATCH_DEF(strategy) \
+    template<> \
+    struct raw_visit_dispatch<(strategy)> \
+    { \
+        template<std::size_t N, class Visitor, class Storage> \
+        [[nodiscard]] static constexpr detail::raw_visit_result_t<Visitor, Storage> \
+        apply(std::size_t const i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&& storage) \
+            noexcept(detail::raw_visit_noexcept_all<Visitor, Storage>) \
+        { \
+            static_assert((1uz << ((strategy) * 2uz)) <= N && N <= (1uz << (((strategy) + 1) * 2uz))); \
+            switch (i) { \
+            YK_VISIT_CASES_ ## strategy (YK_RAW_VISIT_CASE, 0); \
+            default: std::unreachable(); \
+            } \
+        } \
+    }
+
+YK_RAW_VISIT_DISPATCH_DEF(0);
+YK_RAW_VISIT_DISPATCH_DEF(1);
+YK_RAW_VISIT_DISPATCH_DEF(2);
+YK_RAW_VISIT_DISPATCH_DEF(3);
+
+#undef YK_RAW_VISIT_CASE
+#undef YK_RAW_VISIT_DISPATCH_DEF
+
+
 template<class Variant, class Visitor>
-constexpr raw_visit_return_type<Visitor, forward_storage_t<Variant>>
+constexpr raw_visit_result_t<Visitor, forward_storage_t<Variant>>
 raw_visit(Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
     noexcept(raw_visit_noexcept_all<Visitor, forward_storage_t<Variant>>)
 {
-    constexpr auto const& table = raw_visit_table<Visitor&&, forward_storage_t<Variant>>::value;
-    auto&& f = table[valueless_bias<std::remove_cvref_t<Variant>::never_valueless>(v.index_)];
-    return std::invoke(f, std::forward<Visitor>(vis), forward_storage<Variant>(v));
+    constexpr std::size_t N = detail::valueless_bias<Variant>(yk::variant_size_v<std::remove_reference_t<Variant>>);
+    return raw_visit_dispatch<detail::visit_strategy<N>>::template apply<N>(
+        detail::valueless_bias<Variant>(v.index_),
+        std::forward<Visitor>(vis),
+        detail::forward_storage<Variant>(v)
+    );
 }
 
 
@@ -390,6 +448,7 @@ YK_VISIT_DISPATCH_DEF(3);
 
 #undef YK_VISIT_DISPATCH_DEF
 #undef YK_VISIT_CASE
+
 #undef YK_VISIT_CASES_0
 #undef YK_VISIT_CASES_1
 #undef YK_VISIT_CASES_2

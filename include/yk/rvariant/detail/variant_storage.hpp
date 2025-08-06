@@ -239,7 +239,7 @@ struct forward_storage_t_impl
 {
     static_assert(
         core::is_ttp_specialization_of_v<std::remove_cvref_t<Variant>, rvariant>,
-        "`forward_storage` will only accept types which are exactly `rvariant`. Maybe you forgot `as_rvariant_t`?"
+        "`forward_storage` only accepts types which are exactly `rvariant`. Maybe you forgot `as_rvariant_t`?"
     );
     using type = decltype(std::declval<Variant>().storage());
 };

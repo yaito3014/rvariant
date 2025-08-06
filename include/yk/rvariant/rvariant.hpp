@@ -293,6 +293,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     // -----------------------------------------------------------
 
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     template<std::size_t I, class... Args>
         requires std::is_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>
     constexpr variant_alternative_t<I, rvariant<Ts...>>&
@@ -305,7 +306,6 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             this->template reset_construct_never_valueless<I>(std::forward<Args>(args)...);
 
         } else {
-        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
             this->raw_visit([&, this]<std::size_t old_i, class T_old_i>(std::in_place_index_t<old_i>, T_old_i& t_old_i)
                 noexcept(std::is_nothrow_constructible_v<T, Args...>)
             {
@@ -372,10 +372,10 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
                     }
                 }
             });
-        YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         }
         return detail::unwrap_recursive(detail::raw_get<I>(this->storage()));
     }
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     // -----------------------------------------------------------
 
@@ -386,13 +386,16 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     template<class Self, class Visitor>
     constexpr auto
-    raw_visit(this Self&& self, Visitor&& vis) noexcept(raw_visit_noexcept_all<Visitor, decltype(std::forward<Self>(self).storage())>)
-        -> raw_visit_return_type<Visitor, decltype(std::forward<Self>(self).storage())>
+    raw_visit(this Self&& self, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
+        noexcept(detail::raw_visit_noexcept_all<Visitor, decltype(std::forward_like<Self>(self.storage_))>)
+        -> detail::raw_visit_result_t<Visitor, decltype(std::forward_like<Self>(self.storage_))>
     {
-        using Storage = decltype(std::forward<Self>(self).storage());
-        constexpr auto const& table = raw_visit_table<Visitor&&, Storage>::value;
-        auto&& f = table[valueless_bias<storage_type::never_valueless>(self.index_)];
-        return std::invoke(f, std::forward<Visitor>(vis), std::forward<Self>(self).storage());
+        constexpr std::size_t N = detail::valueless_bias<rvariant_base::never_valueless>(sizeof...(Ts));
+        return raw_visit_dispatch<detail::visit_strategy<N>>::template apply<N>(
+            detail::valueless_bias<rvariant_base::never_valueless>(self.index_),
+            std::forward<Visitor>(vis),
+            std::forward_like<Self>(self.storage_)
+        );
     }
 
     storage_type storage_{}; // valueless
@@ -427,7 +430,8 @@ template<class... Ts>
 using rvariant_base_t = core::cond_trivial<rvariant_destructor_base_t<Ts...>, Ts...>;
 
 template<class Compare, class... Ts>
-[[nodiscard]] constexpr bool compare_relops(rvariant<Ts...> const& v, rvariant<Ts...> const& w) noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
+[[nodiscard]] constexpr bool compare_relops(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
 {
     return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& alt)
         noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
@@ -493,6 +497,7 @@ public:
         : base_type(std::in_place_index<core::aggregate_initialize_resolution_index<T, Ts...>>, std::forward<T>(t))
     {}
 
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     // Generic assignment operator
     // <https://eel.is/c++draft/variant.assign#lib:operator=,variant__>
     template<class T>
@@ -506,7 +511,6 @@ public:
         constexpr std::size_t j = core::aggregate_initialize_resolution_index<T, Ts...>;
         static_assert(j != std::variant_npos);
 
-    YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
         this->raw_visit([this, &t]<std::size_t i, class Ti>(std::in_place_index_t<i>, [[maybe_unused]] Ti& ti)
             noexcept(detail::variant_nothrow_assignable<Tj, T>::value)
         {
@@ -534,8 +538,8 @@ public:
             }
         });
         return *this;
-    YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     }
+YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     // --------------------------------------
 
@@ -991,12 +995,13 @@ public:
     template<class Variant, class T>
     friend constexpr std::size_t detail::valueless_unbias(T) noexcept;
 
-    template<class Variant, class Visitor>
-    friend constexpr detail::raw_visit_return_type<Visitor, detail::forward_storage_t<Variant>>
-    detail::raw_visit(Variant&&, Visitor&&) noexcept(detail::raw_visit_noexcept_all<Visitor, detail::forward_storage_t<Variant>>);  // NOLINT(clang-diagnostic-microsoft-exception-spec)
-
     template<class R, class V, std::size_t... n>
     friend struct detail::visit_impl;
+
+    template<class Variant, class Visitor>
+    friend constexpr detail::raw_visit_result_t<Visitor, detail::forward_storage_t<Variant>>
+    detail::raw_visit(Variant&&, Visitor&&)
+        noexcept(detail::raw_visit_noexcept_all<Visitor, detail::forward_storage_t<Variant>>);
 
 private:
     // hack: reduce compile error by half on unrelated overloads

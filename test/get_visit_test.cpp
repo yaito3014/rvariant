@@ -169,7 +169,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage&>);
@@ -182,9 +182,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double&) noexcept(false) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage&>);
+        STATIC_REQUIRE(!raw_visit_noexcept_all<bool, Visitor const&, Storage&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage&>);
@@ -200,7 +200,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage const&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage const&>);
@@ -215,7 +215,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage const&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage const&>);
@@ -231,7 +231,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage&&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage&&>);
@@ -246,7 +246,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage&&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage&&>);
@@ -262,7 +262,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage const&&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage const&&>);
@@ -277,7 +277,7 @@ TEST_CASE("raw_visit", "[detail]")
         using Visitor = decltype(vis);
         STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage const&&>);
 
-        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage const&&>);
