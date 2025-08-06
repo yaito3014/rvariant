@@ -59,9 +59,9 @@ template<std::size_t I, class T, class... Ts>
 struct pack_indexing<I, T, Ts...> : pack_indexing<I - 1, Ts...> {};
 
 #if __cpp_pack_indexing >= 202311L
-# define YK_CORE_PACK_INDEXING(I, Ts) Ts[I]
+# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) Ts_ellipsis[I]
 #else
-# define YK_CORE_PACK_INDEXING(I, Ts) ::yk::core::pack_indexing_t<I, Ts>
+# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) ::yk::core::pack_indexing_t<I, Ts_ellipsis>
 #endif
 
 template<std::size_t I, class T>
