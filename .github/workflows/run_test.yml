@@ -1,0 +1,145 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - '.github/workflows/run_test.yml'
+              - 'include/**/*'
+              - 'test/**/*'
+
+  build:
+    needs: changes
+    runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
+    if: ${{ needs.changes.outputs.build == 'true' }}
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os:
+          - name: ubuntu
+            version: 24.04
+          - name: windows
+            version: 2022
+        build_type: [Release, Debug]
+        cpp_version: [23, 26]
+        compiler:
+          - name: GCC
+            version: 14
+            executable: g++-14
+          - name: Clang
+            version: 19
+            executable: clang++-19
+            cxxflags: -stdlib=libc++
+          - name: Clang
+            version: 20
+            executable: clang++-20
+            cxxflags: -stdlib=libc++
+          - name: MSVC
+            version: v142
+            executable: cl
+        exclude:
+          - os:
+              name: windows
+            compiler:
+              name: GCC
+          - os:
+              name: windows
+            compiler:
+              name: Clang
+          - os:
+              name: ubuntu
+            compiler:
+              name: MSVC
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize Ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: |
+          sudo echo "set man-db/auto-update false" | sudo debconf-communicate
+          sudo dpkg-reconfigure man-db
+
+      - name: Setup Clang
+        if: matrix.compiler.name == 'Clang'
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x ./llvm.sh
+          sudo ./llvm.sh ${{ matrix.compiler.version }} all
+
+      - name: Setup GCC
+        if: matrix.compiler.name == 'GCC'
+        run: sudo apt-get update && sudo apt-get install -y g++-${{ matrix.compiler.version }}
+
+      - name: Configure
+        run: >
+          cmake -B ${{ github.workspace }}/build
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          -S ${{ github.workspace }}
+
+      - name: Build (Ubuntu)
+        if: matrix.os.name == 'ubuntu'
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test 2>&1 | tee -a compilation.log
+
+      - name: Build (Windows)
+        if: matrix.os.name == 'windows'
+        run: |
+          cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test 2>&1 | tee -a compilation.log
+
+      - name: Test (Ubuntu)
+        if: matrix.os.name == 'ubuntu'
+        working-directory: ${{ github.workspace }}/build/test
+        run: ./yk_rvariant_test
+
+      - name: Test (Windows)
+        if: matrix.os.name == 'windows'
+        working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
+        run: ./yk_rvariant_test
+      - uses: qoomon/actions--context@v4
+        id: context
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.os.name == 'ubuntu'
+        with:
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_0_log
+          path: compilation*.log
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.os.name == 'windows'
+        with:
+          name: compilation_${{ github.run_id }}_${{ steps.context.outputs.job_id }}_0_log
+          path: compilation*.log
+
+  run-notifier:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/download-artifact@v4
+      - uses: yaito3014/cpp-warning-notifier@v0.4.13
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_ID: ${{ vars.APP_ID }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          CLIENT_ID: ${{ vars.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}

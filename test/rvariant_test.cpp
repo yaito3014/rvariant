@@ -5,6 +5,9 @@
 
 #include "rvariant_test.hpp"
 
+#include "yk/core/type_traits.hpp"
+#include "yk/core/hash.hpp"
+
 #include "yk/rvariant/recursive_wrapper.hpp"
 #include "yk/rvariant/rvariant.hpp"
 #include "yk/rvariant/pack.hpp"

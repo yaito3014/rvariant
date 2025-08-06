@@ -15,6 +15,7 @@
 
 #include <yk/core/type_traits.hpp>
 #include <yk/core/cond_trivial.hpp>
+#include <yk/core/hash.hpp>
 
 #include <yk/hash.hpp>
 
