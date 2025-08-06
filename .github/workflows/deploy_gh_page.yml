@@ -19,6 +19,10 @@ jobs:
     needs: upload
     if: github.event_name == 'pull_request'
 
+    permissions:
+      pages: write
+      id-token: write
+
     environment:
       name: github-pages-${{ github.event.pull_request.id }}
       url: ${{ steps.deployment.outputs.page_url }}/${{ github.event.pull_request.id }}
@@ -31,6 +35,10 @@ jobs:
   deploy:
     needs: upload
     if: github.event_name == 'push'
+
+    permissions:
+      pages: write
+      id-token: write
 
     environment:
       name: github-pages
