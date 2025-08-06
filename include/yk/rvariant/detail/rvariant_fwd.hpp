@@ -7,6 +7,15 @@
 
 #include <cstddef>
 
+#if !defined(YK_RVARIANT_VISIT_STRENGTHEN)
+# define YK_RVARIANT_VISIT_STRENGTHEN 1
+#endif
+
+#if YK_RVARIANT_VISIT_STRENGTHEN
+# define YK_RVARIANT_VISIT_NOEXCEPT(...) noexcept(__VA_ARGS__)
+#else
+# define YK_RVARIANT_VISIT_NOEXCEPT(...)
+#endif
 
 namespace yk {
 

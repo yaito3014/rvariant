@@ -36,7 +36,10 @@ inline constexpr bool is_nttp_specialization_of_v = is_nttp_specialization_of<T,
 
 
 template<class... Ts>
-struct type_list {};
+struct type_list
+{
+    static constexpr std::size_t size = sizeof...(Ts);
+};
 
 
 template<std::size_t I, class... Ts>
@@ -50,6 +53,33 @@ struct pack_indexing<0, T, Ts...> { using type = T; };
 
 template<std::size_t I, class T, class... Ts>
 struct pack_indexing<I, T, Ts...> : pack_indexing<I - 1, Ts...> {};
+
+#if __cpp_pack_indexing >= 202311L
+# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) Ts_ellipsis[I]
+#else
+# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) ::yk::core::pack_indexing_t<I, Ts_ellipsis>
+#endif
+
+template<std::size_t I, class T>
+struct at_c;
+
+template<std::size_t I, template<class...> class TT, class... Ts>
+struct at_c<I, TT<Ts...>>
+{
+#if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wc++26-extensions"
+#endif
+
+    using type = YK_CORE_PACK_INDEXING(I, Ts...);
+
+#if defined(__clang__)
+# pragma clang diagnostic pop
+#endif
+};
+
+template<std::size_t I, class T>
+using at_c_t = typename at_c<I, T>::type;
 
 
 template<std::size_t I, auto... Ns>

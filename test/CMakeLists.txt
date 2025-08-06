@@ -14,9 +14,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-# Don't remove this; required for ABI compatibility
-target_compile_features(Catch2 PUBLIC cxx_std_23)
 set_target_properties(Catch2 PROPERTIES CXX_EXTENSIONS OFF)
+target_link_libraries(Catch2 PUBLIC yk_rvariant_cxx_common)
+target_compile_definitions(Catch2 PUBLIC DO_NOT_USE_WMAIN)
+
+set_target_properties(Catch2WithMain PROPERTIES CXX_EXTENSIONS OFF)
+target_link_libraries(Catch2WithMain PUBLIC yk_rvariant_cxx_common)
 
 # ---------------------------------------
 
@@ -39,48 +42,97 @@ add_executable(
     io_test.cpp
 )
 
-target_sources(yk_rvariant_test PRIVATE FILE_SET HEADERS FILES rvariant_test.hpp)
+target_sources(
+    yk_rvariant_test
+    PRIVATE FILE_SET HEADERS FILES
+        rvariant_test.hpp
+)
 
-target_compile_features(yk_rvariant_test PRIVATE cxx_std_23)
-set_target_properties(yk_rvariant_test PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(
+    yk_rvariant_test
+    PROPERTIES CXX_EXTENSIONS OFF
+)
 
 if(MSVC)
     target_compile_options(
         Catch2
-            PUBLIC /fsanitize=address
-            PRIVATE /MP /analyze-
+        PUBLIC
+            /wd5072 # ASan intentionally enabled on Release build
+            /fsanitize=address
+        PRIVATE
+            /analyze-
     )
     target_link_options(
         Catch2
-            PUBLIC /INCREMENTAL:NO # required for ASan
-    )
-
-    target_compile_definitions(
-        yk_rvariant_test
-            PUBLIC UNICODE _UNICODE
+        PUBLIC
+            /ignore:4302 # ASan intentionally enabled on Release build
+            /INCREMENTAL:NO # required for ASan
     )
 
     target_compile_options(
         yk_rvariant_test
-            PUBLIC
-                /MP /utf-8 /W4 /analyze /analyze:external-
+        PUBLIC
+            /W4 /analyze /analyze:external-
+            /fsanitize=address
     )
 else()
     target_compile_options(
         yk_rvariant_test
-            PUBLIC
-                -Wall -Wextra -pedantic -fsanitize=undefined,address
+        PUBLIC
+            -fsanitize=undefined,address
     )
     target_link_options(
         yk_rvariant_test
-            PUBLIC
-                -fsanitize=undefined,address
+        PUBLIC
+            -fsanitize=undefined,address
     )
 endif()
 
 target_link_libraries(
     yk_rvariant_test
-    PRIVATE yk::rvariant Catch2::Catch2WithMain
+    PRIVATE yk::rvariant Catch2::Catch2WithMain yk_rvariant_cxx_common
 )
 
 add_test(NAME yk_rvariant_test COMMAND yk_rvariant_test)
+
+# ------------------------------------------------
+# benchmark
+
+add_library(
+    yk_rvariant_benchmark_support
+    SHARED benchmark_support.cpp
+)
+target_sources(
+    yk_rvariant_benchmark_support
+    PRIVATE FILE_SET HEADERS FILES
+        benchmark_support.hpp
+)
+
+if(MSVC)
+    target_compile_options(
+        yk_rvariant_benchmark_support
+        PUBLIC /W4 /analyze /analyze:external-
+    )
+endif()
+
+set_target_properties(
+    yk_rvariant_benchmark_support
+    PROPERTIES CXX_EXTENSIONS OFF
+)
+target_link_libraries(
+    yk_rvariant_benchmark_support
+    PUBLIC yk_rvariant_cxx_common
+)
+
+add_executable(
+    yk_rvariant_benchmark
+    benchmark.cpp
+)
+set_target_properties(
+    yk_rvariant_benchmark
+    PROPERTIES CXX_EXTENSIONS OFF
+)
+target_link_libraries(
+    yk_rvariant_benchmark
+    PUBLIC yk_rvariant_benchmark_support yk::rvariant yk_rvariant_cxx_common
+)

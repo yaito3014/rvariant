@@ -18,6 +18,33 @@
 
 namespace unit_test {
 
+namespace {
+
+template<std::size_t I>
+struct Index
+{
+    constexpr ~Index() noexcept  // NOLINT(modernize-use-equals-default)
+    {
+        // non-trivial
+    }
+
+    int value = I * 2;
+};
+
+template<std::size_t Size, class Seq = std::make_index_sequence<Size>>
+struct many_V_impl;
+
+template<std::size_t Size, std::size_t... Is>
+struct many_V_impl<Size, std::index_sequence<Is...>>
+{
+    using type = yk::rvariant<Index<Is>...>;
+};
+
+template<std::size_t Size>
+using many_V_t = typename many_V_impl<Size>::type;
+
+} // anonymous
+
 TEST_CASE("raw_get", "[detail]")
 {
     using yk::detail::raw_get;
@@ -27,6 +54,60 @@ TEST_CASE("raw_get", "[detail]")
     STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage const&>())), int const&>);
     STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage&&>())), int&&>);
     STATIC_REQUIRE(std::is_same_v<decltype(raw_get<0>(std::declval<Storage const&&>())), int const&&>);
+
+    {
+        using V = many_V_t<1>;
+        constexpr V v(std::in_place_index<0>);
+        STATIC_CHECK(yk::get<0>(v).value == 0 * 2);
+    }
+
+    {
+        using V = many_V_t<33>;
+        STATIC_CHECK(yk::get< 0>(V(std::in_place_index< 0>)).value ==  0 * 2);
+        STATIC_CHECK(yk::get< 1>(V(std::in_place_index< 1>)).value ==  1 * 2);
+        STATIC_CHECK(yk::get< 2>(V(std::in_place_index< 2>)).value ==  2 * 2);
+        STATIC_CHECK(yk::get< 3>(V(std::in_place_index< 3>)).value ==  3 * 2);
+        STATIC_CHECK(yk::get< 4>(V(std::in_place_index< 4>)).value ==  4 * 2);
+        STATIC_CHECK(yk::get< 5>(V(std::in_place_index< 5>)).value ==  5 * 2);
+        STATIC_CHECK(yk::get< 6>(V(std::in_place_index< 6>)).value ==  6 * 2);
+        STATIC_CHECK(yk::get< 7>(V(std::in_place_index< 7>)).value ==  7 * 2);
+        STATIC_CHECK(yk::get< 8>(V(std::in_place_index< 8>)).value ==  8 * 2);
+        STATIC_CHECK(yk::get< 9>(V(std::in_place_index< 9>)).value ==  9 * 2);
+
+        STATIC_CHECK(yk::get<10>(V(std::in_place_index<10>)).value == 10 * 2);
+        STATIC_CHECK(yk::get<11>(V(std::in_place_index<11>)).value == 11 * 2);
+        STATIC_CHECK(yk::get<12>(V(std::in_place_index<12>)).value == 12 * 2);
+        STATIC_CHECK(yk::get<13>(V(std::in_place_index<13>)).value == 13 * 2);
+        STATIC_CHECK(yk::get<14>(V(std::in_place_index<14>)).value == 14 * 2);
+        STATIC_CHECK(yk::get<15>(V(std::in_place_index<15>)).value == 15 * 2);
+        STATIC_CHECK(yk::get<16>(V(std::in_place_index<16>)).value == 16 * 2);
+        STATIC_CHECK(yk::get<17>(V(std::in_place_index<17>)).value == 17 * 2);
+        STATIC_CHECK(yk::get<18>(V(std::in_place_index<18>)).value == 18 * 2);
+        STATIC_CHECK(yk::get<19>(V(std::in_place_index<19>)).value == 19 * 2);
+
+        STATIC_CHECK(yk::get<20>(V(std::in_place_index<20>)).value == 20 * 2);
+        STATIC_CHECK(yk::get<21>(V(std::in_place_index<21>)).value == 21 * 2);
+        STATIC_CHECK(yk::get<22>(V(std::in_place_index<22>)).value == 22 * 2);
+        STATIC_CHECK(yk::get<23>(V(std::in_place_index<23>)).value == 23 * 2);
+        STATIC_CHECK(yk::get<24>(V(std::in_place_index<24>)).value == 24 * 2);
+        STATIC_CHECK(yk::get<25>(V(std::in_place_index<25>)).value == 25 * 2);
+        STATIC_CHECK(yk::get<26>(V(std::in_place_index<26>)).value == 26 * 2);
+        STATIC_CHECK(yk::get<27>(V(std::in_place_index<27>)).value == 27 * 2);
+        STATIC_CHECK(yk::get<28>(V(std::in_place_index<28>)).value == 28 * 2);
+        STATIC_CHECK(yk::get<29>(V(std::in_place_index<29>)).value == 29 * 2);
+
+        STATIC_CHECK(yk::get<30>(V(std::in_place_index<30>)).value == 30 * 2);
+        STATIC_CHECK(yk::get<31>(V(std::in_place_index<31>)).value == 31 * 2);
+        STATIC_CHECK(yk::get<32>(V(std::in_place_index<32>)).value == 32 * 2);
+    }
+    {
+        using V = many_V_t<66>;
+
+        STATIC_CHECK(yk::get<62>(V(std::in_place_index<62>)).value == 62 * 2);
+        STATIC_CHECK(yk::get<63>(V(std::in_place_index<63>)).value == 63 * 2);
+        STATIC_CHECK(yk::get<64>(V(std::in_place_index<64>)).value == 64 * 2);
+        STATIC_CHECK(yk::get<65>(V(std::in_place_index<65>)).value == 65 * 2);
+    }
 }
 
 // Required for suppressing std::move(const&)
@@ -152,8 +233,8 @@ constexpr bool is_noexcept_invocable_r_v = std::conditional_t<
 TEST_CASE("raw_visit", "[detail]")
 {
     using yk::detail::raw_visit_dispatch;
-    using yk::detail::raw_visit_dispatch_table;
-    using yk::detail::raw_visit_noexcept;
+    using yk::detail::raw_visit_table;
+    using yk::detail::raw_visit_noexcept_all;
     using Storage = yk::detail::make_variadic_union_t<int, double>;
     using yk::detail::valueless_t;
 
@@ -167,9 +248,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double&) noexcept(true) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage&>);
+        STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage&>);
@@ -182,9 +263,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double&) noexcept(false) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage&>);
+        STATIC_REQUIRE(!raw_visit_noexcept_all<bool, Visitor const&, Storage&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage&>);
@@ -198,9 +279,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double const&) noexcept(true) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage const&>);
+        STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage const&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage const&>);
@@ -213,9 +294,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double const&) noexcept(false) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage const&>);
+        STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage const&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage const&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage const&>);
@@ -229,9 +310,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double&&) noexcept(true) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage&&>);
+        STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage&&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage&&>);
@@ -244,9 +325,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double&&) noexcept(false) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage&&>);
+        STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage&&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage&&>);
@@ -260,9 +341,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double const&&) noexcept(true) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(raw_visit_noexcept<Visitor const&, Storage const&&>);
+        STATIC_REQUIRE(raw_visit_noexcept_all<Visitor const&, Storage const&&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[0 + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<true, bool, decltype(table[1 + 1]), Visitor const&, Storage const&&>);
@@ -275,9 +356,9 @@ TEST_CASE("raw_visit", "[detail]")
             [](std::in_place_index_t<1>, double const&&) noexcept(false) { return true; },
         };
         using Visitor = decltype(vis);
-        STATIC_REQUIRE(!raw_visit_noexcept<Visitor const&, Storage const&&>);
+        STATIC_REQUIRE(!raw_visit_noexcept_all<Visitor const&, Storage const&&>);
 
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor const&, Storage const&&>::value;
+        constexpr auto const& table = raw_visit_table<Visitor const&, Storage const&&>::table;
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[std::variant_npos + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[0 + 1]), Visitor const&, Storage const&&>);
         STATIC_REQUIRE(is_noexcept_invocable_r_v<false, bool, decltype(table[1 + 1]), Visitor const&, Storage const&&>);

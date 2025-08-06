@@ -30,13 +30,16 @@
 
 namespace unit_test {
 
+template<class Variant>
+constexpr bool is_never_valueless = ::yk::detail::valueless_bias<Variant>(0) == 0;
+
 TEST_CASE("make_valueless", "[detail]")
 {
     yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>(42);
     CHECK(valueless.valueless_by_exception());
     CHECK(valueless.index() == std::variant_npos);
     // ReSharper disable once CppStaticAssertFailure
-    STATIC_CHECK(!std::remove_cvref_t<decltype(valueless)>::never_valueless);
+    STATIC_CHECK(!is_never_valueless<decltype(valueless)>);
 }
 
 TEST_CASE("never_valueless", "[detail]")
@@ -51,7 +54,7 @@ TEST_CASE("never_valueless", "[detail]")
         BadType& operator=(BadType&&) = default;
     };
     STATIC_REQUIRE(!yk::detail::is_never_valueless_v<BadType>);
-    STATIC_REQUIRE(!yk::rvariant<BadType>::never_valueless);
+    STATIC_REQUIRE(!is_never_valueless<yk::rvariant<BadType>>);
 
     // Test many minimal trait combinations for variant to be never_valueless.
     {
@@ -67,10 +70,12 @@ TEST_CASE("never_valueless", "[detail]")
         static_assert(!std::is_trivially_copy_assignable_v<S>);
         static_assert( std::is_trivially_move_constructible_v<S>);
         static_assert( std::is_trivially_move_assignable_v<S>);
+        static_assert( std::is_standard_layout_v<S>);
 
         STATIC_REQUIRE(yk::detail::is_never_valueless_v<S>);
-        STATIC_REQUIRE(yk::rvariant<S>::never_valueless);
-        STATIC_REQUIRE(!yk::rvariant<S, BadType>::never_valueless);
+        STATIC_REQUIRE(is_never_valueless<yk::rvariant<S>>);
+        STATIC_REQUIRE( std::is_standard_layout_v<yk::rvariant<S>>);
+        STATIC_REQUIRE(!is_never_valueless<yk::rvariant<S, BadType>>);
     }
     {
         // strange type, but...
@@ -88,8 +93,8 @@ TEST_CASE("never_valueless", "[detail]")
         static_assert(!std::is_trivially_move_assignable_v<S>);
 
         STATIC_REQUIRE(yk::detail::is_never_valueless_v<S>);
-        STATIC_REQUIRE(yk::rvariant<S>::never_valueless);
-        STATIC_REQUIRE(!yk::rvariant<S, BadType>::never_valueless);
+        STATIC_REQUIRE(is_never_valueless<yk::rvariant<S>>);
+        STATIC_REQUIRE(!is_never_valueless<yk::rvariant<S, BadType>>);
     }
     {
         // strange type, but...
@@ -107,9 +112,9 @@ TEST_CASE("never_valueless", "[detail]")
         static_assert(!std::is_trivially_move_assignable_v<S>);
 
         STATIC_REQUIRE(yk::detail::is_never_valueless_v<S>);
-        STATIC_REQUIRE(yk::rvariant<S>::never_valueless);
+        STATIC_REQUIRE(is_never_valueless<yk::rvariant<S>>);
         STATIC_REQUIRE(!yk::detail::is_never_valueless_v<yk::rvariant<S>>); // wow https://eel.is/c++draft/variant.assign#5
-        STATIC_REQUIRE(!yk::rvariant<S, BadType>::never_valueless);
+        STATIC_REQUIRE(!is_never_valueless<yk::rvariant<S, BadType>>);
     }
 }
 
@@ -142,6 +147,7 @@ TEST_CASE("storage", "[detail]")
             STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
 
             STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+            STATIC_REQUIRE(std::is_standard_layout_v<VD>);
 
             STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
             STATIC_REQUIRE(std::is_constructible_v<VD, std::in_place_index_t<0>, T>);
@@ -158,6 +164,7 @@ TEST_CASE("storage", "[detail]")
             STATIC_REQUIRE(std::is_trivially_move_assignable_v<Base>);
             STATIC_REQUIRE(std::is_trivially_destructible_v<Base>);
             STATIC_REQUIRE(std::is_trivially_copyable_v<Base>);
+            STATIC_REQUIRE(std::is_standard_layout_v<Base>);
         }
         {
             STATIC_REQUIRE(std::is_trivially_copy_constructible_v<V>);
@@ -166,7 +173,34 @@ TEST_CASE("storage", "[detail]")
             STATIC_REQUIRE(std::is_trivially_move_assignable_v<V>);
             STATIC_REQUIRE(std::is_trivially_destructible_v<V>);
             STATIC_REQUIRE(std::is_trivially_copyable_v<V>);
+            STATIC_REQUIRE(std::is_standard_layout_v<V>);
         }
+    }
+
+    {
+        struct S
+        {
+        public:
+            int i;
+            int j;
+        };
+        static_assert(std::is_standard_layout_v<S>);
+        STATIC_REQUIRE(std::is_standard_layout_v<yk::detail::make_variadic_union_t<S>>);
+        STATIC_REQUIRE(std::is_standard_layout_v<yk::rvariant<S>>);
+    }
+    {
+        struct S
+        {
+        public:
+            int i;
+        private:
+            [[maybe_unused]] int j{};
+        };
+        static_assert(!std::is_standard_layout_v<S>);
+        // ReSharper disable once CppStaticAssertFailure
+        STATIC_REQUIRE(!std::is_standard_layout_v<yk::detail::make_variadic_union_t<S>>);
+        // ReSharper disable once CppStaticAssertFailure
+        STATIC_REQUIRE(!std::is_standard_layout_v<yk::rvariant<S>>);
     }
 
     {
@@ -200,6 +234,7 @@ TEST_CASE("storage", "[detail]")
             STATIC_REQUIRE(std::is_trivially_move_assignable_v<Base>);
             STATIC_REQUIRE(std::is_trivially_destructible_v<Base>);
             STATIC_REQUIRE(!std::is_trivially_copyable_v<Base>);
+            STATIC_REQUIRE(std::is_standard_layout_v<Base>);
         }
         {
             STATIC_REQUIRE(!std::is_trivially_copy_constructible_v<V>);
@@ -208,6 +243,7 @@ TEST_CASE("storage", "[detail]")
             STATIC_REQUIRE(std::is_trivially_move_assignable_v<V>);
             STATIC_REQUIRE(std::is_trivially_destructible_v<V>);
             STATIC_REQUIRE(!std::is_trivially_copyable_v<V>);
+            STATIC_REQUIRE(std::is_standard_layout_v<V>);
         }
     }
 
@@ -228,6 +264,7 @@ TEST_CASE("storage", "[detail]")
         STATIC_REQUIRE(std::is_trivially_move_assignable_v<S>);
         STATIC_REQUIRE(std::is_trivially_destructible_v<S>);
         STATIC_REQUIRE(!std::is_trivially_copyable_v<S>);
+        STATIC_REQUIRE(std::is_standard_layout_v<S>);
 
         using V = yk::rvariant<S>;
         STATIC_REQUIRE( std::is_copy_constructible_v<V>);
@@ -240,6 +277,7 @@ TEST_CASE("storage", "[detail]")
         STATIC_REQUIRE(std::is_trivially_move_assignable_v<V>);
         STATIC_REQUIRE(std::is_trivially_destructible_v<V>);
         STATIC_REQUIRE(!std::is_trivially_copyable_v<V>);
+        STATIC_REQUIRE(std::is_standard_layout_v<V>);
     }
 
     {
@@ -268,6 +306,7 @@ TEST_CASE("storage", "[detail]")
         STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
 
         STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+        STATIC_REQUIRE(std::is_standard_layout_v<VD>);
 
         STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
         STATIC_REQUIRE( std::is_constructible_v<VD, std::in_place_index_t<0>, S>);
@@ -301,6 +340,7 @@ TEST_CASE("storage", "[detail]")
         STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
 
         STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+        STATIC_REQUIRE(std::is_standard_layout_v<VD>);
 
         // for VD[0] aka `S`
         STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
@@ -341,6 +381,7 @@ TEST_CASE("storage", "[detail]")
         STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
 
         STATIC_REQUIRE(std::is_trivially_copyable_v<VD>);
+        STATIC_REQUIRE(std::is_standard_layout_v<VD>);
 
         // for VD[0] aka `int`
         STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
@@ -375,6 +416,7 @@ TEST_CASE("storage", "[detail]")
 
         STATIC_REQUIRE(!std::is_trivially_destructible_v<VD>);
         STATIC_REQUIRE(!std::is_trivially_copyable_v<VD>);
+        STATIC_REQUIRE(std::is_standard_layout_v<VD>);
 
         STATIC_REQUIRE(std::is_nothrow_constructible_v<VD, std::in_place_index_t<0>>); // default construct
         STATIC_REQUIRE(std::is_nothrow_destructible_v<VD>);
@@ -1149,14 +1191,14 @@ TEST_CASE("emplace")
     STATIC_REQUIRE(!yk::detail::is_never_valueless_v<BigType>);
 
     // non type-changing
-    STATIC_REQUIRE(!yk::rvariant<BigType>::never_valueless);
+    STATIC_REQUIRE(!is_never_valueless<yk::rvariant<BigType>>);
     {
         yk::rvariant<BigType> a;
         REQUIRE_THROWS_AS(a.emplace<0>(BigType::throwing), BigType::exception);
         CHECK(a.valueless_by_exception() == true);
     }
     // type-changing
-    STATIC_REQUIRE(!yk::rvariant<int, BigType>::never_valueless);
+    STATIC_REQUIRE(!is_never_valueless<yk::rvariant<int, BigType>>);
     {
         yk::rvariant<int, BigType> a;
         REQUIRE_THROWS_AS(a.emplace<1>(BigType::throwing), BigType::exception);
@@ -1164,7 +1206,7 @@ TEST_CASE("emplace")
     }
 
     // non type-changing
-    STATIC_REQUIRE(yk::rvariant<Non_Thrower>::never_valueless);
+    STATIC_REQUIRE(is_never_valueless<yk::rvariant<Non_Thrower>>);
     {
         yk::rvariant<Non_Thrower> a;
         YK_REQUIRE_STATIC_NOTHROW(a.emplace<0>(Non_Thrower{}));
@@ -1188,7 +1230,7 @@ TEST_CASE("emplace")
 
     // type-changing
     STATIC_REQUIRE(std::is_nothrow_move_constructible_v<Non_Thrower>);
-    STATIC_REQUIRE(yk::rvariant<int, Non_Thrower>::never_valueless);
+    STATIC_REQUIRE(is_never_valueless<yk::rvariant<int, Non_Thrower>>);
     {
         yk::rvariant<int, Non_Thrower> a;
         YK_REQUIRE_STATIC_NOTHROW(a.emplace<1>(Non_Thrower{}));
@@ -1212,7 +1254,7 @@ TEST_CASE("emplace")
 
     // non type-changing
     STATIC_REQUIRE(!std::is_nothrow_move_constructible_v<MC_Thrower>);
-    STATIC_REQUIRE(!yk::rvariant<MC_Thrower>::never_valueless);
+    STATIC_REQUIRE(!is_never_valueless<yk::rvariant<MC_Thrower>>);
     {
         yk::rvariant<MC_Thrower> a;
         REQUIRE_THROWS_AS(a.emplace<0>(MC_Thrower{}), MC_Thrower::exception);
@@ -1236,7 +1278,7 @@ TEST_CASE("emplace")
 
     // type-changing
     STATIC_REQUIRE(!std::is_nothrow_move_constructible_v<MC_Thrower>);
-    STATIC_REQUIRE(!yk::rvariant<int, MC_Thrower>::never_valueless);
+    STATIC_REQUIRE(!is_never_valueless<yk::rvariant<int, MC_Thrower>>);
     {
         yk::rvariant<int, MC_Thrower> a;
         REQUIRE_THROWS_AS(a.emplace<1>(MC_Thrower{}), MC_Thrower::exception);
@@ -1259,7 +1301,7 @@ TEST_CASE("emplace")
     }
 
     STATIC_REQUIRE(yk::detail::is_never_valueless_v<yk::recursive_wrapper<int>>);
-    STATIC_REQUIRE(yk::rvariant<yk::recursive_wrapper<int>>::never_valueless);
+    STATIC_REQUIRE(is_never_valueless<yk::rvariant<yk::recursive_wrapper<int>>>);
 
     // ReSharper restore CppStaticAssertFailure
 }
@@ -1659,7 +1701,7 @@ TEST_CASE("rvariant.hash")
         CHECK(do_hash(yk::rvariant<int>(42)) == hash_value(yk::rvariant<int>(42)));
     }
     {
-        struct NonExistent;
+        struct NonExistent {};
         STATIC_REQUIRE(!yk::core::is_hash_enabled_v<NonExistent>);
         STATIC_REQUIRE(!yk::core::is_hash_enabled_v<yk::rvariant<NonExistent>>);
     }
