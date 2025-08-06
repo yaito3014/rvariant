@@ -494,27 +494,79 @@ using visit_R_check = visit_R_check_impl<R, Visitor, core::type_list<>, Variants
 
 // --------------------------------------------------
 
-template<class R, class Visitor, class OverloadSeq, class... Storage>
+template<class Storage>
+struct storage_never_valueless
+    : std::bool_constant<std::remove_cvref_t<Storage>::never_valueless>
+{};
+
+template<class OverloadSeq, class Visitor, class... Storage>
+struct multi_visit_noexcept;
+
+template<std::size_t... Is, class Visitor, class... Storage>
+struct multi_visit_noexcept<std::index_sequence<Is...>, Visitor, Storage...>
+{
+private:
+    template<class... Storage_>
+    struct lazy_invoke
+    {
+        using type = std::is_nothrow_invocable<
+            Visitor,
+            unwrap_recursive_t<
+                raw_get_t<valueless_unbias<std::remove_cvref_t<Storage_>::never_valueless>(Is), Storage_>
+            >...
+        >;
+    };
+
+public:
+    static constexpr bool value = std::conditional_t<
+        std::disjunction_v<
+            std::conjunction<
+                std::negation<storage_never_valueless<Storage>>,
+                std::bool_constant<Is == 0>
+            >...
+        >,
+        std::type_identity<std::bool_constant<false>>, // throw std::bad_variant_access{};
+        lazy_invoke<Storage...>
+    >::type::value;
+};
+
+template<class... OverloadSeq, class Visitor, class... Storage>
+struct multi_visit_noexcept<core::type_list<OverloadSeq...>, Visitor, Storage...>
+    : std::conjunction<multi_visit_noexcept<OverloadSeq, Visitor, Storage...>...>
+{};
+
+
+template<class OverloadSeq>
 struct multi_visitor;
 
-template<class R, class Visitor, std::size_t... Is, class... Storage>
-struct multi_visitor<R, Visitor, std::index_sequence<Is...>, Storage...>
+template<std::size_t... Is>
+struct multi_visitor<std::index_sequence<Is...>>
 {
-    static_assert(sizeof...(Is) == sizeof...(Storage));
-
+    template<class R, class Visitor, class... Storage>
     static constexpr R apply([[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<std::index_sequence<Is...>, Visitor, Storage...>::value)
     {
         if constexpr (((!std::remove_cvref_t<Storage>::never_valueless && Is == 0) || ...)) {
             throw std::bad_variant_access{};
+
         } else {
-            return std::invoke_r<R>(
-                std::forward<Visitor>(vis),
-                unwrap_recursive(
-                    raw_get<valueless_unbias<std::remove_cvref_t<Storage>::never_valueless>(Is)>(
-                        std::forward<Storage>(storage)
-                    )
-                )...
+#define YK_MULTI_VISITOR_INVOKE \
+            std::invoke_r<R>( \
+                std::forward<Visitor>(vis), \
+                unwrap_recursive( \
+                    raw_get<valueless_unbias<std::remove_cvref_t<Storage>::never_valueless>(Is)>( \
+                        std::forward<Storage>(storage) \
+                    ) \
+                )... \
+            )
+#if YK_CI
+            static_assert(
+                noexcept(YK_MULTI_VISITOR_INVOKE)
+                == multi_visit_noexcept<std::index_sequence<Is...>, Visitor, Storage...>::value
             );
+#endif
+            return YK_MULTI_VISITOR_INVOKE;
+#undef YK_MULTI_VISITOR_INVOKE
         }
     }
 };
@@ -535,7 +587,7 @@ struct visit_table<
     using function_type = R(*)(Visitor&&, Storage&&...);
 
     static constexpr function_type table[] = {
-        &multi_visitor<R, Visitor, OverloadSeq, Storage...>::apply...
+        &multi_visitor<OverloadSeq>::template apply<R, Visitor, Storage...>...
     };
 };
 
@@ -591,6 +643,100 @@ private:
 
 // --------------------------------------------------
 
+#define YK_VISIT_CASE(n) \
+    case (n): \
+        if constexpr ((n) < OverloadSeq::size) { \
+            return multi_visitor<core::at_c_t<(n), OverloadSeq>>::template apply<R, Visitor, Storage...>( \
+                std::forward<Visitor>(vis), std::forward<Storage>(storage)... \
+            ); \
+        } else std::unreachable(); [[fallthrough]]
+
+#define YK_VISIT_CASES_0(def, ofs) \
+    def(ofs); \
+    def((ofs) + 1); \
+    def((ofs) + 2); \
+    def((ofs) + 3)
+
+#define YK_VISIT_CASES_1(def, ofs) \
+    YK_VISIT_CASES_0(def, ofs); \
+    YK_VISIT_CASES_0(def, (ofs) + 4); \
+    YK_VISIT_CASES_0(def, (ofs) + 8); \
+    YK_VISIT_CASES_0(def, (ofs) + 12)
+
+#define YK_VISIT_CASES_2(def, ofs) \
+    YK_VISIT_CASES_1(def, ofs); \
+    YK_VISIT_CASES_1(def, (ofs) + 16); \
+    YK_VISIT_CASES_1(def, (ofs) + 32); \
+    YK_VISIT_CASES_1(def, (ofs) + 48)
+
+#define YK_VISIT_CASES_3(def, ofs) \
+    YK_VISIT_CASES_2(def, ofs); \
+    YK_VISIT_CASES_2(def, (ofs) + 64); \
+    YK_VISIT_CASES_2(def, (ofs) + 128); \
+    YK_VISIT_CASES_2(def, (ofs) + 192)
+
+template<std::size_t OverloadSeqSize>
+constexpr int visit_strategy =
+    OverloadSeqSize <= 4 ? 0 :
+    OverloadSeqSize <= 16 ? 1 :
+    OverloadSeqSize <= 64 ? 2 :
+    OverloadSeqSize <= 256 ? 3 : -1;
+
+template<int Strategy>
+struct visit_dispatch;
+
+template<>
+struct visit_dispatch<-1>
+{
+    template<class OverloadSeq, class R, class Visitor, class... Storage>
+    [[nodiscard]] static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<OverloadSeq, Visitor, Storage...>::value)
+    {
+        constexpr auto const& table = visit_table<R, Visitor, OverloadSeq, Storage...>::table;
+        auto const& f = table[flat_i];
+        return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Storage>(storage)...);
+    }
+};
+
+#define YK_VISIT_DISPATCH_DEF(strategy) \
+    template<> \
+    struct visit_dispatch<(strategy)> \
+    { \
+        template<class OverloadSeq, class R, class Visitor, class... Storage> \
+        [[nodiscard]] static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage) \
+            YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<OverloadSeq, Visitor, Storage...>::value) \
+        { \
+            static_assert((1uz << ((strategy) * 2uz)) <= OverloadSeq::size && OverloadSeq::size <= (1uz << (((strategy) + 1) * 2uz))); \
+            switch (flat_i) { \
+            YK_VISIT_CASES_ ## strategy (YK_VISIT_CASE, 0); \
+            default: std::unreachable(); \
+            } \
+        } \
+    }
+
+YK_VISIT_DISPATCH_DEF(0);
+YK_VISIT_DISPATCH_DEF(1);
+YK_VISIT_DISPATCH_DEF(2);
+YK_VISIT_DISPATCH_DEF(3);
+
+#undef YK_VISIT_DISPATCH_DEF
+#undef YK_VISIT_CASE
+#undef YK_VISIT_CASES_0
+#undef YK_VISIT_CASES_1
+#undef YK_VISIT_CASES_2
+#undef YK_VISIT_CASES_3
+
+
+template<class... Variants>
+using make_OverloadSeq = core::seq_cartesian_product<
+    std::index_sequence,
+    std::make_index_sequence<
+        detail::valueless_bias<std::remove_cvref_t<detail::as_variant_t<Variants>>::never_valueless>(
+            yk::variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>> // aka `n`
+        )
+    >...
+>;
+
 template<class R, class V, std::size_t... n>
 struct visit_impl;
 
@@ -601,31 +747,22 @@ struct visit_impl<
     n...
 >
 {
-    static_assert(sizeof...(V) == sizeof...(n));
-
-    template<class Visitor, class... Variants>
+    template<class Visitor, class... Variants, class OverloadSeq = make_OverloadSeq<Variants...>>
     static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(
+            visit_dispatch<visit_strategy<OverloadSeq::size>>::template apply<OverloadSeq, R>(
+                0uz, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...
+            )
+        ))
     {
-        using VisitTable = visit_table<
-            R,
-            Visitor,
-            core::seq_cartesian_product< // OverloadSeq
-                std::index_sequence,
-                std::make_index_sequence<
-                    valueless_bias<std::remove_cvref_t<as_variant_t<Variants>>::never_valueless>(n)
-                >...
-            >,
-            forward_storage_t<as_variant_t<Variants>>... // Storage...
-        >;
-
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
             std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...
         >::get(vars.index_...);
 
-        constexpr auto const& table = VisitTable::table;
-        auto const& f = table[flat_i];
-        return std::invoke_r<R>(f, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...);
+        return visit_dispatch<visit_strategy<OverloadSeq::size>>::template apply<OverloadSeq, R>(
+            flat_i, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...
+        );
     }
 };
 
@@ -641,6 +778,13 @@ template<
 >
 detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
 constexpr visit(Visitor&& vis, Variants&&... vars)
+    YK_RVARIANT_VISIT_NOEXCEPT(noexcept(
+        detail::visit_impl<
+            detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>,
+            core::type_list<detail::as_variant_t<Variants>...>,
+            variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...
+        >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...)
+    ))
 {
     using T0R = detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>;
     using Check = detail::visit_check<T0R, Visitor, detail::as_variant_t<Variants>...>;
@@ -669,6 +813,13 @@ template<
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
 constexpr R visit(Visitor&& vis, Variants&&... vars)
+    YK_RVARIANT_VISIT_NOEXCEPT(noexcept(
+        detail::visit_impl<
+            R,
+            core::type_list<detail::as_variant_t<Variants>...>,
+            variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>>...
+        >::apply(std::forward<Visitor>(vis), std::forward<Variants>(vars)...)
+    ))
 {
     using Check = detail::visit_R_check<R, Visitor, detail::as_variant_t<Variants>...>;
     static_assert(

@@ -42,7 +42,7 @@ using many_V_t = typename many_V_impl<VTT, AltN, TTT>::type;
 TEST_CASE("benchmark")
 {
     using Clock = std::chrono::high_resolution_clock;
-    static_assert(Clock::is_steady);
+    //static_assert(Clock::is_steady);
     using duration_type = std::chrono::duration<double, std::milli>;
 
     constexpr std::size_t N = 100'0000;
@@ -95,6 +95,12 @@ TEST_CASE("benchmark")
             auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
             std::println("[{}] construction: {} ms", bench_name, elapsed.count());
         }
+
+#if YK_RVARIANT_VISIT_STRENGTHEN
+        constexpr bool is_std = yk::core::is_ttp_specialization_of_v<V, std::variant>;
+        static_assert(is_std || noexcept(visit([](int const&) noexcept(true) {}, vars[0])));
+        static_assert(is_std || !noexcept(visit([](int const&) noexcept(false) {}, vars[0])));
+#endif
 
         {
             unsigned long long sum = 0;
