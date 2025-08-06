@@ -1,18 +1,18 @@
-name: Deploy
+name: Deploy for PR
 
-on:
-  push:
-    branches:
-      - main
+on: pull_request
 
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: |
+          mkdir -p public/${{ github.event.pull_request.node_id }}
+          cp -r doc/* public/${{ github.event.pull_request.node_id }}/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: doc/
+          path: public/
 
   deploy:
     needs: upload
@@ -23,7 +23,7 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}rvariant.html
+      url: ${{ steps.deployment.outputs.page_url }}${{ github.event.pull_request.node_id }}/rvariant.html
 
     runs-on: ubuntu-latest
     steps:
