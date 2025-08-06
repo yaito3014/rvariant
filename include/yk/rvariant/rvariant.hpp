@@ -904,46 +904,45 @@ public:
         }
     }
 
+private:
+    template<class Self>
+    using like_rvariant_t = std::conditional_t<
+        std::is_rvalue_reference_v<Self&&>,
+        std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            rvariant const,
+            rvariant
+        >&&,
+        std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            rvariant const,
+            rvariant
+        >&
+    >;
+
+public:
     // NOLINTBEGIN(cppcoreguidelines-missing-std-forward)
+    // ReSharper disable CppCStyleCast
 
     // Member `.visit(...)`
     // <https://eel.is/c++draft/variant.visit#lib:visit,variant_>
     template<int = 0, class Self, class Visitor>
     constexpr decltype(auto) visit(this Self&& self, Visitor&& vis)
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self)))
     {
-        using copy_const_V = std::conditional_t<
-            std::is_const_v<std::remove_reference_t<Self>>,
-            rvariant const,
-            rvariant
-        >;
-        using V = std::conditional_t<
-            std::is_rvalue_reference_v<Self&&>,
-            copy_const_V&&,
-            copy_const_V&
-        >;
-        // ReSharper disable once CppCStyleCast
-        return yk::visit(std::forward<Visitor>(vis), (V)self);
+        return yk::visit(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self);
     }
 
     // Member `.visit<R>(...)`
     // <https://eel.is/c++draft/variant.visit#lib:visit,variant__>
     template<class R, class Self, class Visitor>
     constexpr R visit(this Self&& self, Visitor&& vis)
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit<R>(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self)))
     {
-        using copy_const_V = std::conditional_t<
-            std::is_const_v<std::remove_reference_t<Self>>,
-            rvariant const,
-            rvariant
-        >;
-        using V = std::conditional_t<
-            std::is_rvalue_reference_v<Self&&>,
-            copy_const_V&&,
-            copy_const_V&
-        >;
-        // ReSharper disable once CppCStyleCast
-        return yk::visit<R>(std::forward<Visitor>(vis), (V)self);
+        return yk::visit<R>(std::forward<Visitor>(vis), (like_rvariant_t<Self>)self);
     }
 
+    // ReSharper restore CppCStyleCast
     // NOLINTEND(cppcoreguidelines-missing-std-forward)
 
     template<class Compare, class... Ts_>
