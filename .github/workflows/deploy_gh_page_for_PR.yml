@@ -3,11 +3,11 @@ name: Deploy for PR
 on: pull_request
 
 jobs:
-  upload:
+  build:
     runs-on: ubuntu-latest
+    container: asciidoctor/docker-asciidoctor:latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker://asciidoctor/docker-asciidoctor:latest
       - run: |
           asciidoctor -D public/pull/${{ github.event.number }} rvariant.adoc
       - uses: actions/upload-pages-artifact@v3
@@ -15,7 +15,7 @@ jobs:
           path: public/
 
   deploy:
-    needs: upload
+    needs: build
 
     permissions:
       pages: write
