@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
+          apk update && apk add tar
           asciidoctor -D public/${{ github.ref_name }} doc/rvariant.adoc
       - uses: actions/upload-pages-artifact@v3
         with:
