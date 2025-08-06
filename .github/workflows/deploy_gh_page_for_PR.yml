@@ -1,0 +1,33 @@
+name: Deploy for PR
+
+on: pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: asciidoctor/docker-asciidoctor:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build AsciiDoc
+        run: |
+          apk update && apk add tar
+          asciidoctor -D public/pull/${{ github.event.number }} doc/rvariant.adoc
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public/
+
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages-${{ github.event.number }}
+      url: ${{ steps.deployment.outputs.page_url }}pull/${{ github.event.number }}/rvariant.html
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

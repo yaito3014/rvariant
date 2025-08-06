@@ -8,3 +8,7 @@ build/
 # Node
 node_modules/
 package*.json
+
+# Doc
+doc/*.html
+!doc/*docinfo*.html
