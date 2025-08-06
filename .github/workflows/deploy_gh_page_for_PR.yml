@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: docker://asciidoctor/docker-asciidoctor:latest
       - run: |
-          mkdir -p public/pull/${{ github.event.number }}
-          cp -r doc/* public/pull/${{ github.event.number }}/
+          asciidoctor -D public/pull/${{ github.event.number }} rvariant.adoc
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public/

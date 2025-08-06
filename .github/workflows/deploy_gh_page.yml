@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: docker://asciidoctor/docker-asciidoctor:latest
       - run: |
-          mkdir -p public/${{ github.ref_name }}
-          cp -r doc/* public/${{ github.ref_name }}/
+          asciidoctor -D public/${{ github.ref_name }} rvariant.adoc
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public/
