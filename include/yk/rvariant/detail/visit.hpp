@@ -125,15 +125,35 @@ struct raw_visit_table;
 template<class Visitor, class Storage, std::size_t... Is>
 struct raw_visit_table<Visitor, Storage, std::index_sequence<Is...>>
 {
-    static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
-    static_assert(std::is_reference_v<Storage>, "Storage must be one of: &, const&, &&, const&&");
-
     static constexpr raw_visit_function_ptr<Visitor, Storage> table[] = {
         &do_raw_visit<Is, Visitor, Storage>...
     };
 };
 
 // --------------------------------------------
+
+// When `raw_visit` is well-inlined,
+// GCC yields false-positive "-Wmaybe-uninitialized" on
+// the inactive `case` branch regardless of the actual
+// value of `(n)`.
+#ifdef NDEBUG // Release build
+#if defined(__GNUC__) && !defined(__clang__)
+# define YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+
+# define YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END \
+    _Pragma("GCC diagnostic pop")
+
+#else // non-GCC
+# define YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
+# define YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
+#endif
+
+#else // Debug build
+# define YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
+# define YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
+#endif
 
 template<int Strategy>
 struct raw_visit_dispatch;
@@ -146,7 +166,7 @@ struct raw_visit_dispatch<-1>
     apply(std::size_t const i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&& storage)
         noexcept(raw_visit_noexcept_all<Visitor, Storage>)
     {
-        constexpr auto const& table = raw_visit_table<Visitor&&, Storage>::table;
+        constexpr auto const& table = raw_visit_table<Visitor, Storage>::table;
         auto const& f = table[i];
         return std::invoke(f, std::forward<Visitor>(vis), std::forward<Storage>(storage));
     }

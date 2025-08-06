@@ -6,11 +6,36 @@
 cmake_minimum_required(VERSION 3.23)
 
 project(rvariant LANGUAGES CXX)
+set(YK_RVARIANT_CXX_FEATURE cxx_std_23)
+
+add_library(yk_rvariant_cxx_common INTERFACE)
+target_compile_features(yk_rvariant_cxx_common INTERFACE ${YK_RVARIANT_CXX_FEATURE})
+set_target_properties(yk_rvariant_cxx_common PROPERTIES CXX_EXTENSIONS OFF)
+
+if(MSVC)
+    list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel)
+
+    target_compile_options(
+        yk_rvariant_cxx_common
+        INTERFACE /MP /utf-8
+    )
+    target_compile_definitions(
+        yk_rvariant_cxx_common
+        INTERFACE UNICODE _UNICODE
+    )
+else()
+    target_compile_options(
+        yk_rvariant_cxx_common
+        INTERFACE -Wall -Wextra -pedantic
+    )
+endif()
+
+# --------------------------------------------------
 
 add_library(rvariant INTERFACE)
-
-target_compile_features(rvariant INTERFACE cxx_std_23)
+add_library(yk::rvariant ALIAS rvariant)
 set_target_properties(rvariant PROPERTIES CXX_EXTENSIONS OFF)
+target_link_libraries(rvariant INTERFACE yk_rvariant_cxx_common)
 
 if(MSVC)
     target_compile_options(rvariant INTERFACE /Zc:preprocessor /permissive-)
@@ -33,8 +58,6 @@ target_sources(
 source_group(
     TREE ${PROJECT_SOURCE_DIR}/include FILES ${YK_RVARIANT_HEADERS}
 )
-
-add_library(yk::rvariant ALIAS rvariant)
 
 if(PROJECT_IS_TOP_LEVEL)
     include(CTest)

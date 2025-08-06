@@ -2,11 +2,11 @@
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
+#include "benchmark_support.hpp"
+
 #include <yk/rvariant/rvariant.hpp>
 
 #include <yk/default_init_allocator.hpp>
-
-#include <catch2/catch_test_macros.hpp>
 
 #include <string_view>
 #include <print>
@@ -15,7 +15,9 @@
 #include <variant>
 #include <random>
 
-namespace unit_test {
+#include <cstdlib>
+
+namespace benchmark {
 
 namespace {
 
@@ -37,26 +39,66 @@ struct many_V_impl<VTT, AltN, TTT, std::index_sequence<Is...>>
 template<template<class...> class VTT, std::size_t AltN, template<std::size_t> class TTT>
 using many_V_t = typename many_V_impl<VTT, AltN, TTT>::type;
 
-} // anonymous
 
-TEST_CASE("benchmark")
+int benchmark_main(std::size_t const N)
 {
+#ifndef NDEBUG
+    std::println(
+        "\n"
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+        "   WARNING: This is NOT a Release build\n"
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    );
+#endif
+
     using Clock = std::chrono::high_resolution_clock;
     //static_assert(Clock::is_steady);
     using duration_type = std::chrono::duration<double, std::milli>;
 
-    constexpr std::size_t N = 100'0000;
     constexpr std::size_t AltN = 16;
 
+    std::random_device rd;
     using REng = std::mt19937;
 
+    // ----------------------------------------------------------
+
     std::println("N: {}, alternatives: {}", N, AltN);
+    {
+        unsigned long long sum = 0;
+
+        auto const start_time = Clock::now();
+        for (std::size_t i = 1; i < N; ++i) {
+            sum += N % i;
+        }
+        auto const end_time = Clock::now();
+        auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
+        std::println("Adding loop-based int N times: {:.3f} ms", elapsed.count());
+
+        disable_optimization(sum);
+    }
+    {
+        std::uniform_int_distribution<int> value_dist;
+        REng value_eng(rd());
+
+        unsigned long long sum = 0;
+
+        auto const start_time = Clock::now();
+        for (std::size_t i = 0; i < N; ++i) {
+            int const value = value_dist(value_eng);
+            sum += value;
+        }
+        auto const end_time = Clock::now();
+        auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
+        std::println("Adding random int N times: {:.3f} ms", elapsed.count());
+
+        disable_optimization(sum);
+    }
     std::println();
+
+    // ----------------------------------------------------------
 
     auto const do_bench = [&]<class V>(std::string_view const bench_name)
     {
-        std::random_device rd;
-
         std::uniform_int_distribution<std::size_t> I_dist(0, AltN - 1);
         REng I_eng(rd());
 
@@ -69,7 +111,7 @@ TEST_CASE("benchmark")
         {
             auto const start_time = Clock::now();
             for (std::size_t i = 0; i < N; ++i) {
-                auto const value = value_dist(value_eng);
+                int const value = value_dist(value_eng);
 
                 switch (I_dist(I_eng)) {
                 case  0: vars.emplace_back(std::in_place_index< 0>, value); break;
@@ -93,7 +135,7 @@ TEST_CASE("benchmark")
             }
             auto const end_time = Clock::now();
             auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-            std::println("[{}] construction: {} ms", bench_name, elapsed.count());
+            std::println("[{}] construction: {:.3f} ms", bench_name, elapsed.count());
         }
 
 #if YK_RVARIANT_VISIT_STRENGTHEN
@@ -114,10 +156,9 @@ TEST_CASE("benchmark")
             }
             auto const end_time = Clock::now();
             auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-            std::println("[{}] visit: {} ms", bench_name, elapsed.count());
+            std::println("[{}] visit: {:.3f} ms", bench_name, elapsed.count());
 
-            // TODO: pass this to some extern function
-            std::println("computation result: {}", sum);
+            disable_optimization(sum);
         }
 
         // check raw_visit performance
@@ -130,10 +171,9 @@ TEST_CASE("benchmark")
             }
             auto const end_time = Clock::now();
             auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-            std::println("[{}] operator<: {} ms", bench_name, elapsed.count());
+            std::println("[{}] operator<: {:.3f} ms", bench_name, elapsed.count());
 
-            // TODO: pass this to some extern function
-            std::println("computation result: {}", sum);
+            disable_optimization(sum);
         }
 
         std::println();
@@ -141,6 +181,28 @@ TEST_CASE("benchmark")
 
     do_bench.operator()<many_V_t<std::variant, AltN, int_identity>>("std::variant");
     do_bench.operator()<many_V_t<yk::rvariant, AltN, int_identity>>("yk::rvariant");
+
+    return EXIT_SUCCESS;
 }
 
-} // unit_test
+} // anonymous
+
+} // benchmark
+
+int main(int argc, char* argv[])
+{
+    if (argc <= 1) {
+        std::println("usage: ./yk_rvariant_benchmark [N]");
+        return EXIT_FAILURE;
+    }
+    std::string_view const N_str(argv[1]);
+
+    unsigned long long N = 1;
+    auto const [ptr, ec] = std::from_chars(N_str.data(), N_str.data() + N_str.size(), N);
+    if (ec != std::errc{}) {
+        std::println("parse error");
+        return EXIT_FAILURE;
+    }
+
+    return benchmark::benchmark_main(N);
+}

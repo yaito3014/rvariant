@@ -28,13 +28,6 @@
 
 namespace yk::detail {
 
-template<bool TriviallyDestructible, class... Ts>
-struct variadic_union {};
-
-template<class... Ts>
-using make_variadic_union_t = variadic_union<std::conjunction_v<std::is_trivially_destructible<Ts>...>, Ts...>;
-
-
 template<bool NeverValueless, class T>
 [[nodiscard]] constexpr std::size_t valueless_bias(T i) noexcept
 {
@@ -133,6 +126,13 @@ template<class Storage>
 struct storage_never_valueless : std::bool_constant<std::remove_cvref_t<Storage>::never_valueless> {};
 
 // --------------------------------------------
+
+template<bool TriviallyDestructible, class... Ts>
+struct variadic_union {};
+
+template<class... Ts>
+using make_variadic_union_t = variadic_union<std::conjunction_v<std::is_trivially_destructible<Ts>...>, Ts...>;
+
 
 template<class T, class... Ts>
 struct variadic_union<true, T, Ts...>

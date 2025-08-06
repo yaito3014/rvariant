@@ -86,6 +86,8 @@ public:
 
     friend bool operator==(MC_Thrower const&, MC_Thrower const&) noexcept { return true; }
     friend auto operator<=>(MC_Thrower const&, MC_Thrower const&) noexcept { return std::strong_ordering::equal; }
+
+    //std::string_view dummy{"foobar"};
 };
 
 std::ostream& operator<<(std::ostream&, MC_Thrower const&);
@@ -110,8 +112,13 @@ template<class... Ts, class... Args>
         V b(std::in_place_type<MC_Thrower>);
         a = std::move(b);
     } catch(...) {  // NOLINT(bugprone-empty-catch)
+        if (!a.valueless_by_exception()) {
+            throw std::logic_error{"[BUG] exception was thrown, but a is not valueless"};
+        }
+        return a;
     }
-    return a;
+
+    throw std::logic_error{"[BUG] failed to create valueless instance; exception was never thrown"};
 }
 
 template<class T>

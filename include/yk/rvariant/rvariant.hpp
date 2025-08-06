@@ -87,7 +87,9 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             noexcept(std::conjunction_v<std::is_nothrow_copy_constructible<Ts>...>)
         {
             if constexpr (j != std::variant_npos) {
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
                 construct_on_valueless<j>(alt);
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
             } else {
                 (void)this;
             }
@@ -103,7 +105,9 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         {
             if constexpr (j != std::variant_npos) {
                 static_assert(std::is_rvalue_reference_v<T&&>);
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
                 construct_on_valueless<j>(std::move(alt)); // NOLINT(bugprone-move-forwarding-reference)
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
             } else {
                 (void)this;
             }
@@ -122,6 +126,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
                 (void)rhs_alt;
                 visit_reset();
             } else {
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
                 if (index_ == j) {
                     raw_get<j>(storage()) = rhs_alt;
                 } else {
@@ -136,6 +141,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
                         reset_construct<j>(std::move(tmp)); // B
                     }
                 }
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
             }
         });
     YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
@@ -149,14 +155,18 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             noexcept(std::conjunction_v<variant_nothrow_move_assignable<Ts>...>)
         {
             if constexpr (j == std::variant_npos) {
+                (void)rhs_alt;
                 visit_reset();
             } else {
                 static_assert(std::is_rvalue_reference_v<T&&>);
+
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
                 if (index_ == j) {
                     raw_get<j>(storage()) = std::move(rhs_alt); // NOLINT(bugprone-move-forwarding-reference)
                 } else {
                     reset_construct<j>(std::move(rhs_alt)); // NOLINT(bugprone-move-forwarding-reference)
                 }
+            YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
             }
         });
     }
@@ -1356,5 +1366,11 @@ template<class... Ts>
 }
 
 } // yk
+
+#undef YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_BEGIN
+#undef YK_RVARIANT_DISABLE_UNINITIALIZED_WARNING_END
+
+#undef YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
+#undef YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
 #endif
