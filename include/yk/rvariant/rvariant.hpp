@@ -9,6 +9,7 @@
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/rvariant/detail/variant_requirements.hpp>
 #include <yk/rvariant/detail/variant_storage.hpp>
+#include <yk/rvariant/detail/visit.hpp>
 #include <yk/rvariant/detail/recursive_traits.hpp>
 #include <yk/rvariant/variant_helper.hpp>
 #include <yk/rvariant/subset.hpp>
