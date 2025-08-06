@@ -8,8 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          mkdir -p public/${{ github.event.pull_request.node_id }}
-          cp -r doc/* public/${{ github.event.pull_request.node_id }}/
+          mkdir -p public/${{ github.event.pull_request.id }}
+          cp -r doc/* public/${{ github.event.pull_request.id }}/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public/
@@ -23,7 +23,7 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}${{ github.event.pull_request.node_id }}/rvariant.html
+      url: ${{ steps.deployment.outputs.page_url }}${{ github.event.pull_request.id }}/rvariant.html
 
     runs-on: ubuntu-latest
     steps:
