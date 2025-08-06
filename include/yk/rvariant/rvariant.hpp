@@ -385,11 +385,11 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     template<class Self, class Visitor>
     constexpr auto
-    raw_visit(this Self&& self, Visitor&& vis) noexcept(raw_visit_noexcept<Visitor, decltype(std::forward<Self>(self).storage())>)
+    raw_visit(this Self&& self, Visitor&& vis) noexcept(raw_visit_noexcept_all<Visitor, decltype(std::forward<Self>(self).storage())>)
         -> raw_visit_return_type<Visitor, decltype(std::forward<Self>(self).storage())>
     {
         using Storage = decltype(std::forward<Self>(self).storage());
-        constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, Storage>::value;
+        constexpr auto const& table = raw_visit_table<Visitor&&, Storage>::value;
         auto&& f = table[valueless_bias<storage_type::never_valueless>(self.index_)];
         return std::invoke(f, std::forward<Visitor>(vis), std::forward<Self>(self).storage());
     }
@@ -992,7 +992,7 @@ public:
 
     template<class Variant, class Visitor>
     friend constexpr detail::raw_visit_return_type<Visitor, detail::forward_storage_t<Variant>>
-    detail::raw_visit(Variant&&, Visitor&&) noexcept(detail::raw_visit_noexcept<Visitor, detail::forward_storage_t<Variant>>);  // NOLINT(clang-diagnostic-microsoft-exception-spec)
+    detail::raw_visit(Variant&&, Visitor&&) noexcept(detail::raw_visit_noexcept_all<Visitor, detail::forward_storage_t<Variant>>);  // NOLINT(clang-diagnostic-microsoft-exception-spec)
 
     template<class R, class V, std::size_t... n>
     friend struct detail::visit_impl;

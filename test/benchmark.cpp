@@ -102,6 +102,7 @@ TEST_CASE("benchmark")
         static_assert(is_std || !noexcept(visit([](int const&) noexcept(false) {}, vars[0])));
 #endif
 
+        // check visit performance
         {
             unsigned long long sum = 0;
 
@@ -115,6 +116,23 @@ TEST_CASE("benchmark")
             auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
             std::println("[{}] visit: {} ms", bench_name, elapsed.count());
 
+            // TODO: pass this to some extern function
+            std::println("computation result: {}", sum);
+        }
+
+        // check raw_visit performance
+        {
+            unsigned long long sum = 0;
+
+            auto const start_time = Clock::now();
+            for (std::size_t i = 1; i < N; ++i) {
+                sum += vars[i] < vars[i - 1];
+            }
+            auto const end_time = Clock::now();
+            auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
+            std::println("[{}] operator<: {} ms", bench_name, elapsed.count());
+
+            // TODO: pass this to some extern function
             std::println("computation result: {}", sum);
         }
 

@@ -299,65 +299,68 @@ using raw_visit_return_type = decltype(std::declval<Visitor>()(
     std::declval<std::in_place_index_t<0>>(), std::declval<raw_get_t<0, Storage>>()
 ));
 
-template<class Visitor, class Storage>
-constexpr raw_visit_return_type<Visitor, Storage>
-raw_visit_valueless(Visitor&& vis, Storage&&)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-    noexcept(std::is_nothrow_invocable_v<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>)
+
+
+template<std::size_t I, class Visitor, class Storage>
+struct raw_visit_noexcept
 {
-    valueless_t valueless_;
-    return std::invoke(std::forward<Visitor>(vis), std::in_place_index<std::variant_npos>, std::forward_like<Storage>(valueless_));
-}
+    template<class Storage_>
+    struct lazy_invoke
+    {
+        static constexpr std::size_t RealI = detail::valueless_unbias<Storage_>(I);
+        using type = std::is_nothrow_invocable<
+            Visitor,
+            std::in_place_index_t<RealI>,
+            raw_get_t<RealI, Storage>
+        >;
+    };
+
+    static constexpr bool value = std::conditional_t<
+        !std::remove_cvref_t<Storage>::never_valueless && I == 0,
+        std::type_identity<std::is_nothrow_invocable<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>>,
+        lazy_invoke<Storage>
+    >::type::value;
+};
+
+
+template<class Visitor, class Storage, class Is = std::make_index_sequence<detail::valueless_bias<Storage>(std::remove_cvref_t<Storage>::size)>>
+constexpr bool raw_visit_noexcept_all = false;
+
+template<class Visitor, class Storage, std::size_t... Is>
+constexpr bool raw_visit_noexcept_all<Visitor, Storage, std::index_sequence<Is...>> = std::conjunction_v<
+    raw_visit_noexcept<Is, Visitor, Storage>...
+>;
+
 
 template<std::size_t I, class Visitor, class Storage>
 constexpr raw_visit_return_type<Visitor, Storage>
 raw_visit_dispatch(Visitor&& vis, Storage&& storage)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-    noexcept(std::is_nothrow_invocable_v<Visitor, std::in_place_index_t<I>, raw_get_t<I, Storage>>)
+    noexcept(raw_visit_noexcept<I, Visitor, Storage>::value)
 {
-    return std::invoke(std::forward<Visitor>(vis), std::in_place_index<I>, raw_get<I>(std::forward<Storage>(storage)));
+    if constexpr (!std::remove_cvref_t<Storage>::never_valueless && I == 0) {
+        return std::invoke(std::forward<Visitor>(vis), std::in_place_index<std::variant_npos>, std::forward<Storage>(storage));
+
+    } else {
+        constexpr std::size_t RealI = valueless_unbias<Storage>(I);
+        return std::invoke(std::forward<Visitor>(vis), std::in_place_index<RealI>, raw_get<RealI>(std::forward<Storage>(storage)));
+    }
 }
 
-template<class Visitor, class Storage, class Is = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
-constexpr bool raw_visit_noexcept = false;
-
-template<class Visitor, class Storage, std::size_t... Is>
-constexpr bool raw_visit_noexcept<Visitor, Storage, std::index_sequence<Is...>> = std::conjunction_v<
-    std::conditional_t<
-        std::remove_cvref_t<Storage>::never_valueless,
-        std::true_type,
-        std::is_nothrow_invocable<Visitor, std::in_place_index_t<std::variant_npos>, decltype(std::forward_like<Storage>(std::declval<valueless_t>()))>
-    >,
-    std::is_nothrow_invocable<Visitor, std::in_place_index_t<Is>, raw_get_t<Is, Storage>>...
->;
-
-
-template<class Visitor, class Storage, class Seq = std::make_index_sequence<std::remove_cvref_t<Storage>::size>>
-struct raw_visit_dispatch_table;
 
 template<class Visitor, class Storage>
 using raw_visit_function_ptr = raw_visit_return_type<Visitor, Storage>(*) (Visitor&&, Storage&&)
-    noexcept(raw_visit_noexcept<Visitor, Storage>);
+    noexcept(raw_visit_noexcept_all<Visitor, Storage>);
+
+template<class Visitor, class Storage, class Seq = std::make_index_sequence<detail::valueless_bias<Storage>(std::remove_cvref_t<Storage>::size)>>
+struct raw_visit_table;
 
 template<class Visitor, class Storage, std::size_t... Is>
-    requires (std::remove_cvref_t<Storage>::never_valueless)
-struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
+struct raw_visit_table<Visitor, Storage, std::index_sequence<Is...>>
 {
     static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
     static_assert(std::is_reference_v<Storage>, "Storage must be one of: &, const&, &&, const&&");
 
     static constexpr raw_visit_function_ptr<Visitor, Storage> value[] = {
-        &raw_visit_dispatch<Is, Visitor, Storage>...
-    };
-};
-
-template<class Visitor, class Storage, std::size_t... Is>
-    requires (!std::remove_cvref_t<Storage>::never_valueless)
-struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
-{
-    static_assert(std::is_reference_v<Visitor>, "Visitor must be one of: &, const&, &&, const&&");
-    static_assert(std::is_reference_v<Storage>, "Storage must be one of: &, const&, &&, const&&");
-
-    static constexpr raw_visit_function_ptr<Visitor, Storage> value[] = {
-        &raw_visit_valueless<Visitor, Storage>,
         &raw_visit_dispatch<Is, Visitor, Storage>...
     };
 };
@@ -365,9 +368,9 @@ struct raw_visit_dispatch_table<Visitor, Storage, std::index_sequence<Is...>>
 template<class Variant, class Visitor>
 constexpr raw_visit_return_type<Visitor, forward_storage_t<Variant>>
 raw_visit(Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
-    noexcept(raw_visit_noexcept<Visitor, forward_storage_t<Variant>>)
+    noexcept(raw_visit_noexcept_all<Visitor, forward_storage_t<Variant>>)
 {
-    constexpr auto const& table = raw_visit_dispatch_table<Visitor&&, forward_storage_t<Variant>>::value;
+    constexpr auto const& table = raw_visit_table<Visitor&&, forward_storage_t<Variant>>::value;
     auto&& f = table[valueless_bias<std::remove_cvref_t<Variant>::never_valueless>(v.index_)];
     return std::invoke(f, std::forward<Visitor>(vis), forward_storage<Variant>(v));
 }
