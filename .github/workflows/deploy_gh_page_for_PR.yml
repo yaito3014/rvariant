@@ -5,6 +5,8 @@ on: pull_request
 jobs:
   check-changes:
     runs-on: ubuntu-latest
+    outputs:
+      src-changed: ${{ steps.changes.outputs.src }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -18,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: ${{ needs.check-changes.outputs.src == 'true' }}
+    if: ${{ needs.check-changes.outputs.src-changed == 'true' }}
     container: asciidoctor/docker-asciidoctor:latest
     steps:
       - uses: actions/checkout@v4
