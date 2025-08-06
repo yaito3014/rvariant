@@ -262,35 +262,46 @@ forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept 
 }
 
 
-// TODO: apply same logic to other visits with >= O(n^2) branch
-inline constexpr std::size_t visit_instantiation_limit = 1024;
-
-template<std::size_t I>
-struct get_alternative
-{
-    static_assert(I != -1);
-
-    template<class Union>
-    [[nodiscard]] static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
-    {
-        return get_alternative<I - 1>::apply(std::forward<Union>(u).rest);
-    }
-};
-
-template<>
-struct get_alternative<0>
-{
-    template<class Union>
-    [[nodiscard]] static constexpr auto&& apply(Union&& u YK_LIFETIMEBOUND) noexcept
-    {
-        return std::forward<Union>(u).first;
-    }
-};
-
 template<std::size_t I, class Storage>
 [[nodiscard]] constexpr auto&& raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
 {
-    return get_alternative<I>::apply(std::forward<Storage>(storage));
+         if constexpr (I ==  0) return std::forward<Storage>(storage).first;
+    else if constexpr (I ==  1) return std::forward<Storage>(storage).rest.first;
+    else if constexpr (I ==  2) return std::forward<Storage>(storage).rest.rest.first;
+    else if constexpr (I ==  3) return std::forward<Storage>(storage).rest.rest.rest.first;
+    else if constexpr (I ==  4) return std::forward<Storage>(storage).rest.rest.rest.rest.first;
+    else if constexpr (I ==  5) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.first;
+    else if constexpr (I ==  6) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I ==  7) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I ==  8) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I ==  9) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 10) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 11) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 12) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 13) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 14) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 15) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 16) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 17) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 18) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 19) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 20) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 21) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 22) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 23) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 24) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 25) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 26) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 27) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 28) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 29) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 30) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I == 31) return std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.first;
+    else if constexpr (I < 64)  return raw_get<I - 32>(
+                                       std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest);
+    else                        return raw_get<I - 64>(
+                                       std::forward<Storage>(storage).rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest
+                                                                     .rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest.rest);
 }
 
 template<std::size_t I, class Storage>

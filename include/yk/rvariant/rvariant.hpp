@@ -435,6 +435,7 @@ template<class Compare, class... Ts>
 {
     return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& alt)
         noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
+        -> bool
     {
         if constexpr (i != std::variant_npos) {
             return Compare{}(alt, detail::raw_get<i>(w.storage()));
