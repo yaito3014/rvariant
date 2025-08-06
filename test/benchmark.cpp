@@ -8,6 +8,7 @@
 
 #include <yk/default_init_allocator.hpp>
 
+#include <charconv>
 #include <string_view>
 #include <print>
 #include <chrono>
@@ -93,7 +94,7 @@ int benchmark_main(std::size_t const N)
 
         disable_optimization(sum);
     }
-    std::println();
+    std::println("");
 
     // ----------------------------------------------------------
 
@@ -176,7 +177,7 @@ int benchmark_main(std::size_t const N)
             disable_optimization(sum);
         }
 
-        std::println();
+        std::println("");
     };
 
     do_bench.operator()<many_V_t<std::variant, AltN, int_identity>>("std::variant");
