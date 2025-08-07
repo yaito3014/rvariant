@@ -278,9 +278,8 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     {
         static_assert(I != std::variant_npos);
         static_assert(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>);
+        static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, Args...>);
         visit_destroy();
-        // TODO: enable this on strengthened STL vendors only
-        //static_assert(noexcept(std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...)));
         std::construct_at(&storage_, std::in_place_index<I>, std::forward<Args>(args)...);
         index_ = static_cast<variant_index_t<sizeof...(Ts)>>(I);
     }
@@ -330,8 +329,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
 
                 } else if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
                     t_old_i.~T_old_i();
-                    // TODO: enable this on strengthened STL vendors only
-                    //static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
+                    static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<old_i>, Args...>);
                     std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...);
 
                 } else if constexpr (std::is_same_v<T_old_i, T>) { // NOT type-changing
@@ -364,8 +362,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                     ) {
                         T tmp(std::forward<Args>(args)...); // may throw
                         t_old_i.~T_old_i();
-                        // TODO: enable this on strengthened STL vendors only
-                        //static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp))));
+                        static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, T&&>);
                         std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp)); // never throws
                         this->index_ = I;
                     } else if constexpr (
@@ -373,8 +370,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                     ) { // strange type...
                         T const tmp(std::forward<Args>(args)...); // may throw
                         t_old_i.~T_old_i();
-                        // TODO: enable this on strengthened STL vendors only
-                        //static_assert(noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, tmp)));
+                        static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, T const&>);
                         std::construct_at(&this->storage(), std::in_place_index<I>, tmp); // never throws
                         this->index_ = I;
                     } else {
@@ -1016,7 +1012,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     template<class Variant, class Visitor>
     friend constexpr detail::raw_visit_result_t<Visitor, detail::forward_storage_t<Variant>>
-    detail::raw_visit(Variant&&, Visitor&&)
+    detail::raw_visit(Variant&&, Visitor&&)  // NOLINT(clang-diagnostic-microsoft-exception-spec)
         noexcept(detail::raw_visit_noexcept_all<Visitor, detail::forward_storage_t<Variant>>);
 
 private:
