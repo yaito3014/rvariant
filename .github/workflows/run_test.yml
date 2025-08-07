@@ -102,12 +102,14 @@ jobs:
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
           -S ${{ github.workspace }}
 
+      # https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#standard-github-hosted-runners-for-public-repositories
+
       - name: Build (Ubuntu)
         if: matrix.os.name == 'ubuntu'
         shell: bash
         run: |
           set -o pipefail
-          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test 2>&1 | tee -a compilation.log
+          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test -j4 2>&1 | tee -a compilation.log
 
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
