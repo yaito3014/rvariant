@@ -9,8 +9,22 @@ project(rvariant LANGUAGES CXX)
 set(YK_RVARIANT_CXX_FEATURE cxx_std_23)
 
 add_library(yk_rvariant_cxx_common INTERFACE)
-target_compile_features(yk_rvariant_cxx_common INTERFACE ${YK_RVARIANT_CXX_FEATURE})
 set_target_properties(yk_rvariant_cxx_common PROPERTIES CXX_EXTENSIONS OFF)
+
+# Set minimal C++ version explicitly; avoid "/std:c++latest"
+if(MSVC)
+    if(CMAKE_CXX_STANDARD EQUAL 23)
+        set(CMAKE_CXX23_STANDARD_COMPILE_OPTION "/std:c++23preview")
+        set(CMAKE_CXX23_EXTENSION_COMPILE_OPTION "/std:c++23preview")
+        target_compile_options(yk_rvariant_cxx_common INTERFACE /std:c++23preview)
+    else()
+        # may become /std:c++latest only on this case
+        target_compile_features(yk_rvariant_cxx_common INTERFACE ${YK_RVARIANT_CXX_FEATURE})
+    endif()
+else()
+    target_compile_features(yk_rvariant_cxx_common INTERFACE ${YK_RVARIANT_CXX_FEATURE})
+endif()
+
 
 if(MSVC)
     list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel)
