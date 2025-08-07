@@ -32,7 +32,7 @@ jobs:
       matrix:
         os:
           - name: ubuntu
-            version: 25.04
+            version: 24.04
           - name: windows
             version: 2022
         build_type: [Release, Debug]
@@ -41,9 +41,6 @@ jobs:
           - name: GCC
             version: 14
             executable: g++-14
-          - name: GCC
-            version: 15
-            executable: g++-15
           - name: Clang
             version: 21
             executable: clang++-21
