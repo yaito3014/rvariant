@@ -21,6 +21,16 @@ target_compile_definitions(Catch2 PUBLIC DO_NOT_USE_WMAIN)
 set_target_properties(Catch2WithMain PROPERTIES CXX_EXTENSIONS OFF)
 target_link_libraries(Catch2WithMain PUBLIC yk_rvariant_cxx_common)
 
+set_target_properties(
+    Catch2 Catch2WithMain
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/catch2/lib"
+    LIBRARY_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/catch2/lib"
+    RUNTIME_OUTPUT_DIRECTORY     "${CMAKE_BINARY_DIR}/catch2/bin"
+    PDB_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/catch2/bin"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/catch2/bin"
+)
+
 # ---------------------------------------
 
 add_executable(

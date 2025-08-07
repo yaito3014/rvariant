@@ -87,6 +87,13 @@ jobs:
         if: matrix.compiler.name == 'GCC'
         run: sudo apt-get update && sudo apt-get install -y g++-${{ matrix.compiler.version }}
 
+      - name: Cache Catch2
+        uses: actions/cache@v4
+        id: cache-catch2
+        with:
+          path: ${{ github.workspace }}/build/catch2
+          key: catch2-${{ matrix.os.name }}-${{ matrix.compiler.executable }}-${{ matrix.cpp_version }}-${{ matrix.build_type }}
+
       - name: Configure
         run: >
           cmake -B ${{ github.workspace }}/build
