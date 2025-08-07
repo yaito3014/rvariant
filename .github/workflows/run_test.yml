@@ -104,15 +104,32 @@ jobs:
           set -o pipefail
           cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test -j4 2>&1 | tee -a compilation.log
 
+      - name: Build benchmark (Ubuntu)
+        if: matrix.os.name == 'ubuntu' && matrix.build_type == 'Release'
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build ${{ github.workspace }}/build --verbose --config ${{ matrix.build_type }} --target yk_rvariant_benchmark -j4 2>&1 | tee -a compilation.log
+
       - name: Build (Windows)
         if: matrix.os.name == 'windows'
         run: |
           cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_rvariant_test -j4 2>&1 | tee -a compilation.log
 
+      - name: Build benchmark (Windows)
+        if: matrix.os.name == 'windows' && matrix.build_type == 'Release'
+        run: |
+          cmake --build ${{ github.workspace }}/build/test --verbose --config ${{ matrix.build_type }} --target yk_rvariant_benchmark -j4 2>&1 | tee -a compilation.log
+
       - name: Test (Ubuntu)
         if: matrix.os.name == 'ubuntu'
         working-directory: ${{ github.workspace }}/build/test
         run: ./yk_rvariant_test
+
+      - name: Benchmark (Ubuntu)
+        if: matrix.os.name == 'ubuntu' && matrix.build_type == 'Release'
+        working-directory: ${{ github.workspace }}/build/test
+        run: ./yk_rvariant_benchmark 1000000
 
       - uses: TheMrMilchmann/setup-msvc-dev@v3
         if: matrix.os.name == 'windows'
@@ -123,6 +140,11 @@ jobs:
         if: matrix.os.name == 'windows'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
         run: ./yk_rvariant_test
+
+      - name: Benchmark (Windows)
+        if: matrix.os.name == 'windows' && matrix.build_type == 'Release'
+        working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
+        run: ./yk_rvariant_benchmark 1000000
 
       - uses: qoomon/actions--context@v4
         id: context
