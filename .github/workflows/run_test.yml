@@ -112,10 +112,16 @@ jobs:
         working-directory: ${{ github.workspace }}/build/test
         run: ./yk_rvariant_test
 
+      - uses: TheMrMilchmann/setup-msvc-dev@v3
+        if: matrix.os.name == 'windows'
+        with:
+          arch: x64
+
       - name: Test (Windows)
         if: matrix.os.name == 'windows'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
         run: ./yk_rvariant_test
+
       - uses: qoomon/actions--context@v4
         id: context
 
