@@ -15,11 +15,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 set_target_properties(Catch2 PROPERTIES CXX_EXTENSIONS OFF)
-target_link_libraries(Catch2 PUBLIC yk_rvariant_cxx_common)
+target_link_libraries(Catch2 PRIVATE yk_rvariant_cxx_common)
 target_compile_definitions(Catch2 PUBLIC DO_NOT_USE_WMAIN)
 
 set_target_properties(Catch2WithMain PROPERTIES CXX_EXTENSIONS OFF)
-target_link_libraries(Catch2WithMain PUBLIC yk_rvariant_cxx_common)
+target_link_libraries(Catch2WithMain PRIVATE yk_rvariant_cxx_common)
 
 # ---------------------------------------
 
@@ -90,7 +90,7 @@ endif()
 
 target_link_libraries(
     yk_rvariant_test
-    PRIVATE yk::rvariant Catch2::Catch2WithMain yk_rvariant_cxx_common
+    PRIVATE yk::rvariant Catch2::Catch2WithMain
 )
 
 add_test(NAME yk_rvariant_test COMMAND yk_rvariant_test)
@@ -121,7 +121,7 @@ set_target_properties(
 )
 target_link_libraries(
     yk_rvariant_benchmark_support
-    PUBLIC yk_rvariant_cxx_common
+    PRIVATE yk_rvariant_cxx_common
 )
 
 add_executable(
@@ -134,5 +134,6 @@ set_target_properties(
 )
 target_link_libraries(
     yk_rvariant_benchmark
-    PUBLIC yk_rvariant_benchmark_support yk::rvariant yk_rvariant_cxx_common
+    PRIVATE yk_rvariant_benchmark_support
+    PUBLIC yk::rvariant
 )
