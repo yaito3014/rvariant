@@ -62,6 +62,39 @@ constexpr auto synth_three_way = []<class T, class U>(T const& t, U const& u) no
     }
 };
 
-}  // namespace yk::core
 
-#endif  // YK_CORE_LIBRARY_HPP
+template<class Compare, class T>
+struct relop_bool_expr : std::false_type {};
+
+template<class Compare, class T>
+constexpr bool relop_bool_expr_v = relop_bool_expr<Compare, T>::value;
+
+// NOTE: boolean_testable is WRONG here; it leads to false positive
+
+template<class T>
+    requires requires(T const& t) { { t == t } -> std::convertible_to<bool>; }
+struct relop_bool_expr<std::equal_to<>, T> : std::true_type {};
+
+template<class T>
+    requires requires(T const& t) { { t != t } -> std::convertible_to<bool>; }
+struct relop_bool_expr<std::not_equal_to<>, T> : std::true_type {};
+
+template<class T>
+    requires requires(T const& t) { { t < t } -> std::convertible_to<bool>; }
+struct relop_bool_expr<std::less<>, T> : std::true_type {};
+
+template<class T>
+    requires requires(T const& t) { { t > t } -> std::convertible_to<bool>; }
+struct relop_bool_expr<std::greater<>, T> : std::true_type {};
+
+template<class T>
+    requires requires(T const& t) { { t <= t } -> std::convertible_to<bool>; }
+struct relop_bool_expr<std::less_equal<>, T> : std::true_type {};
+
+template<class T>
+    requires requires(T const& t) { { t >= t } -> std::convertible_to<bool>; }
+struct relop_bool_expr<std::greater_equal<>, T> : std::true_type {};
+
+}  // yk::core
+
+#endif

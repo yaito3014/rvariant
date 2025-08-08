@@ -6,6 +6,7 @@
 // https://www.boost.org/LICENSE_1_0.txt
 
 #include <memory>
+#include <cstdint>
 
 namespace benchmark {
 
@@ -18,8 +19,11 @@ namespace benchmark {
 namespace detail {
 
 YK_BENCHMARK_API void disable_optimization_impl(void const*) noexcept;
+YK_BENCHMARK_API void asm_trace(std::uint_least32_t line) noexcept;
 
 } // detail
+
+#define YK_ASM_TRACE ::benchmark::detail::asm_trace(__LINE__);
 
 template<class T>
 void disable_optimization(T const& v) noexcept

@@ -51,6 +51,11 @@ add_library(yk::rvariant ALIAS rvariant)
 set_target_properties(rvariant PROPERTIES CXX_EXTENSIONS OFF)
 target_link_libraries(rvariant INTERFACE yk_rvariant_cxx_common)
 
+option(YK_CI "Enables intensive testing for CI" OFF)
+if(YK_CI)
+    target_compile_definitions(rvariant INTERFACE YK_CI=1)
+endif()
+
 if(MSVC)
     target_compile_options(rvariant INTERFACE /Zc:preprocessor /permissive-)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES Clang)

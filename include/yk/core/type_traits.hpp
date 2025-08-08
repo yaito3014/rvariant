@@ -8,6 +8,7 @@
 
 // ReSharper disable once CppUnusedIncludeDirective
 #include <yk/core/config.hpp>
+// ReSharper disable once CppUnusedIncludeDirective
 #include <yk/core/requirements.hpp>
 
 #include <type_traits>
