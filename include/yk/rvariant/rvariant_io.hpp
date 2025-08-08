@@ -54,7 +54,7 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v)
 
     if (v.valueless_by_exception()) [[unlikely]] {
         // does not set badbit, as per the spec
-        throw std::bad_variant_access(); // always throw, regardless of `os.exceptions()`
+        detail::throw_bad_variant_access(); // always throw, regardless of `os.exceptions()`
     }
 
     try {
@@ -212,7 +212,7 @@ struct formatter<::yk::rvariant<Ts...>, charT>  // NOLINT(cert-dcl58-cpp)
             [&]<std::size_t i, class VT>(std::in_place_index_t<i>, VT const& alt) -> OutIt {
                 if constexpr (i == std::variant_npos) {
                     (void)alt;
-                    throw std::bad_variant_access{};
+                    ::yk::detail::throw_bad_variant_access();
                 } else {
                     return std::format_to(
                         ctx.out(),
@@ -251,7 +251,7 @@ struct formatter<::yk::detail::variant_format_proxy<VFormat, Variant>, charT>  /
             [&]<std::size_t i, class VT>(std::in_place_index_t<i>, VT const& alt) -> OutIt {
                 if constexpr (i == std::variant_npos) {
                     (void)alt;
-                    throw std::bad_variant_access{};
+                    ::yk::detail::throw_bad_variant_access();
                 } else {
                     static_assert(
                         std::is_invocable_v<VFormat, std::in_place_type_t<::yk::unwrap_recursive_t<VT>>>,

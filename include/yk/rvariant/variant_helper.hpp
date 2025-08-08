@@ -70,7 +70,7 @@ struct variant_size<rvariant<Ts...>> : std::integral_constant<std::size_t, sizeo
 namespace detail {
 
 template<class T>
-[[nodiscard]] constexpr auto&&
+[[nodiscard]] YK_FORCEINLINE constexpr auto&&
 unwrap_recursive(T&& o YK_LIFETIMEBOUND) noexcept
 {
     if constexpr (core::is_ttp_specialization_of_v<std::remove_cvref_t<T>, recursive_wrapper>) {

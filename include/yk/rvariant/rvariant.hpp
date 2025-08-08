@@ -875,7 +875,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
                     if constexpr (j == core::find_npos) {
-                        throw std::bad_variant_access{};
+                        detail::throw_bad_variant_access();
                     } else {
                         return rvariant<Us...>(std::in_place_index<j>, ti);
                     }
@@ -916,7 +916,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
                 } else {
                     constexpr std::size_t j = detail::subset_reindex<rvariant, rvariant<Us...>>(i);
                     if constexpr (j == core::find_npos) {
-                        throw std::bad_variant_access{};
+                        detail::throw_bad_variant_access();
                     } else {
                         static_assert(std::is_rvalue_reference_v<Ti&&>);
                         return rvariant<Us...>(std::in_place_index<j>, std::move(ti)); // NOLINT(bugprone-move-forwarding-reference)
@@ -1070,32 +1070,44 @@ template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>&
 get(rvariant<Ts...>& v YK_LIFETIMEBOUND)
 {
-    if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&>(v)));
+    static_assert(I < sizeof...(Ts));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>>&&
 get(rvariant<Ts...>&& v YK_LIFETIMEBOUND)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 {
-    if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&&>(v)));
+    static_assert(I < sizeof...(Ts));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const&
 get(rvariant<Ts...> const& v YK_LIFETIMEBOUND)
 {
-    if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&>(v)));
+    static_assert(I < sizeof...(Ts));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr variant_alternative_t<I, rvariant<Ts...>> const&&
 get(rvariant<Ts...> const&& v YK_LIFETIMEBOUND)
 {
-    if (I != v.index()) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&&>(v)));
+    static_assert(I < sizeof...(Ts));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<class T, class... Ts>
@@ -1103,8 +1115,10 @@ template<class T, class... Ts>
 get(rvariant<Ts...>& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
-    if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&>(v)));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<class T, class... Ts>
@@ -1112,8 +1126,10 @@ template<class T, class... Ts>
 get(rvariant<Ts...>&& v YK_LIFETIMEBOUND)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
-    if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&&>(v)));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<class T, class... Ts>
@@ -1121,8 +1137,10 @@ template<class T, class... Ts>
 get(rvariant<Ts...> const& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
-    if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&>(v)));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<class T, class... Ts>
@@ -1130,8 +1148,10 @@ template<class T, class... Ts>
 get(rvariant<Ts...> const&& v YK_LIFETIMEBOUND)
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
-    if (v.index() != I) throw std::bad_variant_access{};
-    return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&&>(v)));
+    if (v.index() == I) {
+        return detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&&>(v)));
+    }
+    detail::throw_bad_variant_access();
 }
 
 template<class T, class... Ts>
@@ -1156,16 +1176,20 @@ template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
 get_if(rvariant<Ts...>* v) noexcept
 {
-    if (v == nullptr || v->index() != I) return nullptr;
-    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&>(*v))));
+    static_assert(I < sizeof...(Ts));
+    return v && v->index() == I
+        ? std::addressof(detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...>&>(*v))))
+        : nullptr;
 }
 
 template<std::size_t I, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
 get_if(rvariant<Ts...> const* v) noexcept
 {
-    if (v == nullptr || v->index() != I) return nullptr;
-    return std::addressof(detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&>(*v))));
+    static_assert(I < sizeof...(Ts));
+    return v && v->index() == I
+        ? std::addressof(detail::unwrap_recursive(detail::raw_get<I>(detail::forward_storage<rvariant<Ts...> const&>(*v))))
+        : nullptr;
 }
 
 template<std::size_t I, class... Ts>
