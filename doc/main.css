@@ -22,6 +22,13 @@ h1, h2, p, td.content, span.alt, summary {
   letter-spacing: inherit;
 }
 
+h1 > a {
+  margin-left: 0.75rem;
+}
+h1 > a, h1 > a > span {
+  display: inline-flex;
+}
+
 p strong, td.content strong, div.footnote strong {
   letter-spacing: inherit;
 }
