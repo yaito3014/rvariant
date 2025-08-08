@@ -55,6 +55,9 @@ expr.visit(temp_ns::overloaded{
 });
 ----
 
+[NOTE]
+This library is intended for future submission to the Boost Libraries. Until then, the namespace is documented as `temp_ns` to indicate that the name is not yet stable. The current implementation temporarily uses the namespace `yk`, which originates from the prototype codebase.
+
 
 [preface]
 = Introduction
