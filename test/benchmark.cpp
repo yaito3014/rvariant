@@ -129,6 +129,72 @@ void benchmark_multi_visit(std::size_t const N, Vars const& vars)
 }
 #endif
 
+template<class Vars>
+void benchmark_get(std::size_t const N, Vars const& vars)
+{
+    unsigned long long sum = 0;
+
+    auto const start_time = Clock::now();
+    for (std::size_t i = 0; i < N; ++i) {
+        switch (vars[i].index()) {
+        case  0: sum += get< 0>(vars[i]); break;
+        case  1: sum += get< 1>(vars[i]); break;
+        case  2: sum += get< 2>(vars[i]); break;
+        case  3: sum += get< 3>(vars[i]); break;
+        case  4: sum += get< 4>(vars[i]); break;
+        case  5: sum += get< 5>(vars[i]); break;
+        case  6: sum += get< 6>(vars[i]); break;
+        case  7: sum += get< 7>(vars[i]); break;
+        case  8: sum += get< 8>(vars[i]); break;
+        case  9: sum += get< 9>(vars[i]); break;
+        case 10: sum += get<10>(vars[i]); break;
+        case 11: sum += get<11>(vars[i]); break;
+        case 12: sum += get<12>(vars[i]); break;
+        case 13: sum += get<13>(vars[i]); break;
+        case 14: sum += get<14>(vars[i]); break;
+        case 15: sum += get<15>(vars[i]); break;
+        default: std::unreachable();
+        }
+    }
+    auto const end_time = Clock::now();
+    auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
+    std::println("get: {:.3f} ms", elapsed.count());
+
+    disable_optimization(sum);
+}
+
+template<class Vars>
+YK_FORCEINLINE void benchmark_get_if(std::size_t const N, Vars const& vars)
+{
+    unsigned long long sum = 0;
+
+    auto const start_time = Clock::now();
+    for (std::size_t i = 0; i < N; ++i) {
+        if (auto* ptr = get_if< 0>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 1>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 2>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 3>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 4>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 5>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 6>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 7>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 8>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if< 9>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if<10>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if<11>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if<12>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if<13>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if<14>(&vars[i])) { sum += *ptr; continue; }
+        if (auto* ptr = get_if<15>(&vars[i])) { sum += *ptr; continue; }
+        //std::unreachable(); // makes the entire benchmark slower
+    }
+    auto const end_time = Clock::now();
+    auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
+    std::println("get_if: {:.3f} ms", elapsed.count());
+
+    disable_optimization(sum);
+}
+
 template<class Comp, class Vars>
 void benchmark_operator(std::size_t const N, Vars const& vars)
 {
@@ -201,6 +267,9 @@ int benchmark_main(std::size_t const N)
 
         std::vector<V, yk::default_init_allocator<V>> vars;
         benchmark_construct(N, vars);
+
+        benchmark_get(N, vars);
+        benchmark_get_if(N, vars);
         benchmark_visit(N, vars);
 #if YK_CI
         benchmark_multi_visit(N, vars);
@@ -222,6 +291,9 @@ int benchmark_main(std::size_t const N)
 
         std::vector<V, yk::default_init_allocator<V>> vars;
         benchmark_construct(N, vars);
+
+        benchmark_get(N, vars);
+        benchmark_get_if(N, vars);
         benchmark_visit(N, vars);
 #if YK_CI
         benchmark_multi_visit(N, vars);

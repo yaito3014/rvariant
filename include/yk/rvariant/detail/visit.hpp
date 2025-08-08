@@ -25,6 +25,11 @@ namespace yk {
 
 namespace detail {
 
+[[noreturn]] inline void throw_bad_variant_access()
+{
+    throw std::bad_variant_access{};
+}
+
 // TODO: apply same logic to other visits with >= O(n^2) branch
 inline constexpr std::size_t visit_instantiation_limit = 1024;
 
@@ -397,7 +402,7 @@ struct multi_visitor<std::index_sequence<Is...>>
         YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, std::index_sequence<Is...>, Visitor, Storage...>::value)
     {
         if constexpr (((!std::remove_cvref_t<Storage>::never_valueless && Is == 0) || ...)) {
-            throw std::bad_variant_access{};
+            detail::throw_bad_variant_access();
 
         } else {
 #define YK_MULTI_VISITOR_INVOKE \
