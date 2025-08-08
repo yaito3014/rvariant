@@ -93,6 +93,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          -DYK_CI=ON
           -S ${{ github.workspace }}
 
       # https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#standard-github-hosted-runners-for-public-repositories
@@ -129,7 +130,7 @@ jobs:
       - name: Benchmark (Ubuntu)
         if: matrix.os.name == 'ubuntu' && matrix.build_type == 'Release'
         working-directory: ${{ github.workspace }}/build/test
-        run: ./yk_rvariant_benchmark 1000000
+        run: ./yk_rvariant_benchmark 10000000
 
       - uses: TheMrMilchmann/setup-msvc-dev@v3
         if: matrix.os.name == 'windows'
@@ -144,7 +145,7 @@ jobs:
       - name: Benchmark (Windows)
         if: matrix.os.name == 'windows' && matrix.build_type == 'Release'
         working-directory: ${{ github.workspace }}/build/test/${{ matrix.build_type }}
-        run: ./yk_rvariant_benchmark 1000000
+        run: ./yk_rvariant_benchmark 10000000
 
       - uses: qoomon/actions--context@v4
         id: context

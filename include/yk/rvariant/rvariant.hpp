@@ -15,6 +15,7 @@
 #include <yk/rvariant/subset.hpp>
 
 #include <yk/core/type_traits.hpp>
+#include <yk/core/library.hpp>
 #include <yk/core/cond_trivial.hpp>
 #include <yk/core/hash.hpp>
 
@@ -33,6 +34,9 @@
 namespace yk {
 
 namespace detail {
+
+template<class Compare, class... Ts>
+struct relops_visitor;
 
 template<class... Ts>
 struct rvariant_base
@@ -440,22 +444,6 @@ using rvariant_destructor_base_t = std::conditional_t<
 template<class... Ts>
 using rvariant_base_t = core::cond_trivial<rvariant_destructor_base_t<Ts...>, Ts...>;
 
-template<class Compare, class... Ts>
-[[nodiscard]] constexpr bool compare_relops(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
-{
-    return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, [[maybe_unused]] T const& alt)
-        noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts const&, Ts const&>...>)
-        -> bool
-    {
-        if constexpr (i != std::variant_npos) {
-            return Compare{}(alt, detail::raw_get<i>(w.storage()));
-        } else {
-            return Compare{}(0, 0);
-        }
-    });
-}
-
 }  // detail
 
 
@@ -738,7 +726,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     constexpr T& emplace(Args&&... args)
         noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
-        return this->template emplace_impl<detail::select_maybe_wrapped_index<T, Ts...>>(std::forward<Args>(args)...);
+        return base_type::template emplace_impl<detail::select_maybe_wrapped_index<T, Ts...>>(std::forward<Args>(args)...);
     }
 
     template<class T, class U, class... Args>
@@ -748,7 +736,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     constexpr T& emplace(std::initializer_list<U> il, Args&&... args)
         noexcept(std::is_nothrow_constructible_v<detail::select_maybe_wrapped_t<T, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
-        return this->template emplace_impl<detail::select_maybe_wrapped_index<T, Ts...>>(il, std::forward<Args>(args)...);
+        return base_type::template emplace_impl<detail::select_maybe_wrapped_index<T, Ts...>>(il, std::forward<Args>(args)...);
     }
 
     template<std::size_t I, class... Args>
@@ -758,7 +746,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        return this->template emplace_impl<I>(std::forward<Args>(args)...);
+        return base_type::template emplace_impl<I>(std::forward<Args>(args)...);
     }
 
     template<std::size_t I, class U, class... Args>
@@ -768,7 +756,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
         noexcept(std::is_nothrow_constructible_v<core::pack_indexing_t<I, Ts...>, std::initializer_list<U>&, Args...>) YK_LIFETIMEBOUND
     {
         static_assert(I < sizeof...(Ts));
-        return this->template emplace_impl<I>(il, std::forward<Args>(args)...);
+        return base_type::template emplace_impl<I>(il, std::forward<Args>(args)...);
     }
 
 
@@ -973,16 +961,6 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     // ReSharper restore CppCStyleCast
     // NOLINTEND(cppcoreguidelines-missing-std-forward)
-
-    template<class Compare, class... Ts_>
-    friend constexpr bool detail::compare_relops(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
-        noexcept(std::conjunction_v<std::is_nothrow_invocable<Compare, Ts_ const&, Ts_ const&>...>);
-
-    template<class... Ts_>
-        requires (std::three_way_comparable<Ts_> && ...)
-    friend constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts_>...> operator<=>(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
-        noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts_ const&, Ts_ const&>...>);
-
     template<class... Us>
     friend class rvariant;
 
@@ -1014,6 +992,53 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     friend constexpr detail::raw_visit_result_t<Visitor, detail::forward_storage_t<Variant>>
     detail::raw_visit(Variant&&, Visitor&&)  // NOLINT(clang-diagnostic-microsoft-exception-spec)
         noexcept(detail::raw_visit_noexcept_all<Visitor, detail::forward_storage_t<Variant>>);
+
+    template<class Variant, class Visitor>
+    friend constexpr detail::raw_visit_result_t<Visitor, detail::forward_storage_t<Variant>>
+    detail::raw_visit_i(std::size_t, Variant&&, Visitor&&)  // NOLINT(clang-diagnostic-microsoft-exception-spec)
+        noexcept(detail::raw_visit_noexcept_all<Visitor, detail::forward_storage_t<Variant>>);
+
+    template<class Compare, class... Ts_>
+    friend struct detail::relops_visitor;
+
+    template<class... Ts_>
+        requires std::conjunction_v<core::relop_bool_expr<std::equal_to<>, Ts_>...>
+    friend constexpr bool operator==(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::equal_to<>, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires std::conjunction_v<core::relop_bool_expr<std::not_equal_to<>, Ts_>...>
+    friend constexpr bool operator!=(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::not_equal_to<>, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires std::conjunction_v<core::relop_bool_expr<std::less<>, Ts_>...>
+    friend constexpr bool operator<(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::less<>, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires std::conjunction_v<core::relop_bool_expr<std::greater<>, Ts_>...>
+    friend constexpr bool operator>(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::greater<>, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires std::conjunction_v<core::relop_bool_expr<std::less_equal<>, Ts_>...>
+    friend constexpr bool operator<=(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::less_equal<>, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires std::conjunction_v<core::relop_bool_expr<std::greater_equal<>, Ts_>...>
+    friend constexpr bool operator>=(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::greater_equal<>, Ts_ const&, Ts_ const&>...>);
+
+    template<class... Ts_>
+        requires (std::three_way_comparable<Ts_> && ...)
+    friend constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts_>...>
+    operator<=>(rvariant<Ts_...> const&, rvariant<Ts_...> const&)
+        noexcept(std::conjunction_v<std::is_nothrow_invocable_r<
+            std::common_comparison_category_t<std::compare_three_way_result_t<Ts_>...>,
+            std::compare_three_way, Ts_ const&, Ts_ const&
+        >...>);
 
 private:
     // hack: reduce compile error by half on unrelated overloads
@@ -1187,92 +1212,151 @@ get(rvariant<Ts...> const* v) noexcept
     return get_if<T>(v);
 }
 
-template<class... Ts, class Compare = std::equal_to<>>
-    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
+// -------------------------------------------
+
+namespace detail {
+
+template<class Compare, class... Ts>
+struct relops_visitor
+{
+    static_assert(sizeof...(Ts) > 0);
+
+    using Storage = make_variadic_union_t<Ts...>;
+    Storage const& v_storage;  // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+
+    using R = std::conditional_t<
+        std::is_same_v<Compare, std::compare_three_way>,
+        std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>,
+        bool
+    >;
+
+    template<std::size_t i, class T>
+    [[nodiscard]] YK_FORCEINLINE constexpr R operator()(std::in_place_index_t<i>, T const& w_alt) const
+        noexcept(std::disjunction_v<
+            std::bool_constant<i == std::variant_npos>,
+            std::is_nothrow_invocable_r<R, Compare, T const&, T const&>
+        >)
+    {
+        if constexpr (i != std::variant_npos) {
+            return Compare{}(detail::raw_get<i>(v_storage), w_alt);
+        } else {
+            (void)w_alt;
+            return Compare{}(0, 0);
+        }
+    }
+};
+
+} // detail
+
+
+template<class... Ts>
+    requires std::conjunction_v<core::relop_bool_expr<std::equal_to<>, Ts>...>
 [[nodiscard]] constexpr bool operator==(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::equal_to<>, Ts const&, Ts const&>...>)
 {
-    if (v.index() != w.index()) return false;
-    return detail::compare_relops<Compare>(v, w);
-}
-
-template<class... Ts, class Compare = std::not_equal_to<>>
-    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator!=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
-{
-    if (v.index() != w.index()) return true;
-    return detail::compare_relops<Compare>(v, w);
-}
-
-template<class... Ts, class Compare = std::less<>>
-    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
-{
-    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
-    if (vi < wi) return true;
-    if (vi > wi) return false;
-    return detail::compare_relops<Compare>(v, w);
-}
-
-template<class... Ts, class Compare = std::greater<>>
-    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
-{
-    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
-    if (vi > wi) return true;
-    if (vi < wi) return false;
-    return detail::compare_relops<Compare>(v, w);
-}
-
-template<class... Ts, class Compare = std::less_equal<>>
-    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
-{
-    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
-    if (vi < wi) return true;
-    if (vi > wi) return false;
-    return detail::compare_relops<Compare>(v, w);
-}
-
-template<class... Ts, class Compare = std::greater_equal<>>
-    requires std::conjunction_v<std::is_invocable_r<bool, Compare, Ts, Ts>...>
-[[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(noexcept(detail::compare_relops<Compare>(v, w)))
-{
-    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index());
-    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index());
-    if (vi > wi) return true;
-    if (vi < wi) return false;
-    return detail::compare_relops<Compare>(v, w);
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+    return vi == wi && detail::raw_visit_i(wi, w, detail::relops_visitor<std::equal_to<>, Ts...>{v.storage_});
 }
 
 template<class... Ts>
-    requires (std::three_way_comparable<Ts> && ...)
-[[nodiscard]] constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
-operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
-    noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
+    requires std::conjunction_v<core::relop_bool_expr<std::not_equal_to<>, Ts>...>
+[[nodiscard]] constexpr bool operator!=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::not_equal_to<>, Ts const&, Ts const&>...>)
 {
-    if (v.valueless_by_exception() || w.valueless_by_exception()) [[unlikely]] {
-        return w.valueless_by_exception() <=> v.valueless_by_exception();
-    }
-    if (auto c = v.index() <=> w.index(); c != 0) return c;
-    return v.raw_visit([&w]<std::size_t i, class T>(std::in_place_index_t<i>, T const& alt)
-        noexcept(std::conjunction_v<std::is_nothrow_invocable<std::compare_three_way, Ts const&, Ts const&>...>)
-        -> std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
-    {
-        if constexpr (i != std::variant_npos) {
-            return alt <=> detail::raw_get<i>(w.storage());
-        } else {
-            return std::strong_ordering::equivalent;
-        }
-    });
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+    return vi != wi || detail::raw_visit_i(wi, w, detail::relops_visitor<std::not_equal_to<>, Ts...>{v.storage_});
+}
+
+template<class... Ts>
+    requires std::conjunction_v<core::relop_bool_expr<std::less<>, Ts>...>
+[[nodiscard]] constexpr bool operator<(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::less<>, Ts const&, Ts const&>...>)
+{
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+
+    // Optimization technique for the expression below.
+    //   return (vi < wi) || (vi == wi && do_comp(v, w));
+    //
+    // Using `|` forces compiler to emit conditional move, reduces
+    // branch count by 1, making it 2x faster on trivial types.
+    // Note that `&&` cannot be `&` because doing so would make it
+    // not short-circuit, violating the precondition on visitation
+    // table access.
+    //
+    // Interestingly, MSVC's `std::variant` emits well-optimized
+    // code even without this technique. However, surprisingly,
+    // that's NOT because `std::variant` is well-optimized, but
+    // instead, it's because it is NOT optimal.
+    //
+    // When the compiler sees access to MSVC's `std::variant`,
+    // the compiler is smart enough to assume that `std::variant` is
+    // some sort of *opaque* layout (because MSVC's implementation is
+    // not standard-layout even for standard-layout alternatives, and
+    // also having many other undesirable characteristics in asm level).
+    //
+    // Memory access to such opaque type leads to a rather
+    // conservative control flow that preliminarily "guards" the
+    // vi==wi case, effectively reducing the branch count by 1.
+    //
+    // However, our implementation has much better characteristics
+    // where the compiler assumes it's some struct-like layout,
+    // enabling more aggressive optimization, which actually
+    // introduces extra branch (unfortunately).
+    return (vi < wi) |
+        ((vi == wi) && detail::raw_visit_i(wi, w, detail::relops_visitor<std::less<>, Ts...>{v.storage_}));
+}
+
+template<class... Ts>
+    requires std::conjunction_v<core::relop_bool_expr<std::greater<>, Ts>...>
+[[nodiscard]] constexpr bool operator>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::greater<>, Ts const&, Ts const&>...>)
+{
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+    return (vi > wi) |
+        ((vi == wi) && detail::raw_visit_i(wi, w, detail::relops_visitor<std::greater<>, Ts...>{v.storage_}));
+}
+
+template<class... Ts>
+    requires std::conjunction_v<core::relop_bool_expr<std::less_equal<>, Ts>...>
+[[nodiscard]] constexpr bool operator<=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::less_equal<>, Ts const&, Ts const&>...>)
+{
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+    return (vi < wi) |
+        ((vi == wi) && detail::raw_visit_i(wi, w, detail::relops_visitor<std::less_equal<>, Ts...>{v.storage_}));
+}
+
+template<class... Ts>
+    requires std::conjunction_v<core::relop_bool_expr<std::greater_equal<>, Ts>...>
+[[nodiscard]] constexpr bool operator>=(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<bool, std::greater_equal<>, Ts const&, Ts const&>...>)
+{
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+    return (vi > wi) |
+        ((vi == wi) && detail::raw_visit_i(wi, w, detail::relops_visitor<std::greater_equal<>, Ts...>{v.storage_}));
+}
+
+
+template<class... Ts>
+    requires (std::three_way_comparable<Ts> && ...)
+[[nodiscard]] YK_FORCEINLINE constexpr std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>
+operator<=>(rvariant<Ts...> const& v, rvariant<Ts...> const& w)
+    noexcept(std::conjunction_v<std::is_nothrow_invocable_r<
+        std::common_comparison_category_t<std::compare_three_way_result_t<Ts>...>,
+        std::compare_three_way, Ts const&, Ts const&
+    >...>)
+{
+    auto const vi = detail::valueless_bias<rvariant<Ts...>>(v.index_);
+    auto const wi = detail::valueless_bias<rvariant<Ts...>>(w.index_);
+    auto const comp = vi <=> wi;
+    return comp != 0 ? comp :
+        detail::raw_visit_i(wi, w, detail::relops_visitor<std::compare_three_way, Ts...>{v.storage_});
 }
 
 }  // yk

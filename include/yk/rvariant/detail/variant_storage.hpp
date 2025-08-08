@@ -29,7 +29,7 @@
 namespace yk::detail {
 
 template<bool NeverValueless, class T>
-[[nodiscard]] constexpr std::size_t valueless_bias(T i) noexcept
+[[nodiscard]] YK_FORCEINLINE constexpr std::size_t valueless_bias(T i) noexcept
 {
     if constexpr (NeverValueless) {
         return i;
@@ -39,7 +39,7 @@ template<bool NeverValueless, class T>
 }
 
 template<class Variant, class T>
-[[nodiscard]] constexpr std::size_t valueless_bias(T i) noexcept
+[[nodiscard]] YK_FORCEINLINE constexpr std::size_t valueless_bias(T i) noexcept
 {
     if constexpr (std::remove_cvref_t<Variant>::never_valueless) {
         return i;
@@ -49,7 +49,7 @@ template<class Variant, class T>
 }
 
 template<bool NeverValueless, class T>
-[[nodiscard]] constexpr std::size_t valueless_unbias(T i) noexcept
+[[nodiscard]] YK_FORCEINLINE constexpr std::size_t valueless_unbias(T i) noexcept
 {
     if constexpr (NeverValueless) {
         return i;
@@ -59,7 +59,7 @@ template<bool NeverValueless, class T>
 }
 
 template<class Variant, class T>
-[[nodiscard]] constexpr std::size_t valueless_unbias(T i) noexcept
+[[nodiscard]] YK_FORCEINLINE constexpr std::size_t valueless_unbias(T i) noexcept
 {
     if constexpr (std::remove_cvref_t<Variant>::never_valueless) {
         return i;
@@ -248,14 +248,14 @@ template<class Variant>
 using forward_storage_t = typename forward_storage_t_impl<Variant>::type;
 
 template<class Variant>
-[[nodiscard]] constexpr forward_storage_t<Variant>&&
+[[nodiscard]] YK_FORCEINLINE constexpr forward_storage_t<Variant>&&
 forward_storage(std::remove_reference_t<Variant>& v YK_LIFETIMEBOUND) noexcept
 {
     return std::forward<Variant>(v).storage();
 }
 
 template<class Variant>
-[[nodiscard]] constexpr forward_storage_t<Variant>&&
+[[nodiscard]] YK_FORCEINLINE constexpr forward_storage_t<Variant>&&
 forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 {
     return std::forward<Variant>(v).storage();
@@ -263,7 +263,7 @@ forward_storage(std::remove_reference_t<Variant>&& v YK_LIFETIMEBOUND) noexcept 
 
 
 template<std::size_t I, class Storage>
-[[nodiscard]] constexpr auto&& raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
+[[nodiscard]] YK_FORCEINLINE constexpr auto&& raw_get(Storage&& storage YK_LIFETIMEBOUND) noexcept
 {
          if constexpr (I ==  0) return std::forward<Storage>(storage).first;
     else if constexpr (I ==  1) return std::forward<Storage>(storage).rest.first;

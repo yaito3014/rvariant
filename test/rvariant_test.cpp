@@ -1580,8 +1580,70 @@ TEST_CASE("non_recursive_same_as_std") // not [recursive]
     }
 }
 
+namespace {
+
+struct noneq_three_way_thrower
+{
+    struct exception {};
+    bool operator==(noneq_three_way_thrower const&) = delete;
+    bool operator<(noneq_three_way_thrower const&) const { return false; }
+    std::strong_ordering operator<=>(noneq_three_way_thrower const&) const { throw exception{}; }  // NOLINT(hicpp-exception-baseclass)
+};
+
+struct eq_three_way_thrower
+{
+    struct exception {};
+    bool operator==(eq_three_way_thrower const&) const { return true; }
+    bool operator<(eq_three_way_thrower const&) const { return false; }
+    bool operator>(eq_three_way_thrower const&) const { return false; }
+    bool operator<=(eq_three_way_thrower const&) const { return true; }
+    bool operator>=(eq_three_way_thrower const&) const { return true; }
+    std::strong_ordering operator<=>(eq_three_way_thrower const&) const { throw exception{}; }  // NOLINT(hicpp-exception-baseclass)
+};
+
+} // anonymous
+
 TEST_CASE("relational operators")
 {
+    {
+        REQUIRE_NOTHROW(noneq_three_way_thrower{} < noneq_three_way_thrower{});
+        STATIC_REQUIRE(!std::is_invocable_r_v<bool, std::equal_to<>, noneq_three_way_thrower const&, noneq_three_way_thrower const&>);
+        STATIC_REQUIRE(!yk::core::relop_bool_expr_v<std::equal_to<>, noneq_three_way_thrower>);
+        REQUIRE_THROWS_AS(noneq_three_way_thrower{} <=> noneq_three_way_thrower{}, noneq_three_way_thrower::exception);
+
+        // std::variant on GCC/Clang/MSVC all fails to evaluate these.
+        // TODO: Is this a bug on their implementation?
+        {
+            using V = yk::rvariant<noneq_three_way_thrower>;
+            CHECK_NOTHROW(V{} < V{});
+            STATIC_REQUIRE(!std::is_invocable_r_v<bool, std::equal_to<>, V const&, V const&>);
+            STATIC_CHECK(!yk::core::relop_bool_expr_v<std::equal_to<>, V>);
+        }
+    }
+
+    // std::variant on GCC/Clang/MSVC all fails to evaluate these.
+    // TODO: Is this a bug on their implementation?
+
+    {
+        STATIC_REQUIRE(std::is_invocable_r_v<bool, std::equal_to<>, eq_three_way_thrower const&, eq_three_way_thrower const&>);
+        STATIC_REQUIRE(yk::core::relop_bool_expr_v<std::equal_to<>, eq_three_way_thrower>);
+        REQUIRE_NOTHROW(eq_three_way_thrower{} < eq_three_way_thrower{});
+        REQUIRE_THROWS_AS(eq_three_way_thrower{} <=> eq_three_way_thrower{}, eq_three_way_thrower::exception);
+
+        {
+            using V = yk::rvariant<eq_three_way_thrower>;
+            STATIC_REQUIRE(std::is_invocable_r_v<bool, std::equal_to<>, V const&, V const&>);
+            STATIC_CHECK(yk::core::relop_bool_expr_v<std::equal_to<>, V>);
+            CHECK_NOTHROW(V{} == V{});
+            CHECK_NOTHROW(V{} != V{});
+            CHECK_NOTHROW(V{} <  V{}); // make sure <=> is not selected
+            CHECK_NOTHROW(V{} >  V{}); // make sure <=> is not selected
+            CHECK_NOTHROW(V{} <= V{}); // make sure <=> is not selected
+            CHECK_NOTHROW(V{} >= V{}); // make sure <=> is not selected
+            CHECK_THROWS_AS(V{} <=> V{}, eq_three_way_thrower::exception);
+        }
+    }
+
     {
         yk::rvariant<int> a = 33, b = 4;
         CHECK(a == a);

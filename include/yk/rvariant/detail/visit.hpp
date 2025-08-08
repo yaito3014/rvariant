@@ -162,7 +162,7 @@ template<>
 struct raw_visit_dispatch<-1>
 {
     template<std::size_t N, class Visitor, class Storage>
-    [[nodiscard]] static constexpr raw_visit_result_t<Visitor, Storage>
+    [[nodiscard]] YK_FORCEINLINE static constexpr raw_visit_result_t<Visitor, Storage>
     apply(std::size_t const i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&& storage)
         noexcept(raw_visit_noexcept_all<Visitor, Storage>)
     {
@@ -183,7 +183,7 @@ struct raw_visit_dispatch<-1>
     struct raw_visit_dispatch<(strategy)> \
     { \
         template<std::size_t N, class Visitor, class Storage> \
-        [[nodiscard]] static constexpr detail::raw_visit_result_t<Visitor, Storage> \
+        [[nodiscard]] YK_FORCEINLINE static constexpr detail::raw_visit_result_t<Visitor, Storage> \
         apply(std::size_t const i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&& storage) \
             noexcept(detail::raw_visit_noexcept_all<Visitor, Storage>) \
         { \
@@ -205,13 +205,26 @@ YK_RAW_VISIT_DISPATCH_DEF(3);
 
 
 template<class Variant, class Visitor>
-constexpr raw_visit_result_t<Visitor, forward_storage_t<Variant>>
+YK_FORCEINLINE constexpr raw_visit_result_t<Visitor, forward_storage_t<Variant>>
 raw_visit(Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
     noexcept(raw_visit_noexcept_all<Visitor, forward_storage_t<Variant>>)
 {
     constexpr std::size_t N = detail::valueless_bias<Variant>(yk::variant_size_v<std::remove_reference_t<Variant>>);
     return raw_visit_dispatch<detail::visit_strategy<N>>::template apply<N>(
         detail::valueless_bias<Variant>(v.index_),
+        std::forward<Visitor>(vis),
+        detail::forward_storage<Variant>(v)
+    );
+}
+
+template<class Variant, class Visitor>
+YK_FORCEINLINE constexpr raw_visit_result_t<Visitor, forward_storage_t<Variant>>
+raw_visit_i(std::size_t const biased_i, Variant&& v, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
+    noexcept(raw_visit_noexcept_all<Visitor, forward_storage_t<Variant>>)
+{
+    constexpr std::size_t N = detail::valueless_bias<Variant>(yk::variant_size_v<std::remove_reference_t<Variant>>);
+    return raw_visit_dispatch<detail::visit_strategy<N>>::template apply<N>(
+        biased_i,
         std::forward<Visitor>(vis),
         detail::forward_storage<Variant>(v)
     );
@@ -431,7 +444,7 @@ template<>
 struct visit_dispatch<-1>
 {
     template<class R, class OverloadSeq, class Visitor, class... Storage>
-    [[nodiscard]] static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
+    [[nodiscard]] YK_FORCEINLINE static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
         YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeq, Visitor, Storage...>::value)
     {
         constexpr auto const& table = visit_table<R, Visitor, OverloadSeq, Storage...>::table;
@@ -485,7 +498,7 @@ template<std::size_t... Ns, bool... NeverValueless>
 struct flat_index<std::index_sequence<Ns...>, NeverValueless...>
 {
     template<class... RuntimeIndex>
-    [[nodiscard]] static constexpr std::size_t
+    [[nodiscard]] YK_FORCEINLINE static constexpr std::size_t
     get(RuntimeIndex... index) noexcept
     {
         static_assert(sizeof...(RuntimeIndex) == sizeof...(Ns));
@@ -495,7 +508,7 @@ struct flat_index<std::index_sequence<Ns...>, NeverValueless...>
 
 private:
     template<std::size_t... Stride, class... RuntimeIndex>
-    [[nodiscard]] static constexpr std::size_t
+    [[nodiscard]] YK_FORCEINLINE static constexpr std::size_t
     get_impl(std::index_sequence<Stride...>, RuntimeIndex... index) noexcept
     {
         return ((Stride * detail::valueless_bias<NeverValueless>(index)) + ...);
@@ -571,7 +584,7 @@ template<
     // https://eel.is/c++draft/variant.visit#2
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
-detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
+YK_FORCEINLINE detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
 constexpr visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>,
@@ -606,7 +619,7 @@ template<
     // https://eel.is/c++draft/variant.visit#2
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
-constexpr R visit(Visitor&& vis, Variants&&... vars)
+YK_FORCEINLINE constexpr R visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         R,
         detail::make_OverloadSeq<Variants...>,
