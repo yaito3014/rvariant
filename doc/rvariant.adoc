@@ -5,7 +5,7 @@ Distributed under the Boost Software License, Version 1.0.
 https://www.boost.org/LICENSE_1_0.txt
 ////
 
-= rvariant
+= rvariantlink:https://github.com/yaito3014/rvariant[image:https://img.shields.io/badge/GitHub-rvariant-purple?logo=github[GitHub], window="_blank"]
 Yaito Kakeyama; Nana Sakisaka
 :license-url: https://www.boost.org/LICENSE_1_0.txt
 :license-title: Boost Software License, Version 1.0
