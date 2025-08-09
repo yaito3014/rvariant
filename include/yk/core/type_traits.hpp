@@ -148,6 +148,8 @@ struct at_c<I, TT<Ts...>>
 
 inline constexpr std::size_t find_npos = static_cast<std::size_t>(-1);
 
+namespace detail {
+
 template<std::size_t I, class T, class... Ts>
 struct find_index_impl
     : std::integral_constant<std::size_t, find_npos>
@@ -162,11 +164,13 @@ struct find_index_impl<I, T, U, Us...>
     >
 {};
 
+} // detail
+
 template<class T, class List>
 struct find_index;
 
 template<class T, template<class...> class TT, class... Ts>
-struct find_index<T, TT<Ts...>> : find_index_impl<0, T, Ts...> {};
+struct find_index<T, TT<Ts...>> : detail::find_index_impl<0, T, Ts...> {};
 
 template<class T, class List>
 inline constexpr std::size_t find_index_v = find_index<T, List>::value;
@@ -192,6 +196,8 @@ template<template<class A, class B> class F, class U, class... Ts>
 inline constexpr bool conjunction_for_v = conjunction_for<F, U, Ts...>::value;
 
 
+namespace detail {
+
 template<bool Found, class T, class... Us>
 struct exactly_once_impl : std::bool_constant<Found> {};
 
@@ -203,11 +209,13 @@ template<class T, class U, class... Us>
 struct exactly_once_impl<true, T, U, Us...>
     : std::conditional_t<std::is_same_v<T, U>, std::false_type, exactly_once_impl<true, T, Us...>> {};
 
+} // detail
+
 template<class T, class List>
 struct exactly_once;
 
 template<class T, template<class...> class TT, class... Ts>
-struct exactly_once<T, TT<Ts...>> : exactly_once_impl<false, T, Ts...>
+struct exactly_once<T, TT<Ts...>> : detail::exactly_once_impl<false, T, Ts...>
 {
     static_assert(sizeof...(Ts) > 0);
 };
