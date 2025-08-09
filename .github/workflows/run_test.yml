@@ -87,6 +87,13 @@ jobs:
         if: matrix.compiler.name == 'GCC'
         run: sudo apt-get update && sudo apt-get install -y g++-${{ matrix.compiler.version }}
 
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: ${{ github.workspace }}/build/_deps
+          key: deps-${{ matrix.compiler.executable }}-${{ matrix.cpp_version }}-${{ matrix.build_type }}
+
       - name: Configure
         run: >
           cmake -B ${{ github.workspace }}/build
