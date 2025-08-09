@@ -1,6 +1,6 @@
 name: Deploy for PR
 
-on: pull_request
+on: pull_request_target
 
 jobs:
   check-changes:
