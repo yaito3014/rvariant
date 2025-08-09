@@ -829,25 +829,18 @@ TEST_CASE("default construction")
         STATIC_CHECK(std::is_trivially_destructible_v<yk::rvariant<int>>);
         STATIC_CHECK(std::is_trivially_copyable_v<yk::rvariant<int>>);
 
-        // try to test in constexpr context to detect UB
-        constexpr auto default_constructed_value = []() constexpr -> int {
-            using V = yk::rvariant<int>;
-            alignas(V) std::array<std::byte, sizeof(V)> storage;
-            {
-                V arbitrary_value(42);
-                storage = std::bit_cast<decltype(storage)>(arbitrary_value);
-            }
-            V* v_ptr = new (&storage) V; // default-initialize
-            int value = yk::get<int>(*v_ptr); // MUST be value-initialized as per https://eel.is/c++draft/variant.ctor#3
-            v_ptr->~V();
-            return value;
-        };
+        // NB: bit_cast from union type is not allowed in constant expression
+        using V = yk::rvariant<int>;
+        alignas(V) std::array<std::byte, sizeof(V)> storage;
+        {
+            V arbitrary_value(42);
+            storage = std::bit_cast<decltype(storage)>(arbitrary_value);
+        }
+        V* v_ptr = new (&storage) V; // default-initialize
+        int const default_constructed_value = yk::get<int>(*v_ptr); // MUST be value-initialized as per https://eel.is/c++draft/variant.ctor#3
+        v_ptr->~V();
 
-#if __cpp_lib_constexpr_new >= 202406L
-        STATIC_CHECK(default_constructed_value() == 0);
-#else
-        CHECK(default_constructed_value() == 0);
-#endif
+        CHECK(default_constructed_value == 0);
     }
 
     {

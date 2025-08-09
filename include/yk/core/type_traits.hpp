@@ -42,61 +42,113 @@ struct type_list
     static constexpr std::size_t size = sizeof...(Ts);
 };
 
+template<class T, class> struct pack_identity { using type = T; };
+template<class T, class> using pack_identity_t = T;
 
-template<std::size_t I, class... Ts>
-struct pack_indexing;
+template<class T, auto> struct npack_identity { using type = T; };
+template<class T, auto> using npack_identity_t = T;
 
-template<std::size_t I, class... Ts>
-using pack_indexing_t = typename pack_indexing<I, Ts...>::type;
+template<auto> using nvoid_t = void;
 
-template<class T, class... Ts>
-struct pack_indexing<0, T, Ts...> { using type = T; };
 
-template<std::size_t I, class T, class... Ts>
-struct pack_indexing<I, T, Ts...> : pack_indexing<I - 1, Ts...> {};
+namespace detail {
 
-#if __cpp_pack_indexing >= 202311L
-# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) Ts_ellipsis[I]
-#else
-# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) ::yk::core::pack_indexing_t<I, Ts_ellipsis>
-#endif
+template<class Voids>
+struct do_pack_indexing;
+
+template<std::size_t... Voids>
+struct do_pack_indexing<std::index_sequence<Voids...>>
+{
+    template<class T>
+    static T select(nvoid_t<Voids>*..., std::type_identity<T>*, ...);
+};
+
+template<class Voids>
+struct do_npack_indexing;
+
+template<std::size_t... Voids>
+struct do_npack_indexing<std::index_sequence<Voids...>>
+{
+    template<class T, T N>
+    static std::integral_constant<T, N> select(nvoid_t<Voids>*..., std::integral_constant<T, N>*, ...);
+};
+
+} // detail
+
 
 template<std::size_t I, class T>
 struct at_c;
 
-template<std::size_t I, template<class...> class TT, class... Ts>
-struct at_c<I, TT<Ts...>>
-{
-#if defined(__clang__)
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wc++26-extensions"
-#endif
-
-    using type = YK_CORE_PACK_INDEXING(I, Ts...);
-
-#if defined(__clang__)
-# pragma clang diagnostic pop
-#endif
-};
-
 template<std::size_t I, class T>
 using at_c_t = typename at_c<I, T>::type;
 
+#if __cpp_pack_indexing >= 202311L // has native pack indexing
+# if defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wc++26-extensions"
+# endif
+
+# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) Ts_ellipsis[I]
+
+template<std::size_t I, class... Ts> struct pack_indexing { using type = Ts...[I]; };
+template<std::size_t I, class... Ts> using pack_indexing_t = Ts...[I];
+template<std::size_t I, auto... Ns> struct npack_indexing { static constexpr auto value = Ns...[I]; };
+template<std::size_t I, auto... Ns> constexpr auto npack_indexing_v = Ns...[I];
+
+template<std::size_t I, template<class...> class TT, class... Ts>
+struct at_c<I, TT<Ts...>>
+{
+    using type = Ts...[I];
+};
+# if defined(__clang__)
+#  pragma clang diagnostic pop
+# endif
+// ----------------------------------------------------------
+#else // no native pack indexing
+template<std::size_t I, class... Ts>
+struct pack_indexing
+{
+    static_assert(I < sizeof...(Ts));
+    using type = decltype(detail::do_pack_indexing<std::make_index_sequence<I>>::select(
+        static_cast<std::type_identity<Ts>*>(nullptr)...
+    ));
+};
+
+template<std::size_t I, class... Ts>
+using pack_indexing_t = typename pack_indexing<I, Ts...>::type;
+
+# define YK_CORE_PACK_INDEXING(I, Ts_ellipsis) ::yk::core::pack_indexing_t<I, Ts_ellipsis>
+
 
 template<std::size_t I, auto... Ns>
-struct npack_indexing;
-
-template<auto N, auto... Ns>
-struct npack_indexing<0, N, Ns...> : std::integral_constant<std::size_t, N> {};
-
-template<std::size_t I, auto N, auto... Ns>
-struct npack_indexing<I, N, Ns...> : npack_indexing<I - 1, Ns...> {};
+struct npack_indexing
+{
+    static_assert(I < sizeof...(Ns));
+    static constexpr auto value = decltype(detail::do_npack_indexing<std::make_index_sequence<I>>::select(
+        static_cast<std::integral_constant<decltype(Ns), Ns>*>(nullptr)...
+    ))::value;
+};
 
 template<std::size_t I, auto... Ns>
 constexpr auto npack_indexing_v = npack_indexing<I, Ns...>::value;
 
 
+template<std::size_t I, template<class...> class TT, class... Ts>
+struct at_c<I, TT<Ts...>>
+{
+    static_assert(I < sizeof...(Ts));
+    using type = decltype(detail::do_pack_indexing<std::make_index_sequence<I>>::select(
+        static_cast<std::type_identity<Ts>*>(nullptr)...
+    ));
+};
+#endif
+
+// ----------------------------------------------------------
+
+
 inline constexpr std::size_t find_npos = static_cast<std::size_t>(-1);
+
+namespace detail {
 
 template<std::size_t I, class T, class... Ts>
 struct find_index_impl
@@ -112,11 +164,13 @@ struct find_index_impl<I, T, U, Us...>
     >
 {};
 
+} // detail
+
 template<class T, class List>
 struct find_index;
 
 template<class T, template<class...> class TT, class... Ts>
-struct find_index<T, TT<Ts...>> : find_index_impl<0, T, Ts...> {};
+struct find_index<T, TT<Ts...>> : detail::find_index_impl<0, T, Ts...> {};
 
 template<class T, class List>
 inline constexpr std::size_t find_index_v = find_index<T, List>::value;
@@ -142,6 +196,8 @@ template<template<class A, class B> class F, class U, class... Ts>
 inline constexpr bool conjunction_for_v = conjunction_for<F, U, Ts...>::value;
 
 
+namespace detail {
+
 template<bool Found, class T, class... Us>
 struct exactly_once_impl : std::bool_constant<Found> {};
 
@@ -153,11 +209,13 @@ template<class T, class U, class... Us>
 struct exactly_once_impl<true, T, U, Us...>
     : std::conditional_t<std::is_same_v<T, U>, std::false_type, exactly_once_impl<true, T, Us...>> {};
 
+} // detail
+
 template<class T, class List>
 struct exactly_once;
 
 template<class T, template<class...> class TT, class... Ts>
-struct exactly_once<T, TT<Ts...>> : exactly_once_impl<false, T, Ts...>
+struct exactly_once<T, TT<Ts...>> : detail::exactly_once_impl<false, T, Ts...>
 {
     static_assert(sizeof...(Ts) > 0);
 };

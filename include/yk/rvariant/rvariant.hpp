@@ -351,7 +351,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         static_assert(noexcept(t_old_i = tmp));
                         t_old_i = tmp;
                     } else {
-                        static_assert(!rvariant_base::never_valueless);
+                        static_assert(!never_valueless);
                         t_old_i.~T_old_i();
                         this->index_ = detail::variant_npos<sizeof...(Ts)>;
                         static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
@@ -378,7 +378,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         std::construct_at(&this->storage(), std::in_place_index<I>, tmp); // never throws
                         this->index_ = I;
                     } else {
-                        static_assert(!rvariant_base::never_valueless);
+                        static_assert(!never_valueless);
                         t_old_i.~T_old_i();
                         this->index_ = detail::variant_npos<sizeof...(Ts)>;
                         static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...)));
@@ -400,14 +400,14 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     [[nodiscard]] constexpr storage_type const&& storage() const&& noexcept { return std::move(storage_); }
 
     template<class Self, class Visitor>
-    constexpr auto
+    YK_FORCEINLINE constexpr auto
     raw_visit(this Self&& self, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
         noexcept(detail::raw_visit_noexcept_all<Visitor, decltype(std::forward_like<Self>(self.storage_))>)
         -> detail::raw_visit_result_t<Visitor, decltype(std::forward_like<Self>(self.storage_))>
     {
-        constexpr std::size_t N = detail::valueless_bias<rvariant_base::never_valueless>(sizeof...(Ts));
-        return raw_visit_dispatch<detail::visit_strategy<N>>::template apply<N>(
-            detail::valueless_bias<rvariant_base::never_valueless>(self.index_),
+        constexpr std::size_t N = detail::valueless_bias<never_valueless>(sizeof...(Ts));
+        return raw_visit_dispatch<never_valueless, detail::visit_strategy<N>>::template apply<N>(
+            detail::valueless_bias<never_valueless>(self.index_),
             std::forward<Visitor>(vis),
             std::forward_like<Self>(self.storage_)
         );
@@ -772,7 +772,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             std::swap(storage(), rhs.storage()); // no ADL
             std::swap(index_, rhs.index_);
 
-        } else if constexpr (sizeof...(Ts) * sizeof...(Ts) < detail::visit_instantiation_limit) {
+        } else if constexpr (sizeof...(Ts) * sizeof...(Ts) < 1024) {
         YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
             this->raw_visit([this, &rhs]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                 noexcept(all_nothrow_swappable)

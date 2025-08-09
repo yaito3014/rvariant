@@ -14,6 +14,19 @@ TEST_CASE("pack_indexing", "[core]")
     STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, int>, int>);
     STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, int, float>, int>);
     STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<1, int, float>, float>);
+
+    // make sure non-object and non-referenceable type is working
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, void>, void>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, void, int>, void>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<1, void, int>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, int, void>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<1, int, void>, void>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<0, void, void>, void>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::pack_indexing_t<1, void, void>, void>);
+
+    STATIC_REQUIRE(std::is_same_v<yk::core::at_c_t<0, yk::core::type_list<int>>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::at_c_t<0, yk::core::type_list<int, float>>, int>);
+    STATIC_REQUIRE(std::is_same_v<yk::core::at_c_t<1, yk::core::type_list<int, float>>, float>);
 }
 
 TEST_CASE("exactly_once", "[core]")
@@ -34,6 +47,8 @@ TEST_CASE("find_index", "[core]")
     STATIC_REQUIRE(yk::core::find_index_v<float,  yk::core::type_list<int, float, double>> == 1);
     STATIC_REQUIRE(yk::core::find_index_v<double, yk::core::type_list<int, float, double>> == 2);
     STATIC_REQUIRE(yk::core::find_index_v<int,    yk::core::type_list<float, double>> == yk::core::find_npos);
+
+    STATIC_REQUIRE(yk::core::find_index_v<int, yk::core::type_list<int, int, double>> == 0);
 }
 
 TEST_CASE("Cpp17EqualityComparable", "[core]")

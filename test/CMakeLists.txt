@@ -5,6 +5,9 @@
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# https://github.com/catchorg/Catch2/blob/devel/docs/configuration.md
+set(CATCH_CONFIG_FAST_COMPILE ON)
+
 include(FetchContent)
 FetchContent_Declare(
     Catch2
@@ -111,7 +114,15 @@ target_sources(
 if(MSVC)
     target_compile_options(
         yk_rvariant_benchmark_support
-        PUBLIC /W4 /analyze /analyze:external-
+        PUBLIC
+            /W4 /analyze /analyze:external-
+            $<$<CONFIG:Release,MinSizeRel>:/Oi> # intrinsic
+    )
+else() # non-MSVC
+    target_compile_options(
+        yk_rvariant_benchmark_support
+        PUBLIC
+            $<$<CONFIG:Release>:-march=native> # intrinsic
     )
 endif()
 
@@ -135,5 +146,5 @@ set_target_properties(
 target_link_libraries(
     yk_rvariant_benchmark
     PRIVATE yk_rvariant_benchmark_support
-    PUBLIC yk::rvariant
+    PRIVATE yk::rvariant
 )
