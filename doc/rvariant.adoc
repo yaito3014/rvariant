@@ -1621,6 +1621,9 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 [[benchmark]]
 == Benchmark
 
+- *CPU:* Intel Core i9-14900KF (not overclocked)
+- *RAM:* Crucial Pro 48GB DDR5-5600 x 4
+
 === GCC
 ++++
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=804955990&amp;format=interactive"></iframe>
