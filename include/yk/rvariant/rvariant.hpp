@@ -772,7 +772,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             std::swap(storage(), rhs.storage()); // no ADL
             std::swap(index_, rhs.index_);
 
-        } else if constexpr (sizeof...(Ts) * sizeof...(Ts) < detail::visit_instantiation_limit) {
+        } else if constexpr (sizeof...(Ts) * sizeof...(Ts) < 1024) {
         YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
             this->raw_visit([this, &rhs]<std::size_t i, class ThisAlt>(std::in_place_index_t<i>, [[maybe_unused]] ThisAlt& this_alt)
                 noexcept(all_nothrow_swappable)

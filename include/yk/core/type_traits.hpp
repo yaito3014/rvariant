@@ -59,8 +59,8 @@ struct do_pack_indexing;
 template<std::size_t... Voids>
 struct do_pack_indexing<std::index_sequence<Voids...>>
 {
-    template<class T, class... Rest>
-    static T select(nvoid_t<Voids>*..., std::type_identity<T>*, Rest...);
+    template<class T>
+    static T select(nvoid_t<Voids>*..., std::type_identity<T>*, ...);
 };
 
 template<class Voids>
@@ -69,8 +69,8 @@ struct do_npack_indexing;
 template<std::size_t... Voids>
 struct do_npack_indexing<std::index_sequence<Voids...>>
 {
-    template<class T, T N, class... Rest>
-    static std::integral_constant<T, N> select(nvoid_t<Voids>*..., std::integral_constant<T, N>*, Rest...);
+    template<class T, T N>
+    static std::integral_constant<T, N> select(nvoid_t<Voids>*..., std::integral_constant<T, N>*, ...);
 };
 
 } // detail

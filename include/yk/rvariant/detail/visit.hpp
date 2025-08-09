@@ -30,9 +30,6 @@ namespace detail {
     throw std::bad_variant_access{};
 }
 
-// TODO: apply same logic to other visits with >= O(n^2) branch
-inline constexpr std::size_t visit_instantiation_limit = 1024;
-
 #define YK_VISIT_CASES_0(def, ofs) \
     def(ofs); \
     def((ofs) + 1); \
