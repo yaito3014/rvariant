@@ -92,7 +92,7 @@ struct Table
     std::string make_csv() const
     {
         std::string csv;
-        csv += std::format("T={} / alternatives={} / N={},std::variant,rvariant\n", type_name, AltN, N);
+        csv += std::format("T={} | alternatives={} | N={},std::variant,rvariant\n", type_name, AltN, N);
 
         for (auto const& [a, b] : std::views::zip(std_datas, rva_datas)) {
             if (a.key != b.key) throw std::logic_error{"invalid scheme"};
@@ -128,7 +128,6 @@ void benchmark_construct_3(Table::EntryList& entries, std::size_t const N, Vars&
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("construction: {:.3f} ms", elapsed.count());
     entries.emplace_back("construction", elapsed);
 }
 
@@ -171,7 +170,6 @@ void benchmark_construct_16(Table::EntryList& entries, std::size_t const N, Vars
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("construction: {:.3f} ms", elapsed.count());
     entries.emplace_back("construction", elapsed);
 }
 
@@ -186,7 +184,6 @@ YK_FORCEINLINE void benchmark_copy_assign(Table::EntryList& entries, std::size_t
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("copy assign: {:.3f} ms", elapsed.count());
     entries.emplace_back("copy assign", elapsed);
 
     disable_optimization(sum);
@@ -205,7 +202,6 @@ void benchmark_visit(Table::EntryList& entries, std::size_t const N, Vars const&
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("visit: {:.3f} ms", elapsed.count());
     entries.emplace_back("visit", elapsed);
 
     disable_optimization(sum);
@@ -224,7 +220,6 @@ void benchmark_multi_visit(Table::EntryList& entries, std::size_t const N, Vars 
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("multi visit (2 vars): {:.3f} ms", elapsed.count());
     entries.emplace_back("multi visit (2 vars)", elapsed);
 
     disable_optimization(sum);
@@ -246,7 +241,6 @@ void benchmark_get_3(Table::EntryList& entries, std::size_t const N, Vars const&
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("get: {:.3f} ms", elapsed.count());
     entries.emplace_back("get", elapsed);
 
     disable_optimization(sum);
@@ -281,7 +275,6 @@ void benchmark_get_16(Table::EntryList& entries, std::size_t const N, Vars const
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("get: {:.3f} ms", elapsed.count());
     entries.emplace_back("get", elapsed);
 
     disable_optimization(sum);
@@ -301,7 +294,6 @@ void benchmark_get_if_3(Table::EntryList& entries, std::size_t const N, Vars con
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("get_if: {:.3f} ms", elapsed.count());
     entries.emplace_back("get_if", elapsed);
 
     disable_optimization(sum);
@@ -334,7 +326,6 @@ void benchmark_get_if_16(Table::EntryList& entries, std::size_t const N, Vars co
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("get_if: {:.3f} ms", elapsed.count());
     entries.emplace_back("get_if", elapsed);
 
     disable_optimization(sum);
@@ -365,7 +356,6 @@ void benchmark_operator(Table::EntryList& entries, std::size_t const N, Vars con
     }
     auto const end_time = Clock::now();
     auto const elapsed = std::chrono::duration_cast<duration_type>(end_time - start_time);
-    std::println("{}: {:.3f} ms", operator_name<Comp>(), elapsed.count());
     entries.emplace_back(std::string{operator_name<Comp>()}, elapsed);
 
     disable_optimization(sum);
@@ -376,16 +366,13 @@ void do_bench(Table& table_3, Table& table_16, std::size_t const N)
 {
     table_3.N = N;
     table_16.N = N;
-    std::println("N = {}", N);
 
     {
         constexpr std::size_t AltN = 3;
         table_3.AltN = AltN;
-        std::println("alternatives: {}", AltN);
 
         {
             using V = many_V_t<std::variant, AltN, T>;
-            std::println("[std::variant]");
             auto& entries = table_3.std_datas;
 
             std::vector<V, yk::default_init_allocator<V>> vars;
@@ -404,12 +391,9 @@ void do_bench(Table& table_3, Table& table_16, std::size_t const N)
             benchmark_operator<std::less_equal<>>(entries, N, vars);
             benchmark_operator<std::greater_equal<>>(entries, N, vars);
             benchmark_operator<std::compare_three_way>(entries, N, vars);
-
-            std::println("");
         }
         {
             using V = many_V_t<yk::rvariant, AltN, T>;
-            std::println("[yk::rvariant]");
             auto& entries = table_3.rva_datas;
 
             std::vector<V, yk::default_init_allocator<V>> vars;
@@ -428,18 +412,14 @@ void do_bench(Table& table_3, Table& table_16, std::size_t const N)
             benchmark_operator<std::less_equal<>>(entries, N, vars);
             benchmark_operator<std::greater_equal<>>(entries, N, vars);
             benchmark_operator<std::compare_three_way>(entries, N, vars);
-
-            std::println("");
         }
     }
     {
         constexpr std::size_t AltN = 16;
         table_16.AltN = 16;
-        std::println("alternatives: {}", AltN);
 
         {
             using V = many_V_t<std::variant, AltN, T>;
-            std::println("[std::variant]");
             auto& entries = table_16.std_datas;
 
             std::vector<V, yk::default_init_allocator<V>> vars;
@@ -458,12 +438,9 @@ void do_bench(Table& table_3, Table& table_16, std::size_t const N)
             benchmark_operator<std::less_equal<>>(entries, N, vars);
             benchmark_operator<std::greater_equal<>>(entries, N, vars);
             benchmark_operator<std::compare_three_way>(entries, N, vars);
-
-            std::println("");
         }
         {
             using V = many_V_t<yk::rvariant, AltN, T>;
-            std::println("[yk::rvariant]");
             auto& entries = table_16.rva_datas;
 
             std::vector<V, yk::default_init_allocator<V>> vars;
@@ -475,15 +452,13 @@ void do_bench(Table& table_3, Table& table_16, std::size_t const N)
             benchmark_visit(entries, N, vars);
             benchmark_multi_visit(entries, N, vars);
 
-            std::print("operator== "); benchmark_operator<std::equal_to<>>(entries, N, vars);
-            std::print("operator!= "); benchmark_operator<std::not_equal_to<>>(entries, N, vars);
-            std::print("operator<  "); benchmark_operator<std::less<>>(entries, N, vars);
-            std::print("operator>  "); benchmark_operator<std::greater<>>(entries, N, vars);
-            std::print("operator<= "); benchmark_operator<std::less_equal<>>(entries, N, vars);
-            std::print("operator>= "); benchmark_operator<std::greater_equal<>>(entries, N, vars);
-            std::print("operator<=>"); benchmark_operator<std::compare_three_way>(entries, N, vars);
-
-            std::println("");
+            benchmark_operator<std::equal_to<>>(entries, N, vars);
+            benchmark_operator<std::not_equal_to<>>(entries, N, vars);
+            benchmark_operator<std::less<>>(entries, N, vars);
+            benchmark_operator<std::greater<>>(entries, N, vars);
+            benchmark_operator<std::less_equal<>>(entries, N, vars);
+            benchmark_operator<std::greater_equal<>>(entries, N, vars);
+            benchmark_operator<std::compare_three_way>(entries, N, vars);
         }
     }
 }
@@ -541,10 +516,7 @@ int benchmark_main(std::size_t const N)
         int_table_3{"int"}, int_table_16{"int"},
         str_table_3{"std::string"}, str_table_16{"std::string"};
 
-    std::println("T = int");
     do_bench<int>(int_table_3, int_table_16, N);
-
-    std::println("T = std::string");
     do_bench<std::string>(str_table_3, str_table_16, std::max(N / 5, 100uz));
 
     auto const save_csv = [](char const* name, std::string const& csv) {
@@ -554,7 +526,6 @@ int benchmark_main(std::size_t const N)
     };
     save_csv("00_int3.csv", int_table_3.make_csv());
     save_csv("01_int16.csv", int_table_16.make_csv());
-    std::println("");
     save_csv("02_str3.csv", str_table_3.make_csv());
     save_csv("03_str16.csv", str_table_16.make_csv());
 
