@@ -1621,9 +1621,56 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 [[benchmark]]
 == Benchmark
 
-Non-recursive / Recursive
+=== GCC
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=804955990&amp;format=interactive"></iframe>
+++++
 
-GCC / Clang / MSVC
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=621295946&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=88715623&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=278187472&amp;format=interactive"></iframe>
+++++
+
+=== Clang
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=679075429&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=1601224301&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=283810185&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=144195081&amp;format=interactive"></iframe>
+++++
+
+=== MSVC
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=1168105336&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=1271822110&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=873983110&amp;format=interactive"></iframe>
+++++
+
+++++
+<iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=1452444822&amp;format=interactive"></iframe>
+++++
 
 
 [[about]]
