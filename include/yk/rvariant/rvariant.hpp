@@ -400,7 +400,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     [[nodiscard]] constexpr storage_type const&& storage() const&& noexcept { return std::move(storage_); }
 
     template<class Self, class Visitor>
-    constexpr auto
+    YK_FORCEINLINE constexpr auto
     raw_visit(this Self&& self, Visitor&& vis)  // NOLINT(cppcoreguidelines-missing-std-forward)
         noexcept(detail::raw_visit_noexcept_all<Visitor, decltype(std::forward_like<Self>(self.storage_))>)
         -> detail::raw_visit_result_t<Visitor, decltype(std::forward_like<Self>(self.storage_))>

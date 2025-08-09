@@ -181,7 +181,7 @@ struct raw_visit_dispatch<-1>
     case (n): \
         if constexpr ((n) < N) { \
             return detail::do_raw_visit<(n)>(std::forward<Visitor>(vis), std::forward<Storage>(storage)); \
-        } else std::unreachable(); [[fallthrough]]
+        } std::unreachable(); [[fallthrough]]
 
 #define YK_RAW_VISIT_DISPATCH_DEF(strategy) \
     template<> \
@@ -590,7 +590,7 @@ template<
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
 detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
-constexpr visit(Visitor&& vis, Variants&&... vars)
+YK_FORCEINLINE constexpr visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>,
         detail::make_OverloadSeq<Variants...>,
