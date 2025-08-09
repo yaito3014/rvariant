@@ -22,23 +22,23 @@ namespace benchmark {
 
 namespace {
 
-template<std::size_t I>
-struct int_identity
-{
-    using type = int;
-};
-
-template<template<class...> class VTT, std::size_t AltN, template<std::size_t> class TTT, class Seq = std::make_index_sequence<AltN>>
+template<template<class...> class VTT, std::size_t AltN, class T, class Seq = std::make_index_sequence<AltN>>
 struct many_V_impl;
 
-template<std::size_t AltN, template<class...> class VTT, template<std::size_t> class TTT, std::size_t... Is>
-struct many_V_impl<VTT, AltN, TTT, std::index_sequence<Is...>>
+template<std::size_t AltN, template<class...> class VTT, class T, std::size_t... Is>
+struct many_V_impl<VTT, AltN, T, std::index_sequence<Is...>>
 {
-    using type = VTT<typename TTT<Is>::type...>;
+    template<auto>
+    struct type_identity
+    {
+        using type = T;
+    };
+
+    using type = VTT<typename type_identity<Is>::type...>;
 };
 
-template<template<class...> class VTT, std::size_t AltN, template<std::size_t> class TTT>
-using many_V_t = typename many_V_impl<VTT, AltN, TTT>::type;
+template<template<class...> class VTT, std::size_t AltN, class T>
+using many_V_t = typename many_V_impl<VTT, AltN, T>::type;
 
 
 using Clock = std::chrono::high_resolution_clock;
@@ -109,7 +109,6 @@ void benchmark_visit(std::size_t const N, Vars const& vars)
     disable_optimization(sum);
 }
 
-#if YK_CI
 template<class Vars>
 void benchmark_multi_visit(std::size_t const N, Vars const& vars)
 {
@@ -127,7 +126,6 @@ void benchmark_multi_visit(std::size_t const N, Vars const& vars)
 
     disable_optimization(sum);
 }
-#endif
 
 template<class Vars>
 void benchmark_get(std::size_t const N, Vars const& vars)
@@ -164,7 +162,7 @@ void benchmark_get(std::size_t const N, Vars const& vars)
 }
 
 template<class Vars>
-YK_FORCEINLINE void benchmark_get_if(std::size_t const N, Vars const& vars)
+void benchmark_get_if(std::size_t const N, Vars const& vars)
 {
     unsigned long long sum = 0;
 
@@ -262,7 +260,7 @@ int benchmark_main(std::size_t const N)
     // ----------------------------------------------------------
 
     {
-        using V = many_V_t<std::variant, AltN, int_identity>;
+        using V = many_V_t<std::variant, AltN, int>;
         std::println("[std::variant]");
 
         std::vector<V, yk::default_init_allocator<V>> vars;
@@ -271,9 +269,7 @@ int benchmark_main(std::size_t const N)
         benchmark_get(N, vars);
         benchmark_get_if(N, vars);
         benchmark_visit(N, vars);
-#if YK_CI
         benchmark_multi_visit(N, vars);
-#endif
 
         std::print("operator== "); benchmark_operator<std::equal_to<>>(N, vars);
         std::print("operator!= "); benchmark_operator<std::not_equal_to<>>(N, vars);
@@ -286,7 +282,7 @@ int benchmark_main(std::size_t const N)
         std::println("");
     }
     {
-        using V = many_V_t<yk::rvariant, AltN, int_identity>;
+        using V = many_V_t<yk::rvariant, AltN, int>;
         std::println("[yk::rvariant]");
 
         std::vector<V, yk::default_init_allocator<V>> vars;
@@ -295,9 +291,7 @@ int benchmark_main(std::size_t const N)
         benchmark_get(N, vars);
         benchmark_get_if(N, vars);
         benchmark_visit(N, vars);
-#if YK_CI
         benchmark_multi_visit(N, vars);
-#endif
 
         std::print("operator== "); benchmark_operator<std::equal_to<>>(N, vars);
         std::print("operator!= "); benchmark_operator<std::not_equal_to<>>(N, vars);

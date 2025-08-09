@@ -452,7 +452,7 @@ struct visit_dispatch<-1>
     [[nodiscard]] YK_FORCEINLINE static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
         YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeq, Visitor, Storage...>::value)
     {
-        constexpr auto const& table = visit_table<R, Visitor, OverloadSeq, Storage...>::table;
+        constexpr auto const& table = visit_table<R, OverloadSeq, Visitor, Storage...>::table;
         auto const& f = table[flat_i];
         return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Storage>(storage)...);
     }
@@ -462,7 +462,7 @@ struct visit_dispatch<-1>
     case (n): \
         if constexpr ((n) < OverloadSeq::size) { \
             return multi_visitor<core::at_c_t<(n), OverloadSeq>>::template apply<R, Visitor, Storage...>( \
-                std::forward<Visitor>(vis), std::forward<Storage>(storage)... \
+                static_cast<Visitor&&>(vis), static_cast<Storage&&>(storage)... \
             ); \
         } else std::unreachable(); [[fallthrough]]
 
@@ -589,7 +589,7 @@ template<
     // https://eel.is/c++draft/variant.visit#2
     class = std::void_t<detail::as_variant_t<Variants>...>
 >
-YK_FORCEINLINE detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
+detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
 constexpr visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>,
