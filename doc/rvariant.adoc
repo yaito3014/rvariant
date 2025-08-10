@@ -11,9 +11,6 @@ Yaito Kakeyama; Nana Sakisaka
 :license-title: Boost Software License, Version 1.0
 :docinfo: shared
 :doctype: book
-:stylesheet: main.css
-:source-highlighter: highlight.js
-:highlightjs-theme: github
 :icons: font
 :sectanchors:
 :idprefix:
@@ -1620,10 +1617,20 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 
 [[benchmark]]
 == Benchmark
+The benchmark application link:https://github.com/yaito3014/rvariant/blob/f4d08f16cf8001abe384d7857247a7c8eb539098/test/benchmark.cpp[(source code),window="_blank"] measures the performance of `rvariant` construction and access using randomly generated inputs.
 
-- *CPU:* Intel Core i9-14900KF (not overclocked)
+It uses `std::mt19937` for random number generation and constructs `rvariant` instances directly within a `std::vector`. For the `std::string` benchmarks, we simply pass the stringized random numbers.
+
+The alternative index is distributed randomly during the construction, making sure that the access to internal `union` is not overly optimized by the compiler.
+
+[discrete]
+==== Benchmark Environment
+
+- *Date*: 2025/8/9
+- *CPU:* Intel Core i9-14900KF
 - *RAM:* Crucial Pro 48GB DDR5-5600 x 4
 
+[discrete]
 === GCC
 ++++
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=804955990&amp;format=interactive"></iframe>
@@ -1641,6 +1648,7 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=278187472&amp;format=interactive"></iframe>
 ++++
 
+[discrete]
 === Clang
 ++++
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=679075429&amp;format=interactive"></iframe>
@@ -1658,6 +1666,7 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=144195081&amp;format=interactive"></iframe>
 ++++
 
+[discrete]
 === MSVC
 ++++
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=1168105336&amp;format=interactive"></iframe>
@@ -1674,6 +1683,32 @@ NOTE: `_is-specialization-of_` requires {cpp}26 reflection for a straightforward
 ++++
 <iframe width="666" height="400" seamless frameborder="0" scrolling="no" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQXYU9sO-RE4qKr80DUCgMye9GVX7uM6JjTRKbyXZo4U84nOiI0aOnrs1aynPsa5eSP8trZ8o_ivKdx/pubchart?oid=1452444822&amp;format=interactive"></iframe>
 ++++
+
+[discrete]
+=== Benchmark Analysis
+The graph shows that the cost of read-only access is remarkably small compared to the time spent on construction.
+
+Read operations on a variant complete in constant time, as runtime dispatch is limited by the small, fixed number of alternatives. Benchmarks show `std::variant` and `rvariant` perform similarly, with read times unaffected by whether there are 3 or 16 alternatives and not scaling with `N`.
+
+[discrete]
+==== Visitation Technique in Depth
+Some readers might assume that table-based visitation is the ideal approach, implying that visitations have _constant_ time complexity.
+
+[,cpp,subs="+macros,+attributes"]
+----
+using overload_type = R(*)(Visitor&&, Storage&&);
+constexpr overload_type vtable[] = {
+  &do_visit<0, Visitor, Storage>,
+  &do_visit<1, Visitor, Storage>,
+  &do_visit<2, Visitor, Storage>,
+  ...
+};
+vtable[v.index()](vis, v.storage()); // O(1), of course
+----
+
+Early `std::variant` implementations used this _function-pointer-based dispatch_, but it was later found that this pattern results in poor inlining in major compilers, whereas _switch-case-based dispatch_ is significantly better optimized (link:https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78113[link,window=_blank]). GCC, LLVM, and MSVC subsequently adopted the latter approach.
+
+Unfortunately, GCC enables the optimization only in limited scenarios (link:https://github.com/gcc-mirror/gcc/blob/679e24f5a751663998ff7202149a749e0f7251f9/libstdc%2B%2B-v3/include/std/variant#L1863[link,window=_blank]), and LLVM has reverted it due to unresolved issues (link:https://github.com/llvm/llvm-project/issues/62648#issuecomment-1832315651[link,window=_blank]). Our benchmark results reflect this status quo, with `rvariant` performing up to about 2x faster than GCC/Clang.
 
 
 [[about]]
