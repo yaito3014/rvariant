@@ -1725,7 +1725,7 @@ The alternative index is distributed randomly during the construction, making su
 
 [discrete]
 === Benchmark Analysis
-The graph shows that the cost of read-only access is remarkably small compared to the time spent on construction.
+The graphs show that the cost of read-only access is remarkably small compared to the time spent on construction.
 
 Read operations on a variant complete in constant time, as runtime dispatch is limited by the small, fixed number of alternatives. Benchmarks show `std::variant` and `rvariant` perform similarly, with read times unaffected by whether there are 3 or 16 alternatives and not scaling with `N`.
 
