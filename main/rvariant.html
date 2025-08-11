@@ -3155,7 +3155,7 @@ struct <em>is-specialization-of</em>;      // <span class="exposition-only">expo
 </div>
 <h3 id="benchmark-analysis" class="discrete">Benchmark Analysis</h3>
 <div class="paragraph">
-<p>The graph shows that the cost of read-only access is remarkably small compared to the time spent on construction.</p>
+<p>The graphs show that the cost of read-only access is remarkably small compared to the time spent on construction.</p>
 </div>
 <div class="paragraph">
 <p>Read operations on a variant complete in constant time, as runtime dispatch is limited by the small, fixed number of alternatives. Benchmarks show <code>std::variant</code> and <code>rvariant</code> perform similarly, with read times unaffected by whether there are 3 or 16 alternatives and not scaling with <code>N</code>.</p>
