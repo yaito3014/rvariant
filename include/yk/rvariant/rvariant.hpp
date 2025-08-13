@@ -964,7 +964,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
     template<class... Us>
     friend class rvariant;
 
-    template<class Variant, class T>
+    template<class T, class Variant>
     friend struct detail::exactly_once_index;
 
     template<class Variant>
