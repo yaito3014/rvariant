@@ -61,7 +61,7 @@ if(MSVC)
 
     target_compile_options(
         yk_rvariant_cxx_common
-        INTERFACE /MP /utf-8
+        INTERFACE /EHsc /MP /utf-8
     )
     target_compile_definitions(
         yk_rvariant_cxx_common

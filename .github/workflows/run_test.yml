@@ -41,17 +41,21 @@ jobs:
           - name: GCC
             version: 14
             executable: g++-14
+            stdlib: libstdc++
           - name: Clang
             version: 21
             executable: clang++-21
+            stdlib: libc++
             cxxflags: -stdlib=libc++
           - name: Clang
             version: 22
             executable: clang++-22
+            stdlib: libc++
             cxxflags: -stdlib=libc++
           - name: MSVC
-            version: v142
+            version: v143
             executable: cl
+            stdlib: MSVC-STL
         exclude:
           - os:
               name: windows
@@ -92,14 +96,15 @@ jobs:
         id: cache-deps
         with:
           path: ${{ github.workspace }}/build/_deps
-          key: deps-${{ matrix.compiler.executable }}-${{ matrix.cpp_version }}-${{ matrix.build_type }}
+          key: deps-${{ matrix.compiler.name }}-${{ matrix.compiler.version }}-${{ matrix.compiler.stdlib }}-${{ matrix.cpp_version }}-${{ matrix.build_type }}
 
       - name: Configure
         run: >
           cmake -B ${{ github.workspace }}/build
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DYK_CI=ON
           -S ${{ github.workspace }}
 
