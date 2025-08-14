@@ -385,12 +385,6 @@ template<std::size_t I, class... Ts>
 template<std::size_t I, class... Ts>
   constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
     get_if(rvariant<Ts...> const*) noexcept;
-template<std::size_t I, class... Ts>
-  constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with pass:quotes[`boost::get`]
-template<std::size_t I, class... Ts>
-  constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with pass:quotes[`boost::get`]
 
 template<class T, class... Ts>
   constexpr std::add_pointer_t<T>
@@ -398,12 +392,6 @@ template<class T, class... Ts>
 template<class T, class... Ts>
   constexpr std::add_pointer_t<T const>
     get_if(rvariant<Ts...> const*) noexcept;
-template<class T, class... Ts>
-  constexpr std::add_pointer_t<T>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;       // compatibility with pass:quotes[`boost::get`]
-template<class T, class... Ts>
-  constexpr std::add_pointer_t<T const>
-    pass:quotes[[.underline\]#get#](rvariant<Ts...> const*) noexcept; // compatibility with pass:quotes[`boost::get`]
 
 // <<rvariant.visit,[rvariant.visit]>>, visitation
 template<class Visitor, class... Variants>
@@ -1115,14 +1103,6 @@ template<std::size_t I, class... Ts>
 constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
   get_if(rvariant<Ts...> const* v) noexcept;pass:quotes[[.candidate\]#// 2#]
 
-template<std::size_t I, class... Ts>
-constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...>*) noexcept;         // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 3#]
-
-template<std::size_t I, class... Ts>
-constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 4#]
-
 } // temp_ns
 ----
 
@@ -1130,10 +1110,6 @@ constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
 * [.candidate]#1-2)# *_Mandates:_* `I < sizeof\...(Ts)`.
 +
 *_Returns:_* A pointer to the value [.underline]#denoted by `{UNWRAP_RECURSIVE}(o)`, where `o` denotes a reference to the object stored in the `rvariant`#, if `v != nullptr` and `v\->index() == I`. Otherwise, returns `nullptr`.
-
-* [.candidate]#3-4)# Provided for compatibility with `boost::get`.
-+
-*_Returns:_* `get_if<I>(v)`.
 
 
 [,cpp,subs="+macros,+attributes"]
@@ -1148,14 +1124,6 @@ template<class T, class... Ts>
 constexpr std::add_pointer_t<T const>
   get_if(rvariant<Ts...> const* v) noexcept;pass:quotes[[.candidate\]#// 2#]
 
-template<class T, class... Ts>
-constexpr std::add_pointer_t<T>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...>* v) noexcept;       // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 3#]
-
-template<class T, class... Ts>
-constexpr std::add_pointer_t<T const>
-  pass:quotes[[.underline\]#get#](rvariant<Ts...> const* v) noexcept; // compatibility with pass:quotes[`boost::get`]pass:quotes[[.candidate\]#// 4#]
-
 } // temp_ns
 ----
 
@@ -1165,10 +1133,6 @@ constexpr std::add_pointer_t<T const>
 *_Effects:_* Equivalent to: `return get_if<__i__>(v);` with _i_ being the zero-based index of `T` in [.underline]#`{unwrap_recursive_t}<Ts>`#.
 +
 *_Remarks:_* [.underline]#This function is defined as deleted if `T` is a specialization of `{recursive_wrapper}`.#
-
-* [.candidate]#3-4)# Provided for compatibility with `boost::get`.
-+
-*_Returns:_* `get_if<T>(v)`.
 
 
 [[rvariant.visit]]
