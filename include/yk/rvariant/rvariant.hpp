@@ -1192,20 +1192,6 @@ get_if(rvariant<Ts...> const* v) noexcept
         : nullptr;
 }
 
-template<std::size_t I, class... Ts>
-[[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>>>
-get(rvariant<Ts...>* v) noexcept
-{
-    return get_if<I>(v);
-}
-
-template<std::size_t I, class... Ts>
-[[nodiscard]] constexpr std::add_pointer_t<variant_alternative_t<I, rvariant<Ts...>> const>
-get(rvariant<Ts...> const* v) noexcept
-{
-    return get_if<I>(v);
-}
-
 template<class T, class... Ts>
 [[nodiscard]] constexpr std::add_pointer_t<T>
 get_if(rvariant<Ts...>* v) noexcept
@@ -1220,20 +1206,6 @@ get_if(rvariant<Ts...> const* v) noexcept
 {
     constexpr std::size_t I = detail::exactly_once_index_v<T, rvariant<Ts...>>;
     return get_if<I>(v);
-}
-
-template<class T, class... Ts>
-[[nodiscard]] constexpr std::add_pointer_t<T>
-get(rvariant<Ts...>* v) noexcept
-{
-    return get_if<T>(v);
-}
-
-template<class T, class... Ts>
-[[nodiscard]] constexpr std::add_pointer_t<T const>
-get(rvariant<Ts...> const* v) noexcept
-{
-    return get_if<T>(v);
 }
 
 // -------------------------------------------

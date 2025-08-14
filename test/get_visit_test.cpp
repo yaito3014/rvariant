@@ -167,24 +167,10 @@ TEST_CASE("get_if")
     }
     {
         yk::rvariant<int, float> var = 42;
-        REQUIRE(*yk::get<0>(&var) == 42);
-        REQUIRE(*yk::get<0>(&std::as_const(var)) == 42);
-        REQUIRE(yk::get<1>(&var) == nullptr);
-        REQUIRE(yk::get<1>(&std::as_const(var)) == nullptr);
-    }
-    {
-        yk::rvariant<int, float> var = 42;
         REQUIRE(*yk::get_if<int>(&var) == 42);
         REQUIRE(*yk::get_if<int>(&std::as_const(var)) == 42);
         REQUIRE(yk::get_if<float>(&var) == nullptr);
         REQUIRE(yk::get_if<float>(&std::as_const(var)) == nullptr);
-    }
-    {
-        yk::rvariant<int, float> var = 42;
-        REQUIRE(*yk::get<int>(&var) == 42);
-        REQUIRE(*yk::get<int>(&std::as_const(var)) == 42);
-        REQUIRE(yk::get<float>(&var) == nullptr);
-        REQUIRE(yk::get<float>(&std::as_const(var)) == nullptr);
     }
     {
         yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
@@ -204,18 +190,8 @@ TEST_CASE("get_if", "[wrapper]")
     }
     {
         yk::rvariant<yk::recursive_wrapper<int>, float> var = 42;
-        REQUIRE(*yk::get<0>(&var) == 42);
-        REQUIRE(*yk::get<0>(&std::as_const(var)) == 42);
-    }
-    {
-        yk::rvariant<yk::recursive_wrapper<int>, float> var = 42;
         REQUIRE(*yk::get_if<int>(&var) == 42);
         REQUIRE(*yk::get_if<int>(&std::as_const(var)) == 42);
-    }
-    {
-        yk::rvariant<yk::recursive_wrapper<int>, float> var = 42;
-        REQUIRE(*yk::get<int>(&var) == 42);
-        REQUIRE(*yk::get<int>(&std::as_const(var)) == 42);
     }
 }
 
