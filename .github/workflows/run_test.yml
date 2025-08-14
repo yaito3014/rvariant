@@ -98,8 +98,9 @@ jobs:
         run: >
           cmake -B ${{ github.workspace }}/build
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler.executable }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_FLAGS=${{ matrix.compiler.cxxflags }}
           -DCMAKE_CXX_STANDARD=${{ matrix.cpp_version }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DYK_CI=ON
           -S ${{ github.workspace }}
 
