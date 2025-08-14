@@ -341,13 +341,13 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_assignable_v<T>) ||
                         core::is_ttp_specialization_of_v<T, recursive_wrapper>
                     ) {
-                        T tmp(std::forward<Args>(args)...); // may throw
+                        T tmp{std::forward<Args>(args)...}; // may throw
                         static_assert(noexcept(t_old_i = std::move(tmp)));
                         t_old_i = std::move(tmp);
                     } else if constexpr (
                         sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_assignable_v<T>
                     ) { // strange type...
-                        T const tmp(std::forward<Args>(args)...); // may throw
+                        T const tmp{std::forward<Args>(args)...}; // may throw
                         static_assert(noexcept(t_old_i = tmp));
                         t_old_i = tmp;
                     } else {
@@ -364,7 +364,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         (sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_move_constructible_v<T>) ||
                         core::is_ttp_specialization_of_v<T, recursive_wrapper>
                     ) {
-                        T tmp(std::forward<Args>(args)...); // may throw
+                        T tmp{std::forward<Args>(args)...}; // may throw
                         t_old_i.~T_old_i();
                         static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, T&&>);
                         std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp)); // never throws
@@ -372,7 +372,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                     } else if constexpr (
                         sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_constructible_v<T>
                     ) { // strange type...
-                        T const tmp(std::forward<Args>(args)...); // may throw
+                        T const tmp{std::forward<Args>(args)...}; // may throw
                         t_old_i.~T_old_i();
                         static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, T const&>);
                         std::construct_at(&this->storage(), std::in_place_index<I>, tmp); // never throws
