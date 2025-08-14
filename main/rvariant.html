@@ -1361,12 +1361,6 @@ template&lt;std::size_t I, class... Ts&gt;
 template&lt;std::size_t I, class... Ts&gt;
   constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&gt;
     get_if(rvariant&lt;Ts...&gt; const*) noexcept;
-template&lt;std::size_t I, class... Ts&gt;
-  constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;       // compatibility with <code>boost::get</code>
-template&lt;std::size_t I, class... Ts&gt;
-  constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt; const*) noexcept; // compatibility with <code>boost::get</code>
 
 template&lt;class T, class... Ts&gt;
   constexpr std::add_pointer_t&lt;T&gt;
@@ -1374,12 +1368,6 @@ template&lt;class T, class... Ts&gt;
 template&lt;class T, class... Ts&gt;
   constexpr std::add_pointer_t&lt;T const&gt;
     get_if(rvariant&lt;Ts...&gt; const*) noexcept;
-template&lt;class T, class... Ts&gt;
-  constexpr std::add_pointer_t&lt;T&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;       // compatibility with <code>boost::get</code>
-template&lt;class T, class... Ts&gt;
-  constexpr std::add_pointer_t&lt;T const&gt;
-    <span class="underline">get</span>(rvariant&lt;Ts...&gt; const*) noexcept; // compatibility with <code>boost::get</code>
 
 // <a href="#rvariant.visit">[rvariant.visit]</a>, visitation
 template&lt;class Visitor, class... Variants&gt;
@@ -2355,14 +2343,6 @@ template&lt;std::size_t I, class... Ts&gt;
 constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&gt;
   get_if(rvariant&lt;Ts...&gt; const* v) noexcept;<span class="candidate">// 2</span>
 
-template&lt;std::size_t I, class... Ts&gt;
-constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt;&gt;
-  <span class="underline">get</span>(rvariant&lt;Ts...&gt;*) noexcept;         // compatibility with <code>boost::get</code><span class="candidate">// 3</span>
-
-template&lt;std::size_t I, class... Ts&gt;
-constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt;&gt; const&gt;
-  <span class="underline">get</span>(rvariant&lt;Ts...&gt; const* v) noexcept; // compatibility with <code>boost::get</code><span class="candidate">// 4</span>
-
 } // temp_ns</code></pre>
 </div>
 </div>
@@ -2372,12 +2352,6 @@ constexpr std::add_pointer_t&lt;variant_alternative_t&lt;I, rvariant&lt;Ts...&gt
 <p><span class="candidate">1-2)</span> <strong><em>Mandates:</em></strong> <code>I &lt; sizeof...(Ts)</code>.</p>
 <div class="paragraph">
 <p><strong><em>Returns:</em></strong> A pointer to the value <span class="underline">denoted by <code><em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(o)</code>, where <code>o</code> denotes a reference to the object stored in the <code>rvariant</code></span>, if <code>v != nullptr</code> and <code>v-&gt;index() == I</code>. Otherwise, returns <code>nullptr</code>.</p>
-</div>
-</li>
-<li>
-<p><span class="candidate">3-4)</span> Provided for compatibility with <code>boost::get</code>.</p>
-<div class="paragraph">
-<p><strong><em>Returns:</em></strong> <code>get_if&lt;I&gt;(v)</code>.</p>
 </div>
 </li>
 </ul>
@@ -2394,14 +2368,6 @@ template&lt;class T, class... Ts&gt;
 constexpr std::add_pointer_t&lt;T const&gt;
   get_if(rvariant&lt;Ts...&gt; const* v) noexcept;<span class="candidate">// 2</span>
 
-template&lt;class T, class... Ts&gt;
-constexpr std::add_pointer_t&lt;T&gt;
-  <span class="underline">get</span>(rvariant&lt;Ts...&gt;* v) noexcept;       // compatibility with <code>boost::get</code><span class="candidate">// 3</span>
-
-template&lt;class T, class... Ts&gt;
-constexpr std::add_pointer_t&lt;T const&gt;
-  <span class="underline">get</span>(rvariant&lt;Ts...&gt; const* v) noexcept; // compatibility with <code>boost::get</code><span class="candidate">// 4</span>
-
 } // temp_ns</code></pre>
 </div>
 </div>
@@ -2414,12 +2380,6 @@ constexpr std::add_pointer_t&lt;T const&gt;
 </div>
 <div class="paragraph">
 <p><strong><em>Remarks:</em></strong> <span class="underline">This function is defined as deleted if <code>T</code> is a specialization of <code><a href="#rvariant.recursive">recursive_wrapper</a></code>.</span></p>
-</div>
-</li>
-<li>
-<p><span class="candidate">3-4)</span> Provided for compatibility with <code>boost::get</code>.</p>
-<div class="paragraph">
-<p><strong><em>Returns:</em></strong> <code>get_if&lt;T&gt;(v)</code>.</p>
 </div>
 </li>
 </ul>
