@@ -1158,7 +1158,6 @@ TEST_CASE("emplace")
         STATIC_REQUIRE(std::is_same_v<decltype(a.emplace<int>()), int&>);
         STATIC_REQUIRE(std::is_same_v<decltype(std::move(a).emplace<int>()), int&>);
     }
-
     {
         yk::rvariant<int> a = 42;
         YK_REQUIRE_STATIC_NOTHROW(a.emplace<int>(12));
@@ -1173,6 +1172,45 @@ TEST_CASE("emplace")
         yk::rvariant<int, float> a = 42;
         a.emplace<1>(3.14f);
         CHECK(a.index() == 1);
+    }
+
+    {
+        // NOLINTBEGIN(modernize-use-equals-default)
+        {
+            struct S
+            {
+                S() noexcept(false) {} // potentially-throwing
+            };
+            using V = yk::rvariant<int, S>;
+            {
+                V v(std::in_place_type<int>);
+                v.emplace<S>(); // type-changing & no args; test T{}
+            }
+            {
+                V v(std::in_place_type<S>);
+                v.emplace<S>(); // non-type-changing & no args; test T{}
+            }
+        }
+        {
+            struct StrangeS
+            {
+                StrangeS() noexcept(false) {} // potentially-throwing
+                StrangeS(StrangeS&&) noexcept {} // not trivial
+                StrangeS(StrangeS const&) = default; // trivial
+                StrangeS& operator=(StrangeS&&) noexcept { return *this; } // not trivial
+                StrangeS& operator=(StrangeS const&) = default; // trivial
+            };
+            using V = yk::rvariant<int, StrangeS>;
+            {
+                V v(std::in_place_type<int>);
+                v.emplace<StrangeS>(); // type-changing & no args; test T{}
+            }
+            {
+                V v(std::in_place_type<StrangeS>);
+                v.emplace<StrangeS>(); // non-type-changing & no args; test T{}
+            }
+        }
+        // NOLINTEND(modernize-use-equals-default)
     }
 
     // ReSharper disable CppStaticAssertFailure
