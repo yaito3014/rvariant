@@ -8,12 +8,15 @@
 
 // Utilities related to [rvariant.helper], [rvariant.recursive.helper]
 
+// This header is intended to be extremely lightweight;
+// third-party codes may depend on only this header to
+// provide sufficient concepts for their code.
+
 #include <yk/rvariant/detail/rvariant_fwd.hpp>
 #include <yk/core/type_traits.hpp>
 
 #include <utility>
 #include <type_traits>
-#include <cstdint>
 #include <cstddef>
 
 namespace yk {
