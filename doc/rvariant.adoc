@@ -55,6 +55,13 @@ expr.visit(temp_ns::overloaded{
 [NOTE]
 This library is intended for future submission to the Boost Libraries. Until then, the namespace is documented as `temp_ns` to indicate that the name is not yet stable. The current implementation temporarily uses the namespace `yk`, which originates from the prototype codebase.
 
+[discrete]
+=== Supported Environments
+* GCC 14
+* Clang 21-22 (lib{cxx})
+* MSVC (2022)
+* {cpp}23 and {cpp}26
+
 
 [preface]
 = Introduction
