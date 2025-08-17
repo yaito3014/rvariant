@@ -68,18 +68,12 @@ public:
             (!std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>) &&
             (!std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>) &&
             std::is_default_constructible_v<Allocator> &&
-            //std::is_constructible_v<T, U> && // UNIMPLEMENTABLE for recursive types; instantiates infinitely
-            (
-                // Required for `recursive_wrapper<double> i = 3;`
-                std::is_convertible_v<U, T> ||
-
-                // Required for making recursive_wrapper itself SFINAE-friendly;
-                // otherwise `std::is_constructible_v<recursive_wrapper<int>, X>` will be true for any `X`
-                core::is_aggregate_initializable_v<T, U>
-            )
-    constexpr explicit(!std::is_convertible_v<U, T>)
-    recursive_wrapper(U&& u)
-        noexcept(noexcept(base_type(std::forward<U>(u))))
+            //std::is_constructible_v<T, U> // UNIMPLEMENTABLE for recursive types; instantiates infinitely
+            std::is_convertible_v<U, T>
+    constexpr /* not explicit */ recursive_wrapper(U&& u)
+        // This overload is never `noexcept` as it always allocates.
+        // Note that conditionally enabling `noexcept` will lead to
+        // recursive instantiation in some situations.
         : base_type(std::forward<U>(u))
     {}
 

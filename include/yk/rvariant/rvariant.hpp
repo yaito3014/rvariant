@@ -517,12 +517,6 @@ public:
         : base_type(std::in_place_index<0>) // value-initialized
     {}
 
-    ~rvariant() noexcept = default;
-    rvariant(rvariant const&) = default;
-    rvariant(rvariant&&) = default;
-    rvariant& operator=(rvariant const&) = default;
-    rvariant& operator=(rvariant&&) = default;
-
     // --------------------------------------
 
     // Generic constructor
@@ -533,10 +527,10 @@ public:
             (!std::is_same_v<std::remove_cvref_t<T>, rvariant>) &&
             (!core::is_ttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_type_t>) &&
             (!core::is_nttp_specialization_of_v<std::remove_cvref_t<T>, std::in_place_index_t>) &&
-            std::is_constructible_v<core::aggregate_initialize_resolution_t<T, Ts...>, T>
+            std::is_constructible_v<typename core::aggregate_initialize_resolution<T, Ts...>::type, T>
     constexpr /* not explicit */ rvariant(T&& t)
-        noexcept(std::is_nothrow_constructible_v<core::aggregate_initialize_resolution_t<T, Ts...>, T>)
-        : base_type(std::in_place_index<core::aggregate_initialize_resolution_index<T, Ts...>>, std::forward<T>(t))
+        noexcept(std::is_nothrow_constructible_v<typename core::aggregate_initialize_resolution<T, Ts...>::type, T>)
+        : base_type(std::in_place_index<core::aggregate_initialize_resolution<T, Ts...>::index>, std::forward<T>(t))
     {}
 
 YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
@@ -545,12 +539,12 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     template<class T>
         requires
             (!std::is_same_v<std::remove_cvref_t<T>, rvariant>) &&
-            detail::variant_assignable<core::aggregate_initialize_resolution_t<T, Ts...>, T>::value
+            detail::variant_assignable<typename core::aggregate_initialize_resolution<T, Ts...>::type, T>::value
     constexpr rvariant& operator=(T&& t)
-        noexcept(detail::variant_nothrow_assignable<core::aggregate_initialize_resolution_t<T, Ts...>, T>::value)
+        noexcept(detail::variant_nothrow_assignable<typename core::aggregate_initialize_resolution<T, Ts...>::type, T>::value)
     {
-        using Tj = core::aggregate_initialize_resolution_t<T, Ts...>; // either plain type or wrapped with recursive_wrapper
-        constexpr std::size_t j = core::aggregate_initialize_resolution_index<T, Ts...>;
+        using Tj = typename core::aggregate_initialize_resolution<T, Ts...>::type; // either plain type or wrapped with recursive_wrapper
+        constexpr std::size_t j = core::aggregate_initialize_resolution<T, Ts...>::index;
         static_assert(j != std::variant_npos);
 
         this->raw_visit([this, &t]<std::size_t i, class Ti>(std::in_place_index_t<i>, [[maybe_unused]] Ti& ti)
@@ -576,7 +570,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                     }
 #endif
                     static_assert(std::is_nothrow_constructible_v<Tj, T> || !base_type::never_valueless);
-                        base_type::template reset_construct<i, j>(std::forward<T>(t));
+                    base_type::template reset_construct<i, j>(std::forward<T>(t));
 
                 } else {
                     Tj tmp(std::forward<T>(t));
