@@ -1132,7 +1132,7 @@ TEST_CASE("generic assignment")
     {
         yk::rvariant<int, MC_Thrower> a;
         REQUIRE_THROWS_AS(a = MC_Thrower{}, MC_Thrower::exception);
-        CHECK(a.valueless_by_exception() == false);
+        CHECK(a.valueless_by_exception() == true);
     }
     {
         yk::rvariant<int, MC_Thrower> a;
@@ -1142,12 +1142,13 @@ TEST_CASE("generic assignment")
     {
         yk::rvariant<int, MC_Thrower> a;
         REQUIRE_THROWS_AS(a = MC_Thrower::throwing, MC_Thrower::exception);
-        CHECK(a.valueless_by_exception() == false);
+        CHECK(a.valueless_by_exception() == true);
     }
     {
         yk::rvariant<int, MC_Thrower> a;
-        REQUIRE_THROWS_AS(a = MC_Thrower::potentially_throwing, MC_Thrower::exception);
-        CHECK(a.valueless_by_exception() == true);
+        STATIC_REQUIRE(noexcept(a = MC_Thrower::potentially_throwing) == false);
+        REQUIRE_NOTHROW(a = MC_Thrower::potentially_throwing);
+        CHECK(a.valueless_by_exception() == false);
     }
 }
 
@@ -1335,6 +1336,57 @@ TEST_CASE("emplace")
     STATIC_REQUIRE(is_never_valueless<yk::rvariant<yk::recursive_wrapper<int>>>);
 
     // ReSharper restore CppStaticAssertFailure
+}
+
+
+namespace {
+
+struct any_consumer
+{
+    [[maybe_unused]] char dummy{}; // MSVC bug: MSVC falsely tries to access "uninitialized symbol" without this workaround
+
+    constexpr any_consumer() {}  // NOLINT(modernize-use-equals-default)
+    constexpr ~any_consumer() {}  // NOLINT(modernize-use-equals-default)
+    constexpr any_consumer(any_consumer const&) {}
+    constexpr any_consumer(any_consumer&&) noexcept(false) {}
+    constexpr any_consumer& operator=(any_consumer const&) = delete;
+    constexpr any_consumer& operator=(any_consumer&&) = delete;
+
+    template<class T>
+        requires (!std::is_same_v<std::remove_cvref_t<T>, any_consumer>)
+    constexpr explicit any_consumer(T&&) {}
+
+    template<class T>
+        requires (!std::is_same_v<std::remove_cvref_t<T>, any_consumer>)
+    constexpr any_consumer& operator=(T&&) { return *this; }
+};
+
+} // anonymous
+
+TEST_CASE("self emplace")
+{
+    // Valueless instance never triggers the self-emplace assertion
+    STATIC_REQUIRE([] consteval {
+        auto v = yk::detail::make_valueless<int, any_consumer>();
+        v.emplace<any_consumer>(v);
+        return true;
+    }());
+    REQUIRE([] {
+        auto v = yk::detail::make_valueless<int, any_consumer>();
+        v.emplace<any_consumer>(v);
+        return true;
+    }());
+    // Triggers self-emplace assertion
+    //REQUIRE([] {
+    //    yk::rvariant<int, any_consumer> v;
+    //    v.emplace<any_consumer>(v);
+    //    return true;
+    //}());
+
+    // Valueless case is UNTESTABLE for generic assignment.
+    // There's no way to "assign" valueless object because
+    // self-assignment always resolves to the move assignment
+    // operator of `rvariant` itself (not the generic one).
 }
 
 TEST_CASE("swap")

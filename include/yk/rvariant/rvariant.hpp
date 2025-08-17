@@ -317,6 +317,41 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
     {
         static_assert(I < sizeof...(Ts));
         using T = core::pack_indexing_t<I, Ts...>;
+
+#ifndef NDEBUG
+        // Self-emplace on non-valueless instance ALWAYS leads to UB.
+        //
+        // Constructions, assignment or emplacement on a recursive
+        // alternative is likely to be nested inside a deep context
+        // (notably inside a parser combinator library's semantic
+        // actions), which makes it challenging for users to debug
+        // type-changing self-emplacement in application layer.
+        //
+        // Note that our assertions only check the starting address;
+        // subobjects are not considered as it requires well-defined
+        // constexpr access to the underlying bytes even for
+        // non-trivially-copyable types. See also:
+        //   - http://wg21.link/p1839
+        //   - https://github.com/cplusplus/papers/issues/592
+        //   - https://cplusplus.github.io/LWG/issue3069
+
+        if constexpr (!rvariant_base::never_valueless) {
+            if (!this->valueless_by_exception()) {
+                ((assert(
+                    static_cast<void const*>(std::addressof(args)) != static_cast<void const*>(this) &&
+                    "Self-emplacing `variant` will lead to undefined behavior because the standard specifies `emplace` to destruct the contained object *before* emplacing the new value ([variant.mod])."
+                )), ...);
+
+                this->raw_visit([&]<std::size_t i, class Alt>(std::in_place_index_t<i>, [[maybe_unused]] Alt const& alt) {
+                    ((assert(
+                        static_cast<void const*>(std::addressof(args)) != static_cast<void const*>(std::addressof(alt)) &&
+                        "Self-emplacing `variant` will lead to undefined behavior because the standard specifies `emplace` to destruct the contained object *before* emplacing the new value ([variant.mod])."
+                    )), ...);
+                });
+            }
+        }
+#endif
+
         if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
             this->template reset_construct_never_valueless<I>(std::forward<Args>(args)...);
 
@@ -334,7 +369,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                 } else if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
                     t_old_i.~T_old_i();
                     static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<old_i>, Args...>);
-                    std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...);
+                    std::construct_at(&this->storage_, std::in_place_index<old_i>, std::forward<Args>(args)...);
 
                 } else if constexpr (std::is_same_v<T_old_i, T>) { // NOT type-changing
                     if constexpr (
@@ -355,7 +390,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         t_old_i.~T_old_i();
                         this->index_ = detail::variant_npos<sizeof...(Ts)>;
                         static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...)));
-                        std::construct_at(&this->storage(), std::in_place_index<old_i>, std::forward<Args>(args)...); // may throw
+                        std::construct_at(&this->storage_, std::in_place_index<old_i>, std::forward<Args>(args)...); // may throw
                         this->index_ = old_i;
                     }
 
@@ -367,7 +402,7 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         T tmp{std::forward<Args>(args)...}; // may throw
                         t_old_i.~T_old_i();
                         static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, T&&>);
-                        std::construct_at(&this->storage(), std::in_place_index<I>, std::move(tmp)); // never throws
+                        std::construct_at(&this->storage_, std::in_place_index<I>, std::move(tmp)); // never throws
                         this->index_ = I;
                     } else if constexpr (
                         sizeof(T) <= detail::never_valueless_trivial_size_limit && std::is_trivially_copy_constructible_v<T>
@@ -375,20 +410,20 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                         T const tmp{std::forward<Args>(args)...}; // may throw
                         t_old_i.~T_old_i();
                         static_assert(std::is_nothrow_constructible_v<storage_type, std::in_place_index_t<I>, T const&>);
-                        std::construct_at(&this->storage(), std::in_place_index<I>, tmp); // never throws
+                        std::construct_at(&this->storage_, std::in_place_index<I>, tmp); // never throws
                         this->index_ = I;
                     } else {
                         static_assert(!never_valueless);
                         t_old_i.~T_old_i();
                         this->index_ = detail::variant_npos<sizeof...(Ts)>;
                         static_assert(!noexcept(std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...)));
-                        std::construct_at(&this->storage(), std::in_place_index<I>, std::forward<Args>(args)...); // may throw
+                        std::construct_at(&this->storage_, std::in_place_index<I>, std::forward<Args>(args)...); // may throw
                         this->index_ = I;
                     }
                 }
             });
         }
-        return detail::unwrap_recursive(detail::raw_get<I>(this->storage()));
+        return detail::unwrap_recursive(detail::raw_get<I>(storage_));
     }
 YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
@@ -443,6 +478,13 @@ using rvariant_destructor_base_t = std::conditional_t<
 
 template<class... Ts>
 using rvariant_base_t = core::cond_trivial<rvariant_destructor_base_t<Ts...>, Ts...>;
+
+template<class... Ts>
+[[nodiscard]] constexpr rvariant<Ts...> make_valueless() noexcept
+{
+    static_assert(!is_never_valueless_v<Ts...>);
+    return rvariant<Ts...>{valueless};
+}
 
 }  // detail
 
@@ -522,15 +564,20 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
                 // TC(throw)    && MC(throw)    => A maybe valueless if | TC throws => yes | MC throws => yes |
                 // TC(throw)    && MC(noexcept) => B maybe valueless if | never |
                 if constexpr (std::is_nothrow_constructible_v<Tj, T> || !std::is_nothrow_move_constructible_v<Tj>) {
-                    // strengthen this branch to provide never-valueless guarantee on certain conditions
-                    if constexpr (std::is_nothrow_constructible_v<Tj, T>) {
-                        // TC(noexcept); never valueless
-                        base_type::template reset_construct<i, j>(std::forward<T>(t));
-                    } else {
-                        // TC(throw) && MC(throw)
-                        Tj tmp(std::forward<T>(t));
-                        base_type::template reset_construct<i, j>(std::move(tmp)); // valueless IFF MC throws
+#ifndef NDEBUG
+                    // Self-assign on non-valueless instance ALWAYS leads to UB.
+                    // For details, see the comments on `emplace`.
+                    if constexpr (i != std::variant_npos) {
+                        assert(
+                            static_cast<void const*>(std::addressof(t)) != static_cast<void const*>(this) &&
+                            static_cast<void const*>(std::addressof(t)) != static_cast<void const*>(std::addressof(ti)) &&
+                            "Self-assigning `variant` will lead to undefined behavior because the standard specifies `emplace` to destruct the contained object *before* emplacing the new value ([variant.mod])."
+                        );
                     }
+#endif
+                    static_assert(std::is_nothrow_constructible_v<Tj, T> || !base_type::never_valueless);
+                        base_type::template reset_construct<i, j>(std::forward<T>(t));
+
                 } else {
                     Tj tmp(std::forward<T>(t));
                     base_type::template reset_construct<i, j>(std::move(tmp)); // B
@@ -1039,6 +1086,9 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             std::common_comparison_category_t<std::compare_three_way_result_t<Ts_>...>,
             std::compare_three_way, Ts_ const&, Ts_ const&
         >...>);
+
+    template<class... Ts_>
+    friend constexpr rvariant<Ts_...> detail::make_valueless() noexcept;
 
 private:
     // hack: reduce compile error by half on unrelated overloads
