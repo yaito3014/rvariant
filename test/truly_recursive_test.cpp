@@ -59,10 +59,35 @@ TEST_CASE("truly recursive", "[wrapper][recursive]")
     {
         // Sanity check
         {
+            using V = std::variant<int>;
+            STATIC_REQUIRE( std::is_constructible_v<V, V>);
+            STATIC_REQUIRE( std::is_constructible_v<V, int>);
+            STATIC_REQUIRE(!std::is_constructible_v<V, double>);
+        }
+        {
+            using V = std::variant<yk::recursive_wrapper<int>>;
+            STATIC_REQUIRE( std::is_constructible_v<V, V>);
+            STATIC_REQUIRE( std::is_constructible_v<V, int>);
+            STATIC_REQUIRE( std::is_constructible_v<V, double>);  // !!true!!
+        }
+        {
             using V = yk::rvariant<yk::recursive_wrapper<int>>;
             STATIC_REQUIRE( std::is_constructible_v<V, V>);
             STATIC_REQUIRE( std::is_constructible_v<V, int>);
             STATIC_REQUIRE( std::is_constructible_v<V, double>);  // !!true!!
+        }
+
+        // Sanity check
+        {
+            struct SubExpr;
+            using Expr = std::variant<int, yk::recursive_wrapper<SubExpr>>;
+            struct SubExpr { Expr expr; };
+
+            STATIC_REQUIRE( std::is_constructible_v<Expr, int>);
+            STATIC_REQUIRE(!std::is_constructible_v<Expr, double>); // false because equally viable
+
+            STATIC_REQUIRE( std::is_constructible_v<SubExpr, int>);
+            STATIC_REQUIRE(!std::is_constructible_v<SubExpr, double>); // false because equally viable
         }
 
         struct SubExpr;

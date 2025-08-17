@@ -311,24 +311,11 @@ struct aggregate_initialize_resolution<
 
 } // detail
 
+// We intentionally don't provide the convenient `_t` and `_v` aliases
+// because they would lead to unnecessarily nested instantiation for
+// legitimate infinite recursion errors on recursive types.
 template<class T, class... Ts>
-using aggregate_initialize_resolution_t = typename detail::aggregate_initialize_resolution<void, T, Ts...>::type;
-
-template<class T, class... Ts>
-constexpr std::size_t aggregate_initialize_resolution_index = detail::aggregate_initialize_resolution<void, T, Ts...>::index;
-
-
-template<class T, class U, class Enabled = void>
-struct is_aggregate_initializable : std::false_type {};
-
-template<class T, class U>
-struct is_aggregate_initializable<T, U, std::void_t<decltype(
-    std::declval<detail::aggregate_initialize_overload<0, T>>()(std::declval<U>(), std::declval<U>())
-)>> : std::true_type
-{};
-
-template<class T, class U>
-constexpr bool is_aggregate_initializable_v = is_aggregate_initializable<T, U>::value;
+struct aggregate_initialize_resolution : detail::aggregate_initialize_resolution<void, T, Ts...> {};
 
 
 // https://eel.is/c++draft/function.objects.general

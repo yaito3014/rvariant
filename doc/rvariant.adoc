@@ -1407,7 +1407,7 @@ class recursive_wrapper
   constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper();
 
   template<class U = T>
-  constexpr explicit({see-below}) recursive_wrapper(U&& x) noexcept({see-below});
+  constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper(U&& x);
 };
 
 // equivalent to the https://eel.is/c+\+draft/indirect[pass:quotes[`std::indirect`]] counterpart
@@ -1462,7 +1462,7 @@ Effectively overrides only the ones listed below; rest are the same as `std::ind
 constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper();pass:quotes[[.candidate\]#// 1#]
 
 template<class U = T>
-constexpr explicit({see-below}) recursive_wrapper(U&& u) noexcept({see-below});pass:quotes[[.candidate\]#// 2#]
+constexpr pass:quotes[[.underline\]#/* not explicit */#] recursive_wrapper(U&& u);pass:quotes[[.candidate\]#// 2#]
 ----
 
 [.candidates]
@@ -1475,12 +1475,16 @@ constexpr explicit({see-below}) recursive_wrapper(U&& u) noexcept({see-below});p
 ** -- `std::is_same_v<std::remove_cvref_t<U>, recursive_wrapper>` is `false`, and
 ** -- `std::is_same_v<std::remove_cvref_t<U>, std::in_place_t>` is `false`, and
 ** -- `std::is_default_constructible_v<Allocator>` is `true`, and
-** -- [.underline]#`std::is_convertible_v<U, T>` is `true`, or the expression `T x[] = {std::forward<U>(u)}` (for an imaginary variable `x`) is well-formed in unevaluated context#. (_Note:_ This prevents recursive instantiation of `std::is_constructible`, even for recursive types, while preserving SFINAE-friendliness.)
+** -- [.underline]#`std::is_convertible_v<U, T>` is `true`#.
+
++
+_Note 1:_ [.underline]#This prevents recursive instantiation of `std::is_constructible`#, even for recursive types, while preserving SFINAE-friendliness. This specification is technically viable only because the class template `rvariant` never uses `std::is_convertible` in any of its constructor overloads. As a result, the atomic constraints of `rvariant` and `recursive_wrapper` remain mutually exclusive. However, if a user-defined class depends on _both_ `std::is_constructible` and `std::is_convertible` (for the same `rvariant` specialization), it may trigger recursive instantiation.
+
++
+_Note 2:_ It is currently unknown whether the recursive instantiation scenario described in _Note 1_ can be technically avoided. This note is provided for informational purposes only and does not specify the semantics of `recursive_wrapper`.
 --
 +
 *_Effects:_* Equivalent to the `std::indirect` counterpart. ^link:pass:[https://eel.is/c++draft/indirect.ctor#lib:indirect,constructor______][[spec\]]^
-+
-*_Remarks:_* [.underline]#The explicit specifier is equivalent to `!std::is_convertible_v<U, T>`#.
 
 
 [[rvariant.recursive.helper]]
