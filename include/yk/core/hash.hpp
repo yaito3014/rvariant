@@ -6,23 +6,10 @@
 // Distributed under the Boost Software License, Version 1.0.
 // https://www.boost.org/LICENSE_1_0.txt
 
+#include <yk/core/hash_fwd.hpp>
 #include <yk/core/type_traits.hpp>
 
 #include <type_traits>
-
-#if __cplusplus <= 202302L || (defined(_MSVC_STL_UPDATE) && _MSVC_STL_UPDATE < 202504L) || (defined(__GLIBCXX__) && __GLIBCXX__ < 20241201) || (defined(_LIBCPP_STD_VER) && _LIBCPP_STD_VER < 26)
-#define YK_HAS_STD_HASH_IN_UTILITY 0
-#else
-#define YK_HAS_STD_HASH_IN_UTILITY 1
-#endif
-
-#if YK_HAS_STD_HASH_IN_UTILITY
-#include <utility> // required for hash declaration (in C++26 and later)
-#else
-#include <typeindex> // required for hash declaration
-#endif
-
-#undef YK_HAS_STD_HASH_IN_UTILITY
 
 namespace yk::core {
 
