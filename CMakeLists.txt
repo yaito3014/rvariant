@@ -24,6 +24,12 @@ if(MSVC)
         PRIVATE
             # required for determining correct `/std:` flag
             "${PROJECT_SOURCE_DIR}/test/dummy.cpp"
+
+            # It seems like these should be `PRIVATE`, otherwise
+            # it'll be added to all dependent targets and yields
+            # "Warning: Conflicting <Type> entries detected"
+            "${PROJECT_SOURCE_DIR}/rvariant.natvis"
+            "${PROJECT_SOURCE_DIR}/cpp.hint"
     )
 else()
     add_library(rvariant INTERFACE)
