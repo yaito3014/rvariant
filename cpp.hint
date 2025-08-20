@@ -5,6 +5,7 @@
 // Hint files help the Visual Studio IDE interpret Visual C++ identifiers
 // such as names of functions and macros.
 // For more information see https://go.microsoft.com/fwlink/?linkid=865984
+
 #define YK_RVARIANT_VISIT_NOEXCEPT
 
 #define YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_BEGIN
@@ -18,11 +19,3 @@
 
 #define YK_FORCEINLINE
 #define YK_LIFETIMEBOUND
-
-#define TEST_CASE
-#define REQUIRE
-#define STATIC_REQUIRE
-#define CHECK
-#define STATIC_CHECK
-
-#define YK_REQUIRE_STATIC_NOTHROW

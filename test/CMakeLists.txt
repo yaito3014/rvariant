@@ -45,6 +45,10 @@ add_executable(
     io_test.cpp
 )
 
+if(MSVC)
+    target_sources(yk_rvariant_test PRIVATE cpp.hint)
+endif()
+
 target_sources(
     yk_rvariant_test
     PRIVATE FILE_SET HEADERS FILES
