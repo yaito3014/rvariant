@@ -278,7 +278,7 @@ using visit_result_t = decltype(std::invoke( // If you see an error here, your `
 template<class Visitor, class... Variants>
 using visit_with_index_result_t = decltype(std::invoke( // If you see an error here, your `T0` is not eligible for the `Visitor`.
     std::declval<Visitor>(),
-    (std::declval<Variants>(), std::in_place_index<0>)...,
+    (std::declval<Variants>(), std::integral_constant<std::size_t, 0>{})...,
     unwrap_recursive(detail::raw_get<0>(forward_storage<Variants>(std::declval<Variants>())))...
 ));
 
@@ -416,6 +416,92 @@ struct visit_R_check_impl<R, Visitor, core::type_list<OverloadSeq...>, Variants.
 template<class R, class Visitor, class... Variants>
 using visit_R_check = visit_R_check_impl<R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
 
+template<class T0R, class Visitor, class, class... Variants>
+struct visit_with_index_check_impl;
+
+template<class T0R, class Visitor, class... Args>
+struct visit_with_index_check_impl<T0R, Visitor, core::type_list<Args...>>
+{
+    static constexpr bool accepts_all_combinations = std::is_invocable_v<Visitor, Args...>;
+
+    template<class Visitor_, class... Args_>
+    struct lazy_invoke
+    {
+        using type = decltype(std::invoke(std::declval<Visitor_>(), std::declval<Args_>()...));
+    };
+
+    // In case of `accepts_all_combinations == false`, this
+    // intentionally reports false-positive `true` to avoid
+    // two `static_assert` errors.
+    static constexpr bool same_return_type = std::is_same_v<
+        typename std::conditional_t<
+            accepts_all_combinations,
+            lazy_invoke<Visitor, Args...>,
+            std::type_identity<T0R>
+        >::type,
+        T0R
+    >;
+
+    // for short-circuiting on conjunction
+    static constexpr bool value = accepts_all_combinations && same_return_type;
+};
+
+template<class T0R, class Visitor, std::size_t... Is, class... Variants>
+struct visit_with_index_check_impl<T0R, Visitor, std::index_sequence<Is...>, Variants...>
+    : visit_with_index_check_impl<T0R, Visitor, core::type_list<std::integral_constant<std::size_t, Is>..., get_result_t<Is, Variants>...>> {};
+
+template<class T0R, class Visitor, class... OverloadSeq, class... Variants>
+struct visit_with_index_check_impl<T0R, Visitor, core::type_list<OverloadSeq...>, Variants...>
+    : std::conjunction<visit_with_index_check_impl<T0R, Visitor, OverloadSeq, Variants...>...> {};
+
+template<class T0R, class Visitor, class... Variants>
+using visit_with_index_check = visit_with_index_check_impl<T0R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
+
+template<class R, class Visitor, class, class... Variants>
+struct visit_R_with_index_check_impl;
+
+template<class R, class Visitor, class... Args>
+struct visit_R_with_index_check_impl<R, Visitor, core::type_list<Args...>>
+{
+    // Note that this can't be `std::is_invocable_r_v`,
+    // because we make sure the conditions for `static_assert` be
+    // mutually exclusive in order to provide better errors.
+    static constexpr bool accepts_all_combinations = std::is_invocable_v<Visitor, Args...>;
+
+    template<class Visitor_, class... Args_>
+    struct lazy_invoke
+    {
+        // This is NOT `std::invoke_r`; we need the plain type for conversion check
+        using type = decltype(std::invoke(std::declval<Visitor_>(), std::declval<Args_>()...));
+    };
+
+    // In case of `accepts_all_combinations == false`, this
+    // intentionally reports false-positive `true` to avoid
+    // two `static_assert` errors.
+    static constexpr bool return_type_convertible_to_R = std::is_convertible_v<
+        typename std::conditional_t<
+            accepts_all_combinations,
+            lazy_invoke<Visitor, Args...>,
+            std::type_identity<R>
+        >::type,
+        R
+    >;
+
+    // for short-circuiting on conjunction
+    static constexpr bool value = accepts_all_combinations && return_type_convertible_to_R;
+};
+
+template<class R, class Visitor, std::size_t... Is, class... Variants>
+struct visit_R_with_index_check_impl<R, Visitor, std::index_sequence<Is...>, Variants...>
+    : visit_R_with_index_check_impl<R, Visitor, core::type_list<std::integral_constant<std::size_t, Is>..., get_result_t<Is, Variants>...>> {};
+
+template<class R, class Visitor, class... OverloadSeq, class... Variants>
+struct visit_R_with_index_check_impl<R, Visitor, core::type_list<OverloadSeq...>, Variants...>
+    : std::conjunction<visit_R_with_index_check_impl<R, Visitor, OverloadSeq, Variants...>...> {};
+
+template<class R, class Visitor, class... Variants>
+using visit_R_with_index_check = visit_R_with_index_check_impl<R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
+
 // --------------------------------------------------
 
 template<class R, class BiasedOverloadSeq, class Visitor, class... Storage>
@@ -468,7 +554,7 @@ private:
         using type = std::is_nothrow_invocable_r<
             R,
             Visitor,
-            std::in_place_index_t<Is>...,
+            std::integral_constant<std::size_t, Is>...,
             unwrap_recursive_t<
                 detail::raw_get_t<detail::valueless_unbias<Storage_>(Is), Storage_>
             >...
@@ -544,7 +630,7 @@ struct multi_visitor_with_index<std::index_sequence<Is...>>
 #define YK_MULTI_VISITOR_WITH_INDEX_INVOKE \
             std::invoke_r<R>( \
                 std::forward<Visitor>(vis), \
-                std::in_place_index<Is>..., \
+                std::integral_constant<std::size_t, Is>{}..., \
                 unwrap_recursive( \
                     raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage)) \
                 )... \
@@ -853,8 +939,9 @@ YK_FORCEINLINE constexpr visit_with_index(Visitor&& vis, Variants&&... vars)
     >::value)
 {
     using T0R = detail::visit_with_index_result_t<Visitor, detail::as_variant_t<Variants>...>;
-    
-    // TODO: add "return types are same" check
+    using Check = detail::visit_with_index_check<T0R, Visitor, detail::as_variant_t<Variants>...>;
+    static_assert(Check::accepts_all_combinations, "TODO: meaningful message here");
+    static_assert(Check::same_return_type, "TODO: meaningful message here");
 
     return detail::visit_with_index_impl<
         T0R,
@@ -878,7 +965,9 @@ YK_FORCEINLINE constexpr R visit_with_index(Visitor&& vis, Variants&&... vars)
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
 {
-    // TODO: add "return types are convertible to R" check
+    using Check = detail::visit_R_with_index_check<R, Visitor, detail::as_variant_t<Variants>...>;
+    static_assert(Check::accepts_all_combinations, "TODO: meaningful message here");
+    static_assert(Check::return_type_convertible_to_R, "TODO: meaningful message here");
 
     return detail::visit_with_index_impl<
         R,

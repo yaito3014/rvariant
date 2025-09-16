@@ -765,8 +765,8 @@ TEST_CASE("visit", "[wrapper]")
 TEST_CASE("visit_with_index")
 {
     constexpr auto vis = yk::overloaded{
-        [](std::in_place_index_t<0>, int const&) -> int { return 0; },
-        [](std::in_place_index_t<1>, int const&) -> int { return 1; },
+        [](std::integral_constant<std::size_t, 0>, int const&) -> int { return 0; },
+        [](std::integral_constant<std::size_t, 1>, int const&) -> int { return 1; },
     };
 
     STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<0>, 42}) == 0);
