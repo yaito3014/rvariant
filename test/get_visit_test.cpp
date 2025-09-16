@@ -685,7 +685,7 @@ TEST_CASE("visit_with_index (Constraints)")
             using Check = yk::detail::visit_with_index_check<std::string_view, Visitor, yk::rvariant<int, int>&&>;
             STATIC_REQUIRE(Check::accepts_all_combinations);
             STATIC_REQUIRE(Check::same_return_type);
-            STATIC_REQUIRE(Check::value)
+            STATIC_REQUIRE(Check::value);
         }
         {
             using Check = yk::detail::visit_with_index_check<std::string_view, DifferentRVisitor, yk::rvariant<int, int>&&>;
@@ -707,7 +707,7 @@ TEST_CASE("visit_with_index (Constraints)")
             using Check = yk::detail::visit_R_with_index_check<std::string_view, Visitor, yk::rvariant<int, int>&&>;
             STATIC_REQUIRE(Check::accepts_all_combinations);
             STATIC_REQUIRE(Check::return_type_convertible_to_R);
-            STATIC_REQUIRE(Check::value)
+            STATIC_REQUIRE(Check::value);
         }
         {
             using Check = yk::detail::visit_R_with_index_check<std::string_view, DifferentRVisitor, yk::rvariant<int, int>&&>;
@@ -824,6 +824,38 @@ TEST_CASE("visit", "[wrapper]")
         STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SI{}}, yk::rvariant<SC, SW>{SW{}}) == 1);
         STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
         STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
+    }
+}
+
+TEST_CASE("visit_with_index")
+{
+    {
+        constexpr auto vis = yk::overloaded{
+            [](std::integral_constant<std::size_t, 0>, int const&) { return 0; },
+            [](std::integral_constant<std::size_t, 1>, int const&) { return 1; },
+        };
+
+        STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<0>, 42}) == 0);
+        STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<1>, 42}) == 1);
+        STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<0>, 42}) == 0);
+        STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<1>, 42}) == 1);
+    }
+    {
+        constexpr auto vis = yk::overloaded{
+            [](std::integral_constant<std::size_t, 0>, std::integral_constant<std::size_t, 0>, int const&, int const&) { return 0; },
+            [](std::integral_constant<std::size_t, 0>, std::integral_constant<std::size_t, 1>, int const&, int const&) { return 1; },
+            [](std::integral_constant<std::size_t, 1>, std::integral_constant<std::size_t, 0>, int const&, int const&) { return 2; },
+            [](std::integral_constant<std::size_t, 1>, std::integral_constant<std::size_t, 1>, int const&, int const&) { return 3; },
+        };
+
+        STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<0>, 33}, yk::rvariant<int, int>{std::in_place_index<0>, 4}) == 0);
+        STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<0>, 33}, yk::rvariant<int, int>{std::in_place_index<1>, 4}) == 1);
+        STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<1>, 33}, yk::rvariant<int, int>{std::in_place_index<0>, 4}) == 2);
+        STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<1>, 33}, yk::rvariant<int, int>{std::in_place_index<1>, 4}) == 3);
+        STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<0>, 33}, yk::rvariant<int, int>{std::in_place_index<0>, 4}) == 0);
+        STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<0>, 33}, yk::rvariant<int, int>{std::in_place_index<1>, 4}) == 1);
+        STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<1>, 33}, yk::rvariant<int, int>{std::in_place_index<0>, 4}) == 2);
+        STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<1>, 33}, yk::rvariant<int, int>{std::in_place_index<1>, 4}) == 3);
     }
 }
 
