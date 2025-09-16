@@ -1028,6 +1028,9 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
 
     template<class R, class V, std::size_t... n>
     friend struct detail::visit_impl;
+    
+    template<class R, class V, std::size_t... n>
+    friend struct detail::visit_with_index_impl;
 
     template<class Variant, class Visitor>
     friend constexpr detail::raw_visit_result_t<Visitor, detail::forward_storage_t<Variant>>
