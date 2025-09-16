@@ -446,7 +446,7 @@ struct multi_visitor<std::index_sequence<Is...>>
     }
 };
 
-template<class R, class OverloadSeq, class Visitor, class... Storage>
+template<class R, class OverloadSeqList, class Visitor, class... Storage>
 struct visit_table;
 
 template<class R, class... OverloadSeq, class Visitor, class... Storage>
@@ -470,11 +470,11 @@ struct visit_dispatch;
 template<>
 struct visit_dispatch<-1>
 {
-    template<class R, class OverloadSeq, class Visitor, class... Storage>
+    template<class R, class OverloadSeqList, class Visitor, class... Storage>
     [[nodiscard]] YK_FORCEINLINE static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
-        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeq, Visitor, Storage...>::value)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeqList, Visitor, Storage...>::value)
     {
-        constexpr auto const& table = visit_table<R, OverloadSeq, Visitor, Storage...>::table;
+        constexpr auto const& table = visit_table<R, OverloadSeqList, Visitor, Storage...>::table;
         auto const& f = table[flat_i];
         return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Storage>(storage)...);
     }
@@ -482,8 +482,8 @@ struct visit_dispatch<-1>
 
 #define YK_VISIT_CASE(n) \
     case (n): \
-        if constexpr ((n) < OverloadSeq::size) { \
-            return multi_visitor<core::at_c_t<(n), OverloadSeq>>::template apply<R, Visitor, Storage...>( \
+        if constexpr ((n) < OverloadSeqList::size) { \
+            return multi_visitor<core::at_c_t<(n), OverloadSeqList>>::template apply<R, Visitor, Storage...>( \
                 static_cast<Visitor&&>(vis), static_cast<Storage&&>(storage)... \
             ); \
         } else std::unreachable(); [[fallthrough]]
@@ -492,11 +492,11 @@ struct visit_dispatch<-1>
     template<> \
     struct visit_dispatch<(strategy)> \
     { \
-        template<class R, class OverloadSeq, class Visitor, class... Storage> \
+        template<class R, class OverloadSeqList, class Visitor, class... Storage> \
         [[nodiscard]] static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage) \
-            YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeq, Visitor, Storage...>::value) \
+            YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeqList, Visitor, Storage...>::value) \
         { \
-            static_assert((1uz << ((strategy) * 2uz)) <= OverloadSeq::size && OverloadSeq::size <= (1uz << (((strategy) + 1) * 2uz))); \
+            static_assert((1uz << ((strategy) * 2uz)) <= OverloadSeqList::size && OverloadSeqList::size <= (1uz << (((strategy) + 1) * 2uz))); \
             switch (flat_i) { \
             YK_VISIT_CASES_ ## strategy (YK_VISIT_CASE, 0); \
             default: std::unreachable(); \
@@ -568,7 +568,7 @@ private:
 
 
 template<class... Variants>
-using make_OverloadSeq = core::seq_cartesian_product<
+using make_OverloadSeqList = core::seq_cartesian_product<
     std::index_sequence,
     std::make_index_sequence<
         detail::valueless_bias<detail::as_variant_t<Variants>>(
@@ -587,16 +587,16 @@ struct visit_impl<
     n...
 >
 {
-    template<class Visitor, class... Variants, class OverloadSeq = make_OverloadSeq<Variants...>>
+    template<class Visitor, class... Variants, class OverloadSeqList = make_OverloadSeqList<Variants...>>
     static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
-        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeq, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
     {
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
             std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...
         >::get(vars.index_...);
 
-        return visit_dispatch<visit_strategy<OverloadSeq::size>>::template apply<R, OverloadSeq>(
+        return visit_dispatch<visit_strategy<OverloadSeqList::size>>::template apply<R, OverloadSeqList>(
             flat_i, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...
         );
     }
@@ -615,7 +615,7 @@ detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
 YK_FORCEINLINE constexpr visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>,
-        detail::make_OverloadSeq<Variants...>,
+        detail::make_OverloadSeqList<Variants...>,
         Visitor,
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
@@ -649,7 +649,7 @@ template<
 YK_FORCEINLINE constexpr R visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         R,
-        detail::make_OverloadSeq<Variants...>,
+        detail::make_OverloadSeqList<Variants...>,
         Visitor,
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
