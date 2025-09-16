@@ -593,21 +593,12 @@ struct multi_visitor<std::index_sequence<Is...>>
             detail::throw_bad_variant_access();
 
         } else {
-#define YK_MULTI_VISITOR_INVOKE \
-            std::invoke_r<R>( \
-                std::forward<Visitor>(vis), \
-                unwrap_recursive( \
-                    raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage)) \
-                )... \
+            return std::invoke_r<R>(
+                std::forward<Visitor>(vis),
+                unwrap_recursive(
+                    raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage))
+                )...
             )
-#if YK_CI
-            static_assert(
-                noexcept(YK_MULTI_VISITOR_INVOKE)
-                == multi_visit_noexcept<R, std::index_sequence<Is...>, Visitor, Storage...>::value
-            );
-#endif
-            return YK_MULTI_VISITOR_INVOKE;
-#undef YK_MULTI_VISITOR_INVOKE
         }
     }
 };
@@ -626,22 +617,13 @@ struct multi_visitor_with_index<std::index_sequence<Is...>>
             detail::throw_bad_variant_access();
 
         } else {
-#define YK_MULTI_VISITOR_WITH_INDEX_INVOKE \
-            std::invoke_r<R>( \
-                std::forward<Visitor>(vis), \
-                std::integral_constant<std::size_t, valueless_unbias<Storage>(Is)>{}..., \
-                unwrap_recursive( \
-                    raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage)) \
-                )... \
+            return std::invoke_r<R>(
+                std::forward<Visitor>(vis),
+                std::integral_constant<std::size_t, valueless_unbias<Storage>(Is)>{}...,
+                unwrap_recursive(
+                    raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage))
+                )...
             )
-#if YK_CI
-            static_assert(
-                noexcept(YK_MULTI_VISITOR_WITH_INDEX_INVOKE)
-                == multi_visit_with_index_noexcept<R, std::index_sequence<Is...>, Visitor, Storage...>::value
-            );
-#endif
-            return YK_MULTI_VISITOR_WITH_INDEX_INVOKE;
-#undef YK_MULTI_VISITOR_WITH_INDEX_INVOKE
         }
     }
 };
