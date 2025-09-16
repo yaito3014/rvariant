@@ -54,12 +54,12 @@ namespace detail {
     YK_VISIT_CASES_2(def, (ofs) + 128); \
     YK_VISIT_CASES_2(def, (ofs) + 192)
 
-template<std::size_t BiasedOverloadSeqSize>
+template<std::size_t OverloadSeqListSize>
 constexpr int visit_strategy =
-    BiasedOverloadSeqSize <= 4 ? 0 :
-    BiasedOverloadSeqSize <= 16 ? 1 :
-    BiasedOverloadSeqSize <= 64 ? 2 :
-    BiasedOverloadSeqSize <= 256 ? 3 : -1;
+    OverloadSeqListSize <= 4 ? 0 :
+    OverloadSeqListSize <= 16 ? 1 :
+    OverloadSeqListSize <= 64 ? 2 :
+    OverloadSeqListSize <= 256 ? 3 : -1;
 
 
 template<class Visitor, class Storage>
@@ -503,7 +503,7 @@ using visit_R_with_index_check = visit_R_with_index_check_impl<
 
 // --------------------------------------------------
 
-template<class R, class BiasedOverloadSeq, class Visitor, class... Storage>
+template<class R, class OverloadSeqList, class Visitor, class... Storage>
 struct multi_visit_noexcept;
 
 template<class R, std::size_t... Is, class Visitor, class... Storage>
@@ -535,12 +535,12 @@ public:
     >::type::value;
 };
 
-template<class R, class... BiasedOverloadSeq, class Visitor, class... Storage>
-struct multi_visit_noexcept<R, core::type_list<BiasedOverloadSeq...>, Visitor, Storage...>
-    : std::conjunction<multi_visit_noexcept<R, BiasedOverloadSeq, Visitor, Storage...>...>
+template<class R, class... OverloadSeq, class Visitor, class... Storage>
+struct multi_visit_noexcept<R, core::type_list<OverloadSeq...>, Visitor, Storage...>
+    : std::conjunction<multi_visit_noexcept<R, OverloadSeq, Visitor, Storage...>...>
 {};
 
-template<class R, class BiasedOverloadSeq, class Visitor, class... Storage>
+template<class R, class OverloadSeqList, class Visitor, class... Storage>
 struct multi_visit_with_index_noexcept;
 
 template<class R, std::size_t... Is, class Visitor, class... Storage>
@@ -573,13 +573,13 @@ public:
     >::type::value;
 };
 
-template<class R, class... BiasedOverloadSeq, class Visitor, class... Storage>
-struct multi_visit_with_index_noexcept<R, core::type_list<BiasedOverloadSeq...>, Visitor, Storage...>
-    : std::conjunction<multi_visit_with_index_noexcept<R, BiasedOverloadSeq, Visitor, Storage...>...>
+template<class R, class... OverloadSeq, class Visitor, class... Storage>
+struct multi_visit_with_index_noexcept<R, core::type_list<OverloadSeq...>, Visitor, Storage...>
+    : std::conjunction<multi_visit_with_index_noexcept<R, OverloadSeq, Visitor, Storage...>...>
 {};
 
 
-template<class BiasedOverloadSeq>
+template<class OverloadSeq>
 struct multi_visitor;
 
 template<std::size_t... Is>
@@ -612,7 +612,7 @@ struct multi_visitor<std::index_sequence<Is...>>
     }
 };
 
-template<class BiasedOverloadSeq>
+template<class OverloadSeq>
 struct multi_visitor_with_index;
 
 template<std::size_t... Is>
@@ -646,13 +646,13 @@ struct multi_visitor_with_index<std::index_sequence<Is...>>
     }
 };
 
-template<class R, class BiasedOverloadSeqList, class Visitor, class... Storage>
+template<class R, class OverloadSeqList, class Visitor, class... Storage>
 struct visit_table;
 
-template<class R, class... BiasedOverloadSeq, class Visitor, class... Storage>
+template<class R, class... OverloadSeq, class Visitor, class... Storage>
 struct visit_table<
     R,
-    core::type_list<BiasedOverloadSeq...>,
+    core::type_list<OverloadSeq...>,
     Visitor,
     Storage...
 >
@@ -660,17 +660,17 @@ struct visit_table<
     using function_type = R(*)(Visitor&&, Storage&&...);
 
     static constexpr function_type table[] = {
-        &multi_visitor<BiasedOverloadSeq>::template apply<R, Visitor, Storage...>...
+        &multi_visitor<OverloadSeq>::template apply<R, Visitor, Storage...>...
     };
 };
 
-template<class R, class BiasedOverloadSeqList, class Visitor, class... Storage>
+template<class R, class OverloadSeqList, class Visitor, class... Storage>
 struct visit_with_index_table;
 
-template<class R, class... BiasedOverloadSeq, class Visitor, class... Storage>
+template<class R, class... OverloadSeq, class Visitor, class... Storage>
 struct visit_with_index_table<
     R,
-    core::type_list<BiasedOverloadSeq...>,
+    core::type_list<OverloadSeq...>,
     Visitor,
     Storage...
 >
@@ -678,7 +678,7 @@ struct visit_with_index_table<
     using function_type = R(*)(Visitor&&, Storage&&...);
 
     static constexpr function_type table[] = {
-        &multi_visitor_with_index<BiasedOverloadSeq>::template apply<R, Visitor, Storage...>...
+        &multi_visitor_with_index<OverloadSeq>::template apply<R, Visitor, Storage...>...
     };
 };
 
@@ -688,11 +688,11 @@ struct visit_dispatch;
 template<>
 struct visit_dispatch<-1>
 {
-    template<class R, class BiasedOverloadSeqList, class Visitor, class... Storage>
+    template<class R, class OverloadSeqList, class Visitor, class... Storage>
     [[nodiscard]] YK_FORCEINLINE static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
-        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, BiasedOverloadSeqList, Visitor, Storage...>::value)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeqList, Visitor, Storage...>::value)
     {
-        constexpr auto const& table = visit_table<R, BiasedOverloadSeqList, Visitor, Storage...>::table;
+        constexpr auto const& table = visit_table<R, OverloadSeqList, Visitor, Storage...>::table;
         auto const& f = table[flat_i];
         return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Storage>(storage)...);
     }
@@ -700,8 +700,8 @@ struct visit_dispatch<-1>
 
 #define YK_VISIT_CASE(n) \
     case (n): \
-        if constexpr ((n) < BiasedOverloadSeqList::size) { \
-            return multi_visitor<core::at_c_t<(n), BiasedOverloadSeqList>>::template apply<R, Visitor, Storage...>( \
+        if constexpr ((n) < OverloadSeqList::size) { \
+            return multi_visitor<core::at_c_t<(n), OverloadSeqList>>::template apply<R, Visitor, Storage...>( \
                 static_cast<Visitor&&>(vis), static_cast<Storage&&>(storage)... \
             ); \
         } else std::unreachable(); [[fallthrough]]
@@ -710,11 +710,11 @@ struct visit_dispatch<-1>
     template<> \
     struct visit_dispatch<(strategy)> \
     { \
-        template<class R, class BiasedOverloadSeqList, class Visitor, class... Storage> \
+        template<class R, class OverloadSeqList, class Visitor, class... Storage> \
         [[nodiscard]] static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage) \
-            YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, BiasedOverloadSeqList, Visitor, Storage...>::value) \
+            YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeqList, Visitor, Storage...>::value) \
         { \
-            static_assert((1uz << ((strategy) * 2uz)) <= BiasedOverloadSeqList::size && BiasedOverloadSeqList::size <= (1uz << (((strategy) + 1) * 2uz))); \
+            static_assert((1uz << ((strategy) * 2uz)) <= OverloadSeqList::size && OverloadSeqList::size <= (1uz << (((strategy) + 1) * 2uz))); \
             switch (flat_i) { \
             YK_VISIT_CASES_ ## strategy (YK_VISIT_CASE, 0); \
             default: std::unreachable(); \
@@ -741,11 +741,11 @@ struct visit_with_index_dispatch;
 template<>
 struct visit_with_index_dispatch<-1>
 {
-    template<class R, class BiasedOverloadSeqList, class Visitor, class... Storage>
+    template<class R, class OverloadSeqList, class Visitor, class... Storage>
     [[nodiscard]] YK_FORCEINLINE static constexpr R apply(std::size_t const flat_i, [[maybe_unused]] Visitor&& vis, [[maybe_unused]] Storage&&... storage)
-        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_with_index_noexcept<R, BiasedOverloadSeqList, Visitor, Storage...>::value)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_with_index_noexcept<R, OverloadSeqList, Visitor, Storage...>::value)
     {
-        constexpr auto const& table = visit_with_index_table<R, BiasedOverloadSeqList, Visitor, Storage...>::table;
+        constexpr auto const& table = visit_with_index_table<R, OverloadSeqList, Visitor, Storage...>::table;
         auto const& f = table[flat_i];
         return std::invoke_r<R>(f, std::forward<Visitor>(vis), std::forward<Storage>(storage)...);
     }
@@ -821,16 +821,16 @@ struct visit_impl<
     n...
 >
 {
-    template<class Visitor, class... Variants, class BiasedOverloadSeqList = make_OverloadSeqList<Variants...>>
+    template<class Visitor, class... Variants, class OverloadSeqList = make_OverloadSeqList<Variants...>>
     static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
-        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, BiasedOverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, OverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
     {
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
             std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...
         >::get(vars.index_...);
 
-        return visit_dispatch<visit_strategy<BiasedOverloadSeqList::size>>::template apply<R, BiasedOverloadSeqList>(
+        return visit_dispatch<visit_strategy<OverloadSeqList::size>>::template apply<R, OverloadSeqList>(
             flat_i, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...
         );
     }
@@ -846,16 +846,16 @@ struct visit_with_index_impl<
     n...
 >
 {
-    template<class Visitor, class... Variants, class BiasedOverloadSeqList = make_OverloadSeqList<Variants...>>
+    template<class Visitor, class... Variants, class OverloadSeqList = make_OverloadSeqList<Variants...>>
     static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
-        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_with_index_noexcept<R, BiasedOverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
+        YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_with_index_noexcept<R, OverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
     {
         std::size_t const flat_i = flat_index<
             std::index_sequence<n...>,
             std::remove_cvref_t<as_variant_t<Variants>>::never_valueless...
         >::get(vars.index_...);
 
-        return visit_with_index_dispatch<-1>::template apply<R, BiasedOverloadSeqList>(
+        return visit_with_index_dispatch<-1>::template apply<R, OverloadSeqList>(
             flat_i, std::forward<Visitor>(vis), forward_storage<as_variant_t<Variants>>(vars)...
         );
     }
