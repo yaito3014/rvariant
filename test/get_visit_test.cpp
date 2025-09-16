@@ -655,6 +655,71 @@ TEST_CASE("visit (Constraints)")
     // Make sure "no matching overload" is SFINAE-friendly.
 }
 
+TEST_CASE("visit_with_index (Constraints)")
+{
+    [[maybe_unused]] constexpr auto vis = yk::overloaded{
+        [](std::integral_constant<std::size_t, 0>, int const&) -> std::string_view { return "variant"; },
+        [](std::integral_constant<std::size_t, 1>, int const&) -> std::string_view { return "variant"; },
+    };
+    using Visitor = decltype(vis);
+    
+    [[maybe_unused]] constexpr auto different_R_vis = yk::overloaded{
+        [](std::integral_constant<std::size_t, 0>, int const&) -> std::string_view { return "variant"; },
+        [](std::integral_constant<std::size_t, 1>, int const&) -> std::string /* different type */ { return "variant"; },
+    };
+    using DifferentRVisitor = decltype(different_R_vis);
+
+    STATIC_REQUIRE(std::is_invocable_v<Visitor, std::integral_constant<std::size_t, 0>, int>);
+    STATIC_REQUIRE(std::is_invocable_v<Visitor, std::integral_constant<std::size_t, 1>, int>);
+
+    // for visit_with_index(...)
+    {
+        {
+            using Check = yk::detail::visit_with_index_check_impl<
+                std::string_view, Visitor, yk::core::type_list<std::integral_constant<std::size_t, 0>>, yk::core::type_list<int>>;
+
+            STATIC_REQUIRE(Check::accepts_all_combinations);
+            STATIC_REQUIRE(Check::value);
+        }
+        {
+            using Check = yk::detail::visit_with_index_check<std::string_view, Visitor, yk::rvariant<int, int>&&>;
+            STATIC_REQUIRE(Check::accepts_all_combinations);
+            STATIC_REQUIRE(Check::same_return_type);
+            STATIC_REQUIRE(Check::value)
+        }
+        {
+            using Check = yk::detail::visit_with_index_check<std::string_view, DifferentRVisitor, yk::rvariant<int, int>&&>;
+            STATIC_REQUIRE(Check::accepts_all_combinations);
+            STATIC_REQUIRE(!Check::same_return_type);
+            STATIC_REQUIRE(!Check::value);
+        }
+    }
+    // for visit_with_index<R>(...)
+    {
+        {
+            using Check = yk::detail::visit_R_with_index_check_impl<
+                std::string_view, Visitor, yk::core::type_list<std::integral_constant<std::size_t, 0>>, yk::core::type_list<int>>;
+
+            STATIC_REQUIRE(Check::accepts_all_combinations);
+            STATIC_REQUIRE(Check::value);
+        }
+        {
+            using Check = yk::detail::visit_R_with_index_check<std::string_view, Visitor, yk::rvariant<int, int>&&>;
+            STATIC_REQUIRE(Check::accepts_all_combinations);
+            STATIC_REQUIRE(Check::return_type_convertible_to_R);
+            STATIC_REQUIRE(Check::value)
+        }
+        {
+            using Check = yk::detail::visit_R_with_index_check<std::string_view, DifferentRVisitor, yk::rvariant<int, int>&&>;
+            STATIC_REQUIRE(Check::accepts_all_combinations);
+            STATIC_REQUIRE(Check::return_type_convertible_to_R);
+            STATIC_REQUIRE(Check::value);
+        }
+    }
+
+    // TODO: Check "Constraints:"
+}
+
 TEST_CASE("visit")
 {
     using SI = strong<int>;
@@ -760,17 +825,6 @@ TEST_CASE("visit", "[wrapper]")
         STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SC{}}) == 2);
         STATIC_CHECK(yk::visit(vis, yk::rvariant<yk::recursive_wrapper<SI>, SD>{SD{}}, yk::rvariant<SC, SW>{SW{}}) == 3);
     }
-}
-
-TEST_CASE("visit_with_index")
-{
-    constexpr auto vis = yk::overloaded{
-        [](std::integral_constant<std::size_t, 0>, int const&) -> int { return 0; },
-        [](std::integral_constant<std::size_t, 1>, int const&) -> int { return 1; },
-    };
-
-    STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<0>, 42}) == 0);
-    STATIC_CHECK(yk::visit_with_index(vis, yk::rvariant<int, int>{std::in_place_index<1>, 42}) == 1);
 }
 
 } // unit_test

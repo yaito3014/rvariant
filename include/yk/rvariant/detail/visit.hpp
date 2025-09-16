@@ -286,51 +286,13 @@ template<class... Variants>
 using make_OverloadSeqList = core::seq_cartesian_product<
     std::index_sequence,
     std::make_index_sequence<
-        yk::variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>> // aka `n`
-    >...
->;
-
-template<class... Variants>
-using make_BiasedOverloadSeqList = core::seq_cartesian_product<
-    std::index_sequence,
-    std::make_index_sequence<
         detail::valueless_bias<detail::as_variant_t<Variants>>(
             yk::variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>> // aka `n`
         )
     >...
 >;
 
-template<std::size_t I, class Variant>
-struct get_result {};
-
-template<std::size_t I, class... Ts>
-struct get_result<I, rvariant<Ts...>&>
-{
-    using type = unwrap_recursive_t<core::pack_indexing_t<I, Ts...>>&;
-};
-
-template<std::size_t I, class... Ts>
-struct get_result<I, rvariant<Ts...> const&>
-{
-    using type = unwrap_recursive_t<core::pack_indexing_t<I, Ts...>> const&;
-};
-
-template<std::size_t I, class... Ts>
-struct get_result<I, rvariant<Ts...>&&>
-{
-    using type = unwrap_recursive_t<core::pack_indexing_t<I, Ts...>>&&;
-};
-
-template<std::size_t I, class... Ts>
-struct get_result<I, rvariant<Ts...> const&&>
-{
-    using type = unwrap_recursive_t<core::pack_indexing_t<I, Ts...>> const&&;
-};
-
-template<std::size_t I, class Variant>
-using get_result_t = typename get_result<I, Variant>::type;
-
-template<class T0R, class Visitor, class, class... Variants>
+template<class T0R, class Visitor, class ArgList, class... Variants>
 struct visit_check_impl;
 
 template<class T0R, class Visitor, class... Args>
@@ -360,18 +322,23 @@ struct visit_check_impl<T0R, Visitor, core::type_list<Args...>>
     static constexpr bool value = accepts_all_alternatives && same_return_type;
 };
 
-template<class T0R, class Visitor, std::size_t... Is, class... Variants>
-struct visit_check_impl<T0R, Visitor, std::index_sequence<Is...>, Variants...>
-    : visit_check_impl<T0R, Visitor, core::type_list<get_result_t<Is, Variants>...>> {};
-
-template<class T0R, class Visitor, class... OverloadSeq, class... Variants>
-struct visit_check_impl<T0R, Visitor, core::type_list<OverloadSeq...>, Variants...>
-    : std::conjunction<visit_check_impl<T0R, Visitor, OverloadSeq, Variants...>...> {};
+template<class T0R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Variants...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>&>, Variants...>...> {};
+template<class T0R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Variants...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const&>, Variants...>...> {};
+template<class T0R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Variants...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>&&>, Variants...>...> {};
+template<class T0R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_check_impl<T0R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Variants...>
+    : std::conjunction<visit_check_impl<T0R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const&&>, Variants...>...> {};
 
 template<class T0R, class Visitor, class... Variants>
-using visit_check = visit_check_impl<T0R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
+using visit_check = visit_check_impl<T0R, Visitor, core::type_list<>, Variants...>;
 
-template<class R, class Visitor, class, class... Variants>
+template<class R, class Visitor, class ArgList, class... Variants>
 struct visit_R_check_impl;
 
 template<class R, class Visitor, class... Args>
@@ -405,24 +372,29 @@ struct visit_R_check_impl<R, Visitor, core::type_list<Args...>>
     static constexpr bool value = accepts_all_alternatives && return_type_convertible_to_R;
 };
 
-template<class R, class Visitor, std::size_t... Is, class... Variants>
-struct visit_R_check_impl<R, Visitor, std::index_sequence<Is...>, Variants...>
-    : visit_R_check_impl<R, Visitor, core::type_list<get_result_t<Is, Variants>...>> {};
-
-template<class R, class Visitor, class... OverloadSeq, class... Variants>
-struct visit_R_check_impl<R, Visitor, core::type_list<OverloadSeq...>, Variants...>
-    : std::conjunction<visit_R_check_impl<R, Visitor, OverloadSeq, Variants...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...>&, Variants...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>>, Variants...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&, Variants...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const&>, Variants...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...>&&, Variants...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts>&&>, Variants...>...> {};
+template<class R, class Visitor, class... Args, class... Ts, class... Variants>
+struct visit_R_check_impl<R, Visitor, core::type_list<Args...>, rvariant<Ts...> const&&, Variants...>
+    : std::conjunction<visit_R_check_impl<R, Visitor, core::type_list<Args..., unwrap_recursive_t<Ts> const&&>, Variants...>...> {};
 
 template<class R, class Visitor, class... Variants>
-using visit_R_check = visit_R_check_impl<R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
+using visit_R_check = visit_R_check_impl<R, Visitor, core::type_list<>, Variants...>;
 
-template<class T0R, class Visitor, class, class... Variants>
+template<class T0R, class Visitor, class ICList, class ArgList, class SeqList = core::type_list<>, class... Variants>
 struct visit_with_index_check_impl;
 
-template<class T0R, class Visitor, class... Args>
-struct visit_with_index_check_impl<T0R, Visitor, core::type_list<Args...>>
+template<class T0R, class Visitor, class... ICs, class... Args>
+struct visit_with_index_check_impl<T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>>
 {
-    static constexpr bool accepts_all_combinations = std::is_invocable_v<Visitor, Args...>;
+    static constexpr bool accepts_all_combinations = std::is_invocable_v<Visitor, ICs..., Args...>;
 
     template<class Visitor_, class... Args_>
     struct lazy_invoke
@@ -436,7 +408,7 @@ struct visit_with_index_check_impl<T0R, Visitor, core::type_list<Args...>>
     static constexpr bool same_return_type = std::is_same_v<
         typename std::conditional_t<
             accepts_all_combinations,
-            lazy_invoke<Visitor, Args...>,
+            lazy_invoke<Visitor, ICs..., Args...>,
             std::type_identity<T0R>
         >::type,
         T0R
@@ -446,27 +418,46 @@ struct visit_with_index_check_impl<T0R, Visitor, core::type_list<Args...>>
     static constexpr bool value = accepts_all_combinations && same_return_type;
 };
 
-template<class T0R, class Visitor, std::size_t... Is, class... Variants>
-struct visit_with_index_check_impl<T0R, Visitor, std::index_sequence<Is...>, Variants...>
-    : visit_with_index_check_impl<T0R, Visitor, core::type_list<std::integral_constant<std::size_t, Is>..., get_result_t<Is, Variants>...>> {};
+template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_with_index_check_impl<
+    T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&, Variants...>
+    : std::conjunction<visit_with_index_check_impl<
+          T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&>,
+          core::type_list<Seqs...>, Variants...>...> {};
+template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_with_index_check_impl<
+    T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&, Variants...>
+    : std::conjunction<visit_with_index_check_impl<
+            T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&>,
+            core::type_list<Seqs...>, Variants...>...> {};
+template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_with_index_check_impl<
+    T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&&, Variants...>
+    : std::conjunction<visit_with_index_check_impl<
+            T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&&>,
+            core::type_list<Seqs...>, Variants...>...> {};
+template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_with_index_check_impl<
+    T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&&, Variants...>
+    : std::conjunction<visit_with_index_check_impl<
+            T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&&>,
+            core::type_list<Seqs...>, Variants...>...> {};
 
-template<class T0R, class Visitor, class... OverloadSeq, class... Variants>
-struct visit_with_index_check_impl<T0R, Visitor, core::type_list<OverloadSeq...>, Variants...>
-    : std::conjunction<visit_with_index_check_impl<T0R, Visitor, OverloadSeq, Variants...>...> {};
+template <class T0R, class Visitor, class... Variants>
+using visit_with_index_check = visit_with_index_check_impl<
+    T0R, Visitor, core::type_list<>, core::type_list<>, core::type_list<std::make_index_sequence<variant_size_v<std::remove_cvref_t<Variants>>>...>,
+    Variants...>;
 
-template<class T0R, class Visitor, class... Variants>
-using visit_with_index_check = visit_with_index_check_impl<T0R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
-
-template<class R, class Visitor, class, class... Variants>
+template<class R, class Visitor, class ICList, class ArgList, class SeqList = core::type_list<>, class... Variants>
 struct visit_R_with_index_check_impl;
 
-template<class R, class Visitor, class... Args>
-struct visit_R_with_index_check_impl<R, Visitor, core::type_list<Args...>>
+template<class R, class Visitor, class... ICs, class... Args>
+struct visit_R_with_index_check_impl<R, Visitor, core::type_list<ICs...>, core::type_list<Args...>>
 {
     // Note that this can't be `std::is_invocable_r_v`,
     // because we make sure the conditions for `static_assert` be
     // mutually exclusive in order to provide better errors.
-    static constexpr bool accepts_all_combinations = std::is_invocable_v<Visitor, Args...>;
+    static constexpr bool accepts_all_combinations = std::is_invocable_v<Visitor, ICs..., Args...>;
 
     template<class Visitor_, class... Args_>
     struct lazy_invoke
@@ -481,7 +472,7 @@ struct visit_R_with_index_check_impl<R, Visitor, core::type_list<Args...>>
     static constexpr bool return_type_convertible_to_R = std::is_convertible_v<
         typename std::conditional_t<
             accepts_all_combinations,
-            lazy_invoke<Visitor, Args...>,
+            lazy_invoke<Visitor, ICs..., Args...>,
             std::type_identity<R>
         >::type,
         R
@@ -491,16 +482,34 @@ struct visit_R_with_index_check_impl<R, Visitor, core::type_list<Args...>>
     static constexpr bool value = accepts_all_combinations && return_type_convertible_to_R;
 };
 
-template<class R, class Visitor, std::size_t... Is, class... Variants>
-struct visit_R_with_index_check_impl<R, Visitor, std::index_sequence<Is...>, Variants...>
-    : visit_R_with_index_check_impl<R, Visitor, core::type_list<std::integral_constant<std::size_t, Is>..., get_result_t<Is, Variants>...>> {};
+template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_R_with_index_check_impl<
+    R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&, Variants...>
+    : std::conjunction<visit_R_with_index_check_impl<
+            R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&>,
+            core::type_list<Seqs...>, Variants...>...> {};
+template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_R_with_index_check_impl<
+    R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&, Variants...>
+    : std::conjunction<visit_R_with_index_check_impl<
+            R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&>,
+            core::type_list<Seqs...>, Variants...>...> {};
+template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_R_with_index_check_impl<
+    R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&&, Variants...>
+    : std::conjunction<visit_R_with_index_check_impl<
+            R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&&>,
+            core::type_list<Seqs...>, Variants...>...> {};
+template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+struct visit_R_with_index_check_impl<
+    R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&&, Variants...>
+    : std::conjunction<visit_R_with_index_check_impl<
+            R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&&>,
+            core::type_list<Seqs...>, Variants...>...> {};
 
-template<class R, class Visitor, class... OverloadSeq, class... Variants>
-struct visit_R_with_index_check_impl<R, Visitor, core::type_list<OverloadSeq...>, Variants...>
-    : std::conjunction<visit_R_with_index_check_impl<R, Visitor, OverloadSeq, Variants...>...> {};
-
-template<class R, class Visitor, class... Variants>
-using visit_R_with_index_check = visit_R_with_index_check_impl<R, Visitor, make_OverloadSeqList<Variants...>, Variants...>;
+template <class R, class Visitor, class... Variants>
+using visit_R_with_index_check = visit_R_with_index_check_impl<
+    R, Visitor, core::type_list<>, core::type_list<>, core::type_list<std::make_index_sequence<variant_size_v<std::remove_cvref_t<Variants>>>...>, Variants...>;
 
 // --------------------------------------------------
 
@@ -812,7 +821,7 @@ struct visit_impl<
     n...
 >
 {
-    template<class Visitor, class... Variants, class BiasedOverloadSeqList = make_BiasedOverloadSeqList<Variants...>>
+    template<class Visitor, class... Variants, class BiasedOverloadSeqList = make_OverloadSeqList<Variants...>>
     static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
         YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_noexcept<R, BiasedOverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
     {
@@ -837,7 +846,7 @@ struct visit_with_index_impl<
     n...
 >
 {
-    template<class Visitor, class... Variants, class BiasedOverloadSeqList = make_BiasedOverloadSeqList<Variants...>>
+    template<class Visitor, class... Variants, class BiasedOverloadSeqList = make_OverloadSeqList<Variants...>>
     static constexpr R apply(Visitor&& vis, Variants&&... vars)  // NOLINT(cppcoreguidelines-missing-std-forward)
         YK_RVARIANT_VISIT_NOEXCEPT(multi_visit_with_index_noexcept<R, BiasedOverloadSeqList, Visitor, forward_storage_t<as_variant_t<Variants>>...>::value)
     {
@@ -865,7 +874,7 @@ detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>
 YK_FORCEINLINE constexpr visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         detail::visit_result_t<Visitor, detail::as_variant_t<Variants>...>,
-        detail::make_BiasedOverloadSeqList<Variants...>,
+        detail::make_OverloadSeqList<Variants...>,
         Visitor,
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
@@ -899,7 +908,7 @@ template<
 YK_FORCEINLINE constexpr R visit(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_noexcept<
         R,
-        detail::make_BiasedOverloadSeqList<Variants...>,
+        detail::make_OverloadSeqList<Variants...>,
         Visitor,
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
@@ -933,7 +942,7 @@ detail::visit_with_index_result_t<Visitor, detail::as_variant_t<Variants>...>
 YK_FORCEINLINE constexpr visit_with_index(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_with_index_noexcept<
         detail::visit_with_index_result_t<Visitor, detail::as_variant_t<Variants>...>,
-        detail::make_BiasedOverloadSeqList<Variants...>,
+        detail::make_OverloadSeqList<Variants...>,
         Visitor,
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
@@ -960,7 +969,7 @@ template<
 YK_FORCEINLINE constexpr R visit_with_index(Visitor&& vis, Variants&&... vars)
     YK_RVARIANT_VISIT_NOEXCEPT(detail::multi_visit_with_index_noexcept<
         R,
-        detail::make_BiasedOverloadSeqList<Variants...>,
+        detail::make_OverloadSeqList<Variants...>,
         Visitor,
         detail::forward_storage_t<detail::as_variant_t<Variants>>...
     >::value)
