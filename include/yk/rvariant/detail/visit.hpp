@@ -282,16 +282,6 @@ using visit_with_index_result_t = decltype(std::invoke( // If you see an error h
     unwrap_recursive(detail::raw_get<0>(forward_storage<Variants>(std::declval<Variants>())))...
 ));
 
-template<class... Variants>
-using make_OverloadSeqList = core::seq_cartesian_product<
-    std::index_sequence,
-    std::make_index_sequence<
-        detail::valueless_bias<detail::as_variant_t<Variants>>(
-            yk::variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>> // aka `n`
-        )
-    >...
->;
-
 template<class T0R, class Visitor, class ArgList, class... Variants>
 struct visit_check_impl;
 
@@ -639,7 +629,7 @@ struct multi_visitor_with_index<std::index_sequence<Is...>>
 #define YK_MULTI_VISITOR_WITH_INDEX_INVOKE \
             std::invoke_r<R>( \
                 std::forward<Visitor>(vis), \
-                std::integral_constant<std::size_t, Is>{}..., \
+                std::integral_constant<std::size_t, valueless_unbias<Storage>(Is)>{}..., \
                 unwrap_recursive( \
                     raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage)) \
                 )... \
@@ -810,6 +800,16 @@ private:
         )...>{};
     }(std::make_index_sequence<sizeof...(Ns)>{});
 };
+
+template<class... Variants>
+using make_OverloadSeqList = core::seq_cartesian_product<
+    std::index_sequence,
+    std::make_index_sequence<
+        detail::valueless_bias<detail::as_variant_t<Variants>>(
+            yk::variant_size_v<std::remove_reference_t<detail::as_variant_t<Variants>>> // aka `n`
+        )
+    >...
+>;
 
 template<class R, class V, std::size_t... n>
 struct visit_impl;

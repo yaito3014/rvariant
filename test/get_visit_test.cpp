@@ -857,6 +857,26 @@ TEST_CASE("visit_with_index")
         STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<1>, 33}, yk::rvariant<int, int>{std::in_place_index<0>, 4}) == 2);
         STATIC_CHECK(yk::visit_with_index<int>(vis, yk::rvariant<int, int>{std::in_place_index<1>, 33}, yk::rvariant<int, int>{std::in_place_index<1>, 4}) == 3);
     }
+    {
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        auto const vis = [](auto&&, auto&&) {};
+        CHECK_THROWS(yk::visit_with_index<void>(vis, valueless));
+        CHECK_THROWS(yk::visit_with_index(vis, valueless));
+
+        // TODO: implement member visit_with_index
+        
+        // CHECK_THROWS(valueless.visit_with_index<void>(vis));
+        // CHECK_THROWS(valueless.visit_with_index(vis));
+    }
+    {
+        yk::rvariant<int> never_valueless;
+        yk::rvariant<int, MC_Thrower> valueless = make_valueless<int>();
+        auto const vis = [](auto&&, auto&&, auto&&, auto&&, auto&&, auto&&) {};
+        CHECK_THROWS(yk::visit_with_index<void>(vis, never_valueless, valueless, never_valueless));
+        CHECK_THROWS(yk::visit_with_index(vis, never_valueless, valueless, never_valueless));
+        CHECK_THROWS(yk::visit_with_index<void>(vis, valueless, never_valueless, valueless));
+        CHECK_THROWS(yk::visit_with_index(vis, valueless, never_valueless, valueless));
+    }
 }
 
 } // unit_test
