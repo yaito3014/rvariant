@@ -85,7 +85,7 @@ jobs:
           wget https://apt.llvm.org/llvm.sh
           chmod +x ./llvm.sh
           sudo ./llvm.sh ${{ matrix.compiler.version }}
-          sudo apt-get install -y libc++-${{ matrix.compiler.version }}-dev libc++abi-${{ matrix.compiler.version }}-dev
+          sudo apt-get install -y libc++-${{ matrix.compiler.version }}-dev libc++abi-${{ matrix.compiler.version }}-dev libunwind-${{ matrix.compiler.version }}-dev
 
       - name: Setup GCC
         if: matrix.compiler.name == 'GCC'
