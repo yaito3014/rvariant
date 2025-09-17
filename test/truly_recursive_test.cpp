@@ -8,6 +8,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <variant>
+#include <vector>
+
 namespace unit_test {
 
 #ifdef _MSC_VER
@@ -133,6 +136,33 @@ TEST_CASE("truly recursive", "[wrapper][recursive]")
             [](double const&) { /* ... */ },
             [](BinaryExpr const&) { /* ... */ },
         });
+    }
+    {
+        struct Array;
+        using Expr = yk::rvariant<int, yk::recursive_wrapper<Array>>;
+        struct Array
+        {
+            std::vector<Expr> items;
+            constexpr bool operator==(Array const&) const noexcept = default; // ok
+        };
+        Array a, b;
+        (void)(a == b);
+    }
+    {
+        struct Array;
+        using Expr = yk::rvariant<int, yk::recursive_wrapper<Array>>;
+        struct Array : std::vector<Expr>
+        {
+            //constexpr bool operator==(Array const&) const noexcept = default; // not working
+
+            constexpr bool operator==(Array const& rhs) const noexcept
+            {
+                // error; recursive instantiation
+                return static_cast<std::vector<Expr> const&>(*this) == static_cast<std::vector<Expr> const&>(rhs);
+            }
+        };
+        Array a, b;
+        (void)(a == b);
     }
 }
 
