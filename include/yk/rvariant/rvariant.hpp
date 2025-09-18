@@ -999,6 +999,34 @@ YK_RVARIANT_ALWAYS_THROWING_UNREACHABLE_END
             (typename base_type::template like_rvariant_t<Self>)self
         );
     }
+    
+    // Member `.visit_with_index(...)`
+    template<int = 0, class Self, class Visitor>
+    constexpr decltype(auto) visit_with_index(this Self&& self, Visitor&& vis)
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit_with_index(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        )))
+    {
+        return yk::visit_with_index(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        );
+    }
+
+    // Member `.visit_with_index<R>(...)`
+    template<class R, class Self, class Visitor>
+    constexpr R visit_with_index(this Self&& self, Visitor&& vis)
+        YK_RVARIANT_VISIT_NOEXCEPT(noexcept(yk::visit_with_index<R>(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        )))
+    {
+        return yk::visit_with_index<R>(
+            std::forward<Visitor>(vis),
+            (typename base_type::template like_rvariant_t<Self>)self
+        );
+    }
 
     // ReSharper restore CppCStyleCast
     // NOLINTEND(cppcoreguidelines-missing-std-forward)

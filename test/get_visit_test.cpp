@@ -862,11 +862,8 @@ TEST_CASE("visit_with_index")
         auto const vis = [](auto&&, auto&&) {};
         CHECK_THROWS(yk::visit_with_index<void>(vis, valueless));
         CHECK_THROWS(yk::visit_with_index(vis, valueless));
-
-        // TODO: implement member visit_with_index
-        
-        // CHECK_THROWS(valueless.visit_with_index<void>(vis));
-        // CHECK_THROWS(valueless.visit_with_index(vis));
+        CHECK_THROWS(valueless.visit_with_index<void>(vis));
+        CHECK_THROWS(valueless.visit_with_index(vis));
     }
     {
         yk::rvariant<int> never_valueless;
