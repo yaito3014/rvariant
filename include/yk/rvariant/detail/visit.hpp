@@ -598,7 +598,7 @@ struct multi_visitor<std::index_sequence<Is...>>
                 unwrap_recursive(
                     raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage))
                 )...
-            )
+            );
         }
     }
 };
@@ -623,7 +623,7 @@ struct multi_visitor_with_index<std::index_sequence<Is...>>
                 unwrap_recursive(
                     raw_get<valueless_unbias<Storage>(Is)>(std::forward<Storage>(storage))
                 )...
-            )
+            );
         }
     }
 };
