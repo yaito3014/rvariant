@@ -408,32 +408,32 @@ struct visit_with_index_check_impl<T0R, Visitor, core::type_list<ICs...>, core::
     static constexpr bool value = accepts_all_combinations && same_return_type;
 };
 
-template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_with_index_check_impl<
     T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&, Variants...>
     : std::conjunction<visit_with_index_check_impl<
           T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&>,
           core::type_list<Seqs...>, Variants...>...> {};
-template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_with_index_check_impl<
     T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&, Variants...>
     : std::conjunction<visit_with_index_check_impl<
             T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&>,
             core::type_list<Seqs...>, Variants...>...> {};
-template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_with_index_check_impl<
     T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&&, Variants...>
     : std::conjunction<visit_with_index_check_impl<
             T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&&>,
             core::type_list<Seqs...>, Variants...>...> {};
-template <class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class T0R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_with_index_check_impl<
     T0R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&&, Variants...>
     : std::conjunction<visit_with_index_check_impl<
             T0R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&&>,
             core::type_list<Seqs...>, Variants...>...> {};
 
-template <class T0R, class Visitor, class... Variants>
+template<class T0R, class Visitor, class... Variants>
 using visit_with_index_check = visit_with_index_check_impl<
     T0R, Visitor, core::type_list<>, core::type_list<>, core::type_list<std::make_index_sequence<variant_size_v<std::remove_cvref_t<Variants>>>...>,
     Variants...>;
@@ -472,32 +472,32 @@ struct visit_R_with_index_check_impl<R, Visitor, core::type_list<ICs...>, core::
     static constexpr bool value = accepts_all_combinations && return_type_convertible_to_R;
 };
 
-template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_R_with_index_check_impl<
     R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&, Variants...>
     : std::conjunction<visit_R_with_index_check_impl<
             R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&>,
             core::type_list<Seqs...>, Variants...>...> {};
-template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_R_with_index_check_impl<
     R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&, Variants...>
     : std::conjunction<visit_R_with_index_check_impl<
             R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&>,
             core::type_list<Seqs...>, Variants...>...> {};
-template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_R_with_index_check_impl<
     R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...>&&, Variants...>
     : std::conjunction<visit_R_with_index_check_impl<
             R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts>&&>,
             core::type_list<Seqs...>, Variants...>...> {};
-template <class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
+template<class R, class Visitor, class... ICs, class... Args, std::size_t... Is, class... Seqs, class... Ts, class... Variants>
 struct visit_R_with_index_check_impl<
     R, Visitor, core::type_list<ICs...>, core::type_list<Args...>, core::type_list<std::index_sequence<Is...>, Seqs...>, rvariant<Ts...> const&&, Variants...>
     : std::conjunction<visit_R_with_index_check_impl<
             R, Visitor, core::type_list<ICs..., std::integral_constant<std::size_t, Is>>, core::type_list<Args..., unwrap_recursive_t<Ts> const&&>,
             core::type_list<Seqs...>, Variants...>...> {};
 
-template <class R, class Visitor, class... Variants>
+template<class R, class Visitor, class... Variants>
 using visit_R_with_index_check = visit_R_with_index_check_impl<
     R, Visitor, core::type_list<>, core::type_list<>, core::type_list<std::make_index_sequence<variant_size_v<std::remove_cvref_t<Variants>>>...>, Variants...>;
 

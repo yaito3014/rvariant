@@ -36,7 +36,7 @@ struct variant_index_selector<VariantSize>
     using type = signed char;
 };
 
-template <std::size_t VariantSize>
+template<std::size_t VariantSize>
     requires (static_cast<std::size_t>(static_cast<unsigned char>(-1) / 2) < VariantSize && VariantSize <= static_cast<std::size_t>(static_cast<unsigned short>(-1) / 2))
 struct variant_index_selector<VariantSize>
 {
