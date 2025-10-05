@@ -8,7 +8,7 @@
 #include <version>
 
 #if _MSC_VER
-# include <CppCoreCheck/Warnings.h>
+# include <CodeAnalysis/CppCoreCheck/Warnings.h>
 # pragma warning(default: CPPCORECHECK_LIFETIME_WARNINGS)
 #endif
 
