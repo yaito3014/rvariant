@@ -47,11 +47,6 @@ jobs:
             executable: clang++-21
             stdlib: libc++
             cxxflags: -stdlib=libc++
-          - name: Clang
-            version: 22
-            executable: clang++-22
-            stdlib: libc++
-            cxxflags: -stdlib=libc++
           - name: MSVC
             version: v143
             executable: cl
