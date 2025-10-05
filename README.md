@@ -8,6 +8,8 @@ Documentation: <https://yaito3014.github.io/rvariant/main/rvariant.html>
 
 ## Supported Environments
 
+NOTE: Clang 22 is temporarily disabled due to its broken implementation
+
 - GCC 14
 - Clang 21-22 (libc++)
 - MSVC (2022)
