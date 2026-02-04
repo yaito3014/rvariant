@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.23">
+<meta name="generator" content="Asciidoctor 2.0.26">
 <meta name="author" content="Yaito Kakeyama, Nana Sakisaka">
 <title>rvariant</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
@@ -117,7 +117,6 @@ h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title str
 :not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
 pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
 pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
-pre>code{display:block}
 pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
 em em{font-style:normal}
 strong strong{font-weight:400}
@@ -220,6 +219,7 @@ table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
 .literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
 .literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
 .listingblock>.content{position:relative}
+.listingblock pre>code{display:block}
 .listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
 .listingblock:hover code[data-lang]::before{display:block}
 .listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
@@ -1008,7 +1008,7 @@ This library is intended for future submission to the Boost Libraries. Until the
 <p>The compile-time slowness of <code>boost::variant</code> stems from long-standing technical debt: it relies heavily on preprocessor magic in Boost.MPL. This wizardry is so tightly coupled with <code>boost::variant</code>'s internals that any attempt to modernize it would be unrealistic; it would effectively require a complete rewrite.</p>
 </div>
 <div class="paragraph">
-<p>Until 2025, no one had managed to introduce a modern alternative into either Boost or the C&#43;&#43; standard. <code>rvariant</code> fills this gap with a new implementation that supports recursive types while remaining API-compatible with <code>std::variant</code>.</p>
+<p>Until 2025, no one had managed to introduce a modern alternative to either Boost or the C&#43;&#43; standard. <code>rvariant</code> fills this gap with a new implementation that supports recursive types while remaining API-compatible with <code>std::variant</code>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1107,13 +1107,13 @@ This library is intended for future submission to the Boost Libraries. Until the
 <div class="sect2">
 <h3 id="why-is-recursive-wrapper-needed-1"><a class="anchor" href="#why-is-recursive-wrapper-needed-1"></a>Why is recursive_wrapper needed?</h3>
 <div class="paragraph">
-<p>A recursive type is effectively an incomplete type at the point of its initial definition. However, a <code>std</code>-style variant class requires all alternative types to be complete, since the storage size must be determined at compile time. As a result, recursive alternatives must be wrapped in a <strong>recursive wrapper class</strong>, which holds the incomplete type via a pointer and manages it through dynamic memory allocation.</p>
+<p>A recursive type is effectively an incomplete type at the point of its initial definition. However, a <code>std</code>-style variant class requires all alternatives to be complete, since the storage size must be determined at compile time. As a result, recursive alternatives must be wrapped in a <strong>recursive wrapper class</strong>, which holds the incomplete type via a pointer and manages it through dynamic memory allocation.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="why-is-recursive-wrapper-needed-2"><a class="anchor" href="#why-is-recursive-wrapper-needed-2"></a>Why can&#8217;t I just use std::unique_ptr instead of recursive_wrapper?</h3>
 <div class="paragraph">
-<p><em>Theoretically</em>, a recursive wrapper class can be designed independently, i.e. having no correlation to the variant class itself. So there&#8217;s no theoretical reason to prevent you from using <code>std::unique_ptr</code> with <code>std::variant</code>.</p>
+<p><em>Theoretically</em>, a recursive wrapper class can be designed independently, i.e., with no relation to the variant class itself. So there&#8217;s no theoretical reason you couldn&#8217;t use <code>std::unique_ptr</code> with <code>std::variant</code>.</p>
 </div>
 <div class="paragraph">
 <p>However, <strong>it is essential to have compatible interfaces in the variant class</strong>, because the lack of interfaces means that you must:</p>
@@ -1129,7 +1129,7 @@ This library is intended for future submission to the Boost Libraries. Until the
 </ul>
 </div>
 <div class="paragraph">
-<p>In other words, the commonly seen advice like <em>"use std::unique_ptr if you want to hold recursive types in std::variant"</em> is a <em>hack</em> that basically does <strong>nothing</strong> except for just holding the wrapper instance. As said above, such unadapted wrappers introduce <em>intrusive</em> boilerplates that spreads to the application layer, which is undesirable in practice.</p>
+<p>In other words, the commonly seen advice like <em>"use std::unique_ptr if you want to hold recursive types in std::variant"</em> is a <em>hack</em> that basically does <strong>nothing</strong> except for just holding the wrapper instance. As noted above, such unadapted wrappers introduce <em>intrusive</em> boilerplate that spreads to the application layer, which is undesirable in practice.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1138,10 +1138,10 @@ This library is intended for future submission to the Boost Libraries. Until the
 <p><code>rvariant</code> is designed to be a strict superset of <code>std::variant</code>, not just to act as a third-party drop-in replacement.</p>
 </div>
 <div class="paragraph">
-<p>If <code>rvariant</code> is specified correctly, it has the potential to become the <strong>only variant library in the C++ standard</strong> capable of handling <em>both</em> recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around <code>std::variant</code> (e.g. inheritance or composition), such a specification could never be standardized.</p>
+<p>If <code>rvariant</code> is specified correctly, it has the potential to become the <strong>only variant library in the C++ standard</strong> capable of handling <em>both</em> recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around <code>std::variant</code> (e.g., inheritance or composition), such a specification could never be standardized.</p>
 </div>
 <div class="paragraph">
-<p>For this purpose, the documentation of <code>rvariant</code> is presented in a diff-based format that mirrors <code>std::variant</code>, with key characteristics marked using <span class="underline">underlines</span>.</p>
+<p>For this purpose, the documentation of <code>rvariant</code> is presented in a diff-based format that mirrors <code>std::variant</code>, with key characteristics marked with <span class="underline">underlines</span>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1153,7 +1153,7 @@ This library is intended for future submission to the Boost Libraries. Until the
 <p>Although Boost.Spirit.X3 has a <a href="https://www.boost.org/doc/libs/1_88_0/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html">somewhat updated counterpart</a>, it was never designed around a formal specification and still retains <a href="https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131">legacy implementation details</a> from earlier stages of development.</p>
 </div>
 <div class="paragraph">
-<p>As such, the initial version of <code>rvariant</code> was developed as an internal replacement within Boost.Spirit, as a sub-component with no external exposure. However, before a PR was even submitted, it became clear that the design had potential value beyond Spirit. This prompted a complete redesign into a standalone superset of <code>std::variant</code>, followed by preparation for formal Boost review.</p>
+<p>As such, the initial version of <code>rvariant</code> was developed as an internal replacement within Boost.Spirit, as a subcomponent with no external exposure. However, before a PR was even submitted, it became clear that the design had potential value beyond Spirit. This prompted a complete redesign into a standalone superset of <code>std::variant</code>, followed by preparation for formal Boost review.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1171,7 +1171,7 @@ This library is intended for future submission to the Boost Libraries. Until the
 <p>Boost.Spirit is just one example of a parser combinator library. In practice, <em>any application that constructs statically typed recursive data structures</em> can benefit from a recursive variant class. Furthermore, with the arrival of C&#43;&#43;26 reflection, such data structures are likely to become even more common.</p>
 </div>
 <div class="paragraph">
-<p>A proper solution to these challenges requires a fully-featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a foundation for broader discussion about recursive variants in Boost and beyond.</p>
+<p>A proper solution to these challenges requires a fully featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a foundation for broader discussion about recursive variants in Boost and beyond.</p>
 </div>
 </div>
 </div>
@@ -1180,7 +1180,7 @@ This library is intended for future submission to the Boost Libraries. Until the
 <div class="openblock partintro">
 <div class="content">
 <div class="paragraph">
-<p>This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.</p>
+<p>This section shows the pseudo code for all features in this library. You can click on the links to jump to the corresponding reference.</p>
 </div>
 </div>
 </div>
@@ -1882,7 +1882,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds a value but <code>*this</code> does not, initializes <code>rvariant</code> to hold <span class="underline"><code>VT<sub><em>i</em></sub></code> (with <em>i</em> being the index of the alternative corresponding to that of <code>rhs</code>)</span> and direct-initializes the contained value with <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code>.</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if <span class="underline"><code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;U<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code></span>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> the left hand side is <code>T<sub><em>i</em></sub></code>, <em>not</em> <code>VT<sub><em>i</em></sub></code>. This ensures that the existing storage is reused even for <code>rvariant</code> with duplicate corresponding alternatives; i.e. <code>index()</code> is unchanged.)</span></p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <span class="underline"><code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;U<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code></span>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(rhs)</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> the left hand side is <code>T<sub><em>i</em></sub></code>, <em>not</em> <code>VT<sub><em>i</em></sub></code>. This ensures that the existing storage is reused even for <code>rvariant</code> with duplicate corresponding alternatives; i.e., <code>index()</code> is unchanged.)</span></p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;Otherwise, if either <code>std::is_nothrow_constructible_v&lt;VT<sub><em>i</em></sub>, U<sub><em>j</em></sub> const&amp;&gt;</code> is <code>true</code> or <code>std::is_nothrow_move_constructible_v&lt;VT<sub><em>i</em></sub>&gt;</code> is <code>false</code>, equivalent to <code>emplace<span class="underline">&lt;VT<sub><em>i</em></sub>&gt;</span>(<em>GET</em>&lt;<em>j</em>&gt;(rhs))</code>.</p>
@@ -1949,7 +1949,7 @@ Equivalent to the <code>std::variant</code> counterpart. <sup><a href="https://e
 <p>&#8201;&#8212;&#8201;Otherwise, if <code>rhs</code> holds a value but <code>*this</code> does not, initializes <code>rvariant</code> to hold <span class="underline"><code>VT<sub><em>i</em></sub></code> (with <em>i</em> being the index of the alternative corresponding to that of <code>rhs</code>)</span> and direct-initializes the contained value with <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code>.</span></p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;Otherwise, if <span class="underline"><code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;U<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code></span>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> the left hand side is <code>T<sub><em>i</em></sub></code>, <em>not</em> <code>VT<sub><em>i</em></sub></code>. This ensures that the existing storage is reused even for <code>rvariant</code> with duplicate corresponding alternatives; i.e. <code>index()</code> is unchanged.)</span></p>
+<p>&#8201;&#8212;&#8201;Otherwise, if <span class="underline"><code>std::is_same_v&lt;<a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;T<sub><em>i</em></sub>&gt;, <a href="#rvariant.recursive.helper">unwrap_recursive_t</a>&lt;U<sub><em>j</em></sub>&gt;&gt;</code> is <code>true</code></span>, assigns <span class="underline"><code><em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs))</code></span> to the value contained in <code>*this</code>. <span class="underline">(<em>Note:</em> the left hand side is <code>T<sub><em>i</em></sub></code>, <em>not</em> <code>VT<sub><em>i</em></sub></code>. This ensures that the existing storage is reused even for <code>rvariant</code> with duplicate corresponding alternatives; i.e., <code>index()</code> is unchanged.)</span></p>
 </li>
 <li>
 <p>&#8201;&#8212;&#8201;Otherwise, equivalent to <code>emplace<span class="underline">&lt;VT<sub><em>i</em></sub>&gt;</span>(<em>GET</em>&lt;<em>j</em>&gt;(std::move(rhs)))</code>.</p>
@@ -2559,7 +2559,7 @@ std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, rvariant&lt;Ts...&gt; c
 <p>&#8201;&#8212;&#8201;the output is done as if by calling <code>os &lt;&lt; <em><a href="#rvariant.recursive.helper">UNWRAP_RECURSIVE</a></em>(<em>GET</em>&lt;<em>i</em>&gt;(v))</code> (with <em>i</em> being <code>v.index()</code>), and</p>
 </li>
 <li>
-<p>&#8201;&#8212;&#8201;any exception of type <code>std::bad_variant_access</code>, whether thrown directly (i.e. due to <code>v</code> being valueless) or indirectly (i.e. by a nested call to an alternative&#8217;s output function), is propagated without regard to the value of <code>os.exceptions()</code> and without turning on <code>std::ios_base::badbit</code> in the error state of <code>os</code>.</p>
+<p>&#8201;&#8212;&#8201;any exception of type <code>std::bad_variant_access</code>, whether thrown directly (i.e., due to <code>v</code> being valueless) or indirectly (i.e., by a nested call to an alternative&#8217;s output function), is propagated without regard to the value of <code>os.exceptions()</code> and without turning on <code>std::ios_base::badbit</code> in the error state of <code>os</code>.</p>
 </li>
 </ul>
 </div>
