@@ -73,7 +73,7 @@ Starting with {cpp}17, most of those can be replaced with `std::variant`, _excep
 
 The compile-time slowness of `boost::variant` stems from long-standing technical debt: it relies heavily on preprocessor magic in Boost.MPL. This wizardry is so tightly coupled with ``boost::variant``'s internals that any attempt to modernize it would be unrealistic; it would effectively require a complete rewrite.
 
-Until 2025, no one had managed to introduce a modern alternative into either Boost or the {cpp} standard. `rvariant` fills this gap with a new implementation that supports recursive types while remaining API-compatible with `std::variant`.
+Until 2025, no one had managed to introduce a modern alternative to either Boost or the {cpp} standard. `rvariant` fills this gap with a new implementation that supports recursive types while remaining API-compatible with `std::variant`.
 
 
 [#goals]
@@ -149,13 +149,13 @@ s| Flexible construction +
 [[why-is-recursive-wrapper-needed-1]]
 ### Why is recursive_wrapper needed?
 
-A recursive type is effectively an incomplete type at the point of its initial definition. However, a `std`-style variant class requires all alternative types to be complete, since the storage size must be determined at compile time. As a result, recursive alternatives must be wrapped in a *recursive wrapper class*, which holds the incomplete type via a pointer and manages it through dynamic memory allocation.
+A recursive type is effectively an incomplete type at the point of its initial definition. However, a `std`-style variant class requires all alternatives to be complete, since the storage size must be determined at compile time. As a result, recursive alternatives must be wrapped in a *recursive wrapper class*, which holds the incomplete type via a pointer and manages it through dynamic memory allocation.
 
 
 [[why-is-recursive-wrapper-needed-2]]
 ### Why can't I just use std::unique_ptr instead of recursive_wrapper?
 
-_Theoretically_, a recursive wrapper class can be designed independently, i.e. having no correlation to the variant class itself. So there's no theoretical reason to prevent you from using `std::unique_ptr` with `std::variant`.
+_Theoretically_, a recursive wrapper class can be designed independently, i.e., with no relation to the variant class itself. So there's no theoretical reason you couldn't use `std::unique_ptr` with `std::variant`.
 
 However, *it is essential to have compatible interfaces in the variant class*, because the lack of interfaces means that you must:
 
@@ -163,7 +163,7 @@ However, *it is essential to have compatible interfaces in the variant class*, b
 
 * _unwrap_ the instance every time you access an alternative with `get()` or `visit()`.
 
-In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As said above, such unadapted wrappers introduce _intrusive_ boilerplates that spreads to the application layer, which is undesirable in practice.
+In other words, the commonly seen advice like _"use std::unique_ptr if you want to hold recursive types in std::variant"_ is a _hack_ that basically does *nothing* except for just holding the wrapper instance. As noted above, such unadapted wrappers introduce _intrusive_ boilerplate that spreads to the application layer, which is undesirable in practice.
 
 
 [[why-is-rvariant-not-a-wrapper-of-std]]
@@ -171,9 +171,9 @@ In other words, the commonly seen advice like _"use std::unique_ptr if you want 
 
 `rvariant` is designed to be a strict superset of `std::variant`, not just to act as a third-party drop-in replacement.
 
-If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g. inheritance or composition), such a specification could never be standardized.
+If `rvariant` is specified correctly, it has the potential to become the *only variant library in the C++ standard* capable of handling _both_ recursive and non-recursive types transparently. However, if it is designed merely as a thin wrapper around `std::variant` (e.g., inheritance or composition), such a specification could never be standardized.
 
-For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with key characteristics marked using [.underline]#underlines#.
+For this purpose, the documentation of `rvariant` is presented in a diff-based format that mirrors `std::variant`, with key characteristics marked with [.underline]#underlines#.
 
 
 [[why-is-rvariant-proposed-to-boost-1]]
@@ -183,7 +183,7 @@ One of the co-authors of `rvariant`, Nana Sakisaka, has been using Boost.Spirit 
 
 Although Boost.Spirit.X3 has a https://www.boost.org/doc/libs/{boost-version}/libs/spirit/doc/x3/html/spirit_x3/tutorials/rexpr.html[somewhat updated counterpart], it was never designed around a formal specification and still retains https://github.com/boostorg/spirit/blob/328d940c372367a8d76a48ed956e870b56738ce9/include/boost/spirit/home/x3/support/ast/variant.hpp#L131[legacy implementation details] from earlier stages of development.
 
-As such, the initial version of `rvariant` was developed as an internal replacement within Boost.Spirit, as a sub-component with no external exposure. However, before a PR was even submitted, it became clear that the design had potential value beyond Spirit. This prompted a complete redesign into a standalone superset of `std::variant`, followed by preparation for formal Boost review.
+As such, the initial version of `rvariant` was developed as an internal replacement within Boost.Spirit, as a subcomponent with no external exposure. However, before a PR was even submitted, it became clear that the design had potential value beyond Spirit. This prompted a complete redesign into a standalone superset of `std::variant`, followed by preparation for formal Boost review.
 
 
 [[why-is-rvariant-proposed-to-boost-2]]
@@ -199,12 +199,12 @@ Moreover, we expect the working group to seek implementation experience, which i
 
 Boost.Spirit is just one example of a parser combinator library. In practice, _any application that constructs statically typed recursive data structures_ can benefit from a recursive variant class. Furthermore, with the arrival of {cpp}26 reflection, such data structures are likely to become even more common.
 
-A proper solution to these challenges requires a fully-featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a foundation for broader discussion about recursive variants in Boost and beyond.
+A proper solution to these challenges requires a fully featured library, not just a value-semantic wrapper that happens to work for minimal use cases. We hope this work can serve as a foundation for broader discussion about recursive variants in Boost and beyond.
 
 
 = Feature Cheat Sheet
 
-This section shows the pseudo-code for all features in this library. You can click on the links to jump to the corresponding reference.
+This section shows the pseudo code for all features in this library. You can click on the links to jump to the corresponding reference.
 
 == Basic Features
 
@@ -757,7 +757,7 @@ include::_std-variant-proxy.adoc[]
 ** -- If neither `*this` nor `rhs` holds a value, there is no effect.
 ** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
 ** -- Otherwise, if `rhs` holds a value but `*this` does not, initializes `rvariant` to hold [.underline]#`VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `rhs`)# and direct-initializes the contained value with [.underline]#`_GET_<__j__>(rhs)`.#
-** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(rhs)`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e. `index()` is unchanged.)#
+** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(rhs)`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e., `index()` is unchanged.)#
 ** -- Otherwise, if either `std::is_nothrow_constructible_v<VT~_i_~, U~_j_~ const&>` is `true` or `std::is_nothrow_move_constructible_v<VT~_i_~>` is `false`, equivalent to `emplace[.underline]##<VT~_i_~>##(_GET_<__j__>(rhs))`.
 ** -- Otherwise, equivalent to `emplace<VT~_i_~>([.underline]##VT~_i_~##(_GET_<__j__>(rhs)))`.
 --
@@ -789,7 +789,7 @@ include::_std-variant-proxy.adoc[]
 ** -- If neither `*this` nor `rhs` holds a value, there is no effect.
 ** -- Otherwise, if `*this` holds a value but `rhs` does not, destroys the value contained in `*this` and sets `*this` to not hold a value.
 ** -- Otherwise, if `rhs` holds a value but `*this` does not, initializes `rvariant` to hold [.underline]#`VT~_i_~` (with _i_ being the index of the alternative corresponding to that of `rhs`)# and direct-initializes the contained value with [.underline]#`_GET_<__j__>(std::move(rhs))`.#
-** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(std::move(rhs))`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e. `index()` is unchanged.)#
+** -- Otherwise, if [.underline]#`std::is_same_v<{unwrap_recursive_t}<T~_i_~>, {unwrap_recursive_t}<U~_j_~>>` is `true`#, assigns [.underline]#`_GET_<__j__>(std::move(rhs))`# to the value contained in `*this`. [.underline]#(_Note:_ the left hand side is `T~_i_~`, _not_ `VT~_i_~`. This ensures that the existing storage is reused even for `rvariant` with duplicate corresponding alternatives; i.e., `index()` is unchanged.)#
 ** -- Otherwise, equivalent to `emplace[.underline]##<VT~_i_~>##(_GET_<__j__>(std::move(rhs)))`.
 --
 +
@@ -1258,7 +1258,7 @@ std::ostream& operator<<(std::ostream& os, rvariant<Ts...> const& v);pass:quotes
 --
 [none]
 ** -- the output is done as if by calling `os << {UNWRAP_RECURSIVE}(_GET_<__i__>(v))` (with _i_ being `v.index()`), and
-** -- any exception of type `std::bad_variant_access`, whether thrown directly (i.e. due to `v` being valueless) or indirectly (i.e. by a nested call to an alternative's output function), is propagated without regard to the value of `os.exceptions()` and without turning on `std::ios_base::badbit` in the error state of `os`.
+** -- any exception of type `std::bad_variant_access`, whether thrown directly (i.e., due to `v` being valueless) or indirectly (i.e., by a nested call to an alternative's output function), is propagated without regard to the value of `os.exceptions()` and without turning on `std::ios_base::badbit` in the error state of `os`.
 --
 +
 *_Returns:_* `os`.
